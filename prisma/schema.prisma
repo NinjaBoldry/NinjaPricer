@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -8,4 +5,380 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  SALES
+}
+
+enum ProductKind {
+  SAAS_USAGE
+  PACKAGED_LABOR
+  CUSTOM_LABOR
+}
+
+enum LaborSKUUnit {
+  PER_USER
+  PER_SESSION
+  PER_DAY
+  FIXED
+}
+
+enum BurdenScope {
+  ALL_DEPARTMENTS
+  DEPARTMENT
+}
+
+enum EmployeeCompensationType {
+  ANNUAL_SALARY
+  HOURLY
+}
+
+enum CommissionScopeType {
+  ALL
+  PRODUCT
+  DEPARTMENT
+}
+
+enum CommissionBaseMetric {
+  REVENUE
+  CONTRIBUTION_MARGIN
+  TAB_REVENUE
+  TAB_MARGIN
+}
+
+enum RailKind {
+  MIN_MARGIN_PCT
+  MAX_DISCOUNT_PCT
+  MIN_SEAT_PRICE
+  MIN_CONTRACT_MONTHS
+}
+
+enum MarginBasis {
+  CONTRIBUTION
+  NET
+}
+
+enum ScenarioStatus {
+  DRAFT
+  QUOTED
+  ARCHIVED
+}
+
+model User {
+  id              String           @id @default(cuid())
+  email           String           @unique
+  name            String
+  role            Role             @default(SALES)
+  microsoftSub    String?          @unique
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  scenarios       Scenario[]       @relation("ScenarioOwner")
+  quotesGenerated Quote[]          @relation("QuoteGenerator")
+  commissionsAs   CommissionRule[] @relation("CommissionRecipient")
+}
+
+model Product {
+  id                    String                   @id @default(cuid())
+  name                  String                   @unique
+  kind                  ProductKind
+  sortOrder             Int                      @default(0)
+  isActive              Boolean                  @default(true)
+  createdAt             DateTime                 @default(now())
+  updatedAt             DateTime                 @updatedAt
+  vendorRates           VendorRate[]
+  baseUsage             BaseUsage[]
+  otherVariable         OtherVariable?
+  personas              Persona[]
+  fixedCosts            ProductFixedCost[]
+  scale                 ProductScale?
+  listPrice             ListPrice?
+  volumeTiers           VolumeDiscountTier[]
+  contractModifiers     ContractLengthModifier[]
+  laborSKUs             LaborSKU[]
+  rails                 Rail[]
+  scenarioSaaSConfigs   ScenarioSaaSConfig[]
+  scenarioLaborLines    ScenarioLaborLine[]
+  bundleItems           BundleItem[]
+  commissionRulesScoped CommissionRule[]         @relation("CommissionProductScope")
+}
+
+model VendorRate {
+  id        String      @id @default(cuid())
+  productId String
+  name      String
+  unitLabel String
+  rateUsd   Decimal     @db.Decimal(18, 8)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  product   Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  baseUsage BaseUsage[]
+
+  @@unique([productId, name])
+}
+
+model BaseUsage {
+  id            String     @id @default(cuid())
+  productId     String
+  vendorRateId  String
+  usagePerMonth Decimal    @db.Decimal(18, 6)
+  product       Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  vendorRate    VendorRate @relation(fields: [vendorRateId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, vendorRateId])
+}
+
+model OtherVariable {
+  id                 String  @id @default(cuid())
+  productId          String  @unique
+  usdPerUserPerMonth Decimal @db.Decimal(18, 4)
+  product            Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model Persona {
+  id         String  @id @default(cuid())
+  productId  String
+  name       String
+  multiplier Decimal @db.Decimal(10, 4)
+  sortOrder  Int     @default(0)
+  product    Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, name])
+}
+
+model ProductFixedCost {
+  id         String  @id @default(cuid())
+  productId  String
+  name       String
+  monthlyUsd Decimal @db.Decimal(18, 4)
+  product    Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, name])
+}
+
+model ProductScale {
+  id                 String  @id @default(cuid())
+  productId          String  @unique
+  activeUsersAtScale Int
+  product            Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model ListPrice {
+  id                 String  @id @default(cuid())
+  productId          String  @unique
+  usdPerSeatPerMonth Decimal @db.Decimal(18, 4)
+  product            Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model VolumeDiscountTier {
+  id          String  @id @default(cuid())
+  productId   String
+  minSeats    Int
+  discountPct Decimal @db.Decimal(6, 4)
+  product     Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, minSeats])
+}
+
+model ContractLengthModifier {
+  id                    String  @id @default(cuid())
+  productId             String
+  minMonths             Int
+  additionalDiscountPct Decimal @db.Decimal(6, 4)
+  product               Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, minMonths])
+}
+
+model LaborSKU {
+  id                 String              @id @default(cuid())
+  productId          String
+  name               String
+  unit               LaborSKUUnit
+  costPerUnitUsd     Decimal             @db.Decimal(18, 4)
+  defaultRevenueUsd  Decimal             @db.Decimal(18, 4)
+  isActive           Boolean             @default(true)
+  product            Product             @relation(fields: [productId], references: [id], onDelete: Cascade)
+  bundleItems        BundleItem[]
+  scenarioLaborLines ScenarioLaborLine[]
+
+  @@unique([productId, name])
+}
+
+model Department {
+  id                 String              @id @default(cuid())
+  name               String              @unique
+  isActive           Boolean             @default(true)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  employees          Employee[]
+  billRate           DepartmentBillRate?
+  burdens            Burden[]            @relation("BurdenDepartmentScope")
+  scenarioLaborLines ScenarioLaborLine[]
+  bundleItems        BundleItem[]
+  commissionsScoped  CommissionRule[]    @relation("CommissionDepartmentScope")
+}
+
+model Burden {
+  id           String      @id @default(cuid())
+  name         String      @unique
+  ratePct      Decimal     @db.Decimal(6, 4)
+  capUsd       Decimal?    @db.Decimal(18, 2)
+  scope        BurdenScope
+  departmentId String?
+  department   Department? @relation("BurdenDepartmentScope", fields: [departmentId], references: [id], onDelete: Cascade)
+  isActive     Boolean     @default(true)
+}
+
+model Employee {
+  id                   String                   @id @default(cuid())
+  name                 String
+  departmentId         String
+  compensationType     EmployeeCompensationType
+  annualSalaryUsd      Decimal?                 @db.Decimal(18, 2)
+  hourlyRateUsd        Decimal?                 @db.Decimal(18, 4)
+  standardHoursPerYear Int?
+  isActive             Boolean                  @default(true)
+  createdAt            DateTime                 @default(now())
+  updatedAt            DateTime                 @updatedAt
+  department           Department               @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+}
+
+model DepartmentBillRate {
+  id              String     @id @default(cuid())
+  departmentId    String     @unique
+  billRatePerHour Decimal    @db.Decimal(18, 4)
+  department      Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+}
+
+model CommissionRule {
+  id                  String               @id @default(cuid())
+  name                String
+  scopeType           CommissionScopeType
+  scopeProductId      String?
+  scopeDepartmentId   String?
+  baseMetric          CommissionBaseMetric
+  recipientEmployeeId String?
+  notes               String?
+  isActive            Boolean              @default(true)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  product             Product?             @relation("CommissionProductScope", fields: [scopeProductId], references: [id], onDelete: SetNull)
+  department          Department?          @relation("CommissionDepartmentScope", fields: [scopeDepartmentId], references: [id], onDelete: SetNull)
+  recipient           User?                @relation("CommissionRecipient", fields: [recipientEmployeeId], references: [id], onDelete: SetNull)
+  tiers               CommissionTier[]
+}
+
+model CommissionTier {
+  id               String         @id @default(cuid())
+  ruleId           String
+  thresholdFromUsd Decimal        @db.Decimal(18, 2)
+  ratePct          Decimal        @db.Decimal(6, 4)
+  sortOrder        Int            @default(0)
+  rule             CommissionRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+
+  @@unique([ruleId, thresholdFromUsd])
+}
+
+model Bundle {
+  id          String       @id @default(cuid())
+  name        String       @unique
+  description String?
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  items       BundleItem[]
+  scenarios   Scenario[]   @relation("ScenarioAppliedBundle")
+}
+
+model BundleItem {
+  id           String      @id @default(cuid())
+  bundleId     String
+  productId    String
+  skuId        String?
+  departmentId String?
+  config       Json
+  sortOrder    Int         @default(0)
+  bundle       Bundle      @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+  product      Product     @relation(fields: [productId], references: [id], onDelete: Restrict)
+  sku          LaborSKU?   @relation(fields: [skuId], references: [id], onDelete: SetNull)
+  department   Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+}
+
+model Rail {
+  id            String      @id @default(cuid())
+  productId     String
+  kind          RailKind
+  marginBasis   MarginBasis @default(CONTRIBUTION)
+  softThreshold Decimal     @db.Decimal(18, 4)
+  hardThreshold Decimal     @db.Decimal(18, 4)
+  isEnabled     Boolean     @default(true)
+  product       Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model Scenario {
+  id              String               @id @default(cuid())
+  name            String
+  customerName    String
+  ownerId         String
+  contractMonths  Int
+  appliedBundleId String?
+  notes           String?
+  status          ScenarioStatus       @default(DRAFT)
+  isArchived      Boolean              @default(false)
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  owner           User                 @relation("ScenarioOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  appliedBundle   Bundle?              @relation("ScenarioAppliedBundle", fields: [appliedBundleId], references: [id], onDelete: SetNull)
+  saasConfigs     ScenarioSaaSConfig[]
+  laborLines      ScenarioLaborLine[]
+  quotes          Quote[]
+}
+
+model ScenarioSaaSConfig {
+  id                  String   @id @default(cuid())
+  scenarioId          String
+  productId           String
+  seatCount           Int
+  personaMix          Json
+  discountOverridePct Decimal? @db.Decimal(6, 4)
+  scenario            Scenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  product             Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@unique([scenarioId, productId])
+}
+
+model ScenarioLaborLine {
+  id                String      @id @default(cuid())
+  scenarioId        String
+  productId         String
+  skuId             String?
+  departmentId      String?
+  customDescription String?
+  qty               Decimal     @db.Decimal(18, 4)
+  unit              String
+  costPerUnitUsd    Decimal     @db.Decimal(18, 4)
+  revenuePerUnitUsd Decimal     @db.Decimal(18, 4)
+  sortOrder         Int         @default(0)
+  scenario          Scenario    @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  product           Product     @relation(fields: [productId], references: [id], onDelete: Restrict)
+  sku               LaborSKU?   @relation(fields: [skuId], references: [id], onDelete: SetNull)
+  department        Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+}
+
+model Quote {
+  id               String   @id @default(cuid())
+  scenarioId       String
+  version          Int
+  pdfUrl           String
+  internalPdfUrl   String?
+  generatedAt      DateTime @default(now())
+  generatedById    String
+  customerSnapshot Json
+  totals           Json
+  scenario         Scenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  generatedBy      User     @relation("QuoteGenerator", fields: [generatedById], references: [id], onDelete: Restrict)
+
+  @@unique([scenarioId, version])
 }
