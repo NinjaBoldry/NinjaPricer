@@ -1,14 +1,7 @@
 import { d, toCents } from '@/lib/utils/money';
 import type { SaaSProductSnap, SaaSTabInput, TabResult } from './types';
-import {
-  saasVariableCostPerSeatPerMonth,
-  saasInfraCostPerSeatPerMonth,
-} from './saas-cost';
-import {
-  pickVolumeDiscount,
-  pickContractDiscount,
-  effectiveDiscount,
-} from './saas-discount';
+import { saasVariableCostPerSeatPerMonth, saasInfraCostPerSeatPerMonth } from './saas-cost';
+import { pickVolumeDiscount, pickContractDiscount, effectiveDiscount } from './saas-discount';
 import { ValidationError } from '@/lib/utils/errors';
 
 export function computeSaaSTab(

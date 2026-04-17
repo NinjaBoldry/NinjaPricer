@@ -30,10 +30,7 @@ export function compute(req: ComputeRequest): ComputeResult {
   const monthlyRevenueCents = perTab.reduce((s, t) => s + t.monthlyRevenueCents, 0);
   const contractCostCents = perTab.reduce((s, t) => s + t.contractCostCents, 0);
   const contractRevenueCents = perTab.reduce((s, t) => s + t.contractRevenueCents, 0);
-  const contributionMarginCents = perTab.reduce(
-    (s, t) => s + t.contributionMarginCents,
-    0,
-  );
+  const contributionMarginCents = perTab.reduce((s, t) => s + t.contributionMarginCents, 0);
 
   const commissions = req.commissionRules
     .filter((r) => r.tiers.length > 0)
@@ -43,8 +40,7 @@ export function compute(req: ComputeRequest): ComputeResult {
 
   const marginPctContribution =
     contractRevenueCents === 0 ? 0 : contributionMarginCents / contractRevenueCents;
-  const marginPctNet =
-    contractRevenueCents === 0 ? 0 : netMarginCents / contractRevenueCents;
+  const marginPctNet = contractRevenueCents === 0 ? 0 : netMarginCents / contractRevenueCents;
 
   const warnings = evaluateRails(req.rails, perTab, netMarginCents, contractRevenueCents);
 

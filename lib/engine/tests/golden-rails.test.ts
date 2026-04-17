@@ -20,9 +20,7 @@ describe('Golden fixture: rail warnings', () => {
         notes: {
           kind: 'SAAS_USAGE',
           productId: 'notes',
-          vendorRates: [
-            { id: 'dg', name: 'Deepgram', unitLabel: 'per min', rateUsd: d('0.0043') },
-          ],
+          vendorRates: [{ id: 'dg', name: 'Deepgram', unitLabel: 'per min', rateUsd: d('0.0043') }],
           baseUsage: [{ vendorRateId: 'dg', usagePerMonth: d('200') }],
           otherVariableUsdPerUserPerMonth: d('5.00'),
           personas: [{ id: 'avg', name: 'Avg', multiplier: d('1') }],

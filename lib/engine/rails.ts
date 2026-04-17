@@ -53,9 +53,7 @@ function measureRail(
     case 'MIN_MARGIN_PCT': {
       if (tab.contractRevenueCents === 0) return null;
       if (rail.marginBasis === 'NET') {
-        return contractRevenueCentsAll === 0
-          ? null
-          : netMarginCentsAll / contractRevenueCentsAll;
+        return contractRevenueCentsAll === 0 ? null : netMarginCentsAll / contractRevenueCentsAll;
       }
       return tab.contributionMarginCents / tab.contractRevenueCents;
     }

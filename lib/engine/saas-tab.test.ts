@@ -6,9 +6,7 @@ import type { SaaSProductSnap, SaaSTabInput } from './types';
 const product: SaaSProductSnap = {
   kind: 'SAAS_USAGE',
   productId: 'notes',
-  vendorRates: [
-    { id: 'dg', name: 'Deepgram', unitLabel: 'per min', rateUsd: d('0.0043') },
-  ],
+  vendorRates: [{ id: 'dg', name: 'Deepgram', unitLabel: 'per min', rateUsd: d('0.0043') }],
   baseUsage: [{ vendorRateId: 'dg', usagePerMonth: d('200') }],
   otherVariableUsdPerUserPerMonth: d('2.00'),
   personas: [{ id: 'p', name: 'Avg', multiplier: d('1') }],

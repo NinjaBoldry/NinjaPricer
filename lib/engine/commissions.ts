@@ -20,9 +20,7 @@ export function applyProgressiveTiers(
   if (baseAmount.lte(0) || tiers.length === 0) {
     return { commissionCents: 0, breakdown: [] };
   }
-  const sorted = [...tiers].sort((a, b) =>
-    a.thresholdFromUsd.cmp(b.thresholdFromUsd),
-  );
+  const sorted = [...tiers].sort((a, b) => a.thresholdFromUsd.cmp(b.thresholdFromUsd));
   const breakdown: CommissionBreakdownTier[] = [];
   let total = d(0);
   for (let i = 0; i < sorted.length; i++) {
@@ -43,23 +41,16 @@ export function applyProgressiveTiers(
   return { commissionCents: toCents(total), breakdown };
 }
 
-export function resolveBaseAmount(
-  rule: CommissionRuleSnap,
-  perTab: TabResult[],
-): Decimal {
+export function resolveBaseAmount(rule: CommissionRuleSnap, perTab: TabResult[]): Decimal {
   const byProduct = (kind: 'rev' | 'margin') => {
     const match = perTab.find((t) =>
       rule.scopeProductId ? t.productId === rule.scopeProductId : false,
     );
     if (!match) return d(0);
-    return d(kind === 'rev' ? match.contractRevenueCents : match.contributionMarginCents).div(
-      100,
-    );
+    return d(kind === 'rev' ? match.contractRevenueCents : match.contributionMarginCents).div(100);
   };
-  const allRev = () =>
-    d(perTab.reduce((s, t) => s + t.contractRevenueCents, 0)).div(100);
-  const allMargin = () =>
-    d(perTab.reduce((s, t) => s + t.contributionMarginCents, 0)).div(100);
+  const allRev = () => d(perTab.reduce((s, t) => s + t.contractRevenueCents, 0)).div(100);
+  const allMargin = () => d(perTab.reduce((s, t) => s + t.contributionMarginCents, 0)).div(100);
 
   switch (rule.baseMetric) {
     case 'REVENUE':

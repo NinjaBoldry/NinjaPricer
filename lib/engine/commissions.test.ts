@@ -1,10 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { d } from '@/lib/utils/money';
-import {
-  applyProgressiveTiers,
-  evaluateCommissionRule,
-  resolveBaseAmount,
-} from './commissions';
+import { applyProgressiveTiers, evaluateCommissionRule, resolveBaseAmount } from './commissions';
 import type { CommissionRuleSnap, CommissionTierSnap, TabResult } from './types';
 
 const tiers: CommissionTierSnap[] = [
