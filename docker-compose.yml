@@ -1,0 +1,15 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ninja
+      POSTGRES_PASSWORD: ninja_dev
+      POSTGRES_DB: ninja_pricer
+    ports:
+      - '5433:5432'
+    volumes:
+      - ninja_db:/var/lib/postgresql/data
+
+volumes:
+  ninja_db:

@@ -12,3 +12,5 @@ test-results/
 .turbo/
 dist/
 *.tsbuildinfo
+
+/lib/generated/prisma
