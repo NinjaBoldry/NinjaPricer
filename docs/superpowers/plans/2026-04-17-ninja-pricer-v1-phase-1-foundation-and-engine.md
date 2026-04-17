@@ -43,6 +43,7 @@
 ### Task 1: Initialize repo
 
 **Files:**
+
 - Create: `.gitignore`, `README.md`, `LICENSE` (if applicable — skip for internal)
 
 - [ ] **Step 1: Initialize git in the project root**
@@ -98,6 +99,7 @@ git commit -m "chore: initialize repo with spec and phase plans"
 ### Task 2: Scaffold Next.js 14 with TypeScript
 
 **Files:**
+
 - Create: `package.json`, `tsconfig.json`, `next.config.mjs`, `app/layout.tsx`, `app/page.tsx`
 
 - [ ] **Step 1: Create Next.js app in the current directory**
@@ -139,6 +141,7 @@ git commit -m "feat: scaffold Next.js 14 app with TypeScript and Tailwind"
 ### Task 3: Configure strict TypeScript + Prettier
 
 **Files:**
+
 - Modify: `tsconfig.json`
 - Create: `.prettierrc.json`, `.prettierignore`
 
@@ -215,6 +218,7 @@ git commit -m "chore: enable strict TS and Prettier"
 ### Task 4: Install Vitest and set up unit test infra
 
 **Files:**
+
 - Create: `vitest.config.ts`
 - Modify: `package.json`
 
@@ -279,6 +283,7 @@ git commit -m "chore: add Vitest for unit testing"
 ### Task 5: Create /lib folder structure
 
 **Files:**
+
 - Create: `lib/engine/.gitkeep`, `lib/db/.gitkeep`, `lib/services/.gitkeep`, `lib/auth/.gitkeep`, `lib/utils/.gitkeep`
 
 - [ ] **Step 1: Create folders with placeholder files**
@@ -302,6 +307,7 @@ git commit -m "chore: create lib folder structure"
 ### Task 6: Money utility module
 
 **Files:**
+
 - Create: `lib/utils/money.ts`, `lib/utils/money.test.ts`
 
 - [ ] **Step 1: Install decimal.js**
@@ -405,6 +411,7 @@ git commit -m "feat: add money utility with decimal.js"
 ### Task 7: Typed errors module
 
 **Files:**
+
 - Create: `lib/utils/errors.ts`, `lib/utils/errors.test.ts`
 
 - [ ] **Step 1: Write failing test**
@@ -517,6 +524,7 @@ git commit -m "feat: add typed error module"
 ### Task 8: Logger utility
 
 **Files:**
+
 - Create: `lib/utils/logger.ts`
 
 - [ ] **Step 1: Create logger**
@@ -568,6 +576,7 @@ git commit -m "feat: add structured JSON logger"
 ### Task 9: Install Prisma and set up Docker Postgres
 
 **Files:**
+
 - Create: `docker-compose.yml`, `.env.local.example`, `prisma/schema.prisma`
 
 - [ ] **Step 1: Install Prisma**
@@ -650,6 +659,7 @@ git commit -m "chore: add Prisma and Docker Postgres for local dev"
 ### Task 10: Write full v1 Prisma schema
 
 **Files:**
+
 - Modify: `prisma/schema.prisma`
 
 - [ ] **Step 1: Replace schema.prisma with the full v1 schema**
@@ -1080,6 +1090,7 @@ git commit -m "feat: add full v1 Prisma schema and initial migration"
 ### Task 11: Prisma client singleton
 
 **Files:**
+
 - Create: `lib/db/client.ts`
 
 - [ ] **Step 1: Create singleton Prisma client**
@@ -1122,6 +1133,7 @@ git commit -m "feat: add Prisma client singleton"
 ### Task 12: Install NextAuth v5 and Microsoft Entra provider
 
 **Files:**
+
 - Modify: `package.json`
 
 - [ ] **Step 1: Install dependencies**
@@ -1142,6 +1154,7 @@ git commit -m "chore: install NextAuth v5 and Prisma adapter"
 ### Task 13: Configure NextAuth with Microsoft Entra and domain allowlist
 
 **Files:**
+
 - Create: `auth.ts`, `app/api/auth/[...nextauth]/route.ts`, `lib/auth/session.ts`, `middleware.ts`
 - Modify: `prisma/schema.prisma` (add NextAuth models)
 
@@ -1338,6 +1351,7 @@ git commit -m "feat: configure NextAuth with Microsoft Entra and role session"
 ### Task 14: Admin seed script
 
 **Files:**
+
 - Create: `prisma/seed.ts`
 - Modify: `package.json`
 
@@ -1429,6 +1443,7 @@ git commit -m "feat: seed admin user and v1 products"
 ### Task 15: Role-routed shell layout
 
 **Files:**
+
 - Create: `app/scenarios/page.tsx`, `app/scenarios/layout.tsx`, `app/admin/page.tsx`, `app/admin/layout.tsx`, `components/TopNav.tsx`
 - Modify: `app/page.tsx`, `app/layout.tsx`
 
@@ -1583,6 +1598,7 @@ From here on, every task is fully TDD: failing test → run → implement → ru
 ### Task 16: Engine types
 
 **Files:**
+
 - Create: `lib/engine/types.ts`
 
 - [ ] **Step 1: Define all input/output types**
@@ -1805,6 +1821,7 @@ git commit -m "feat: define engine input/output types"
 ### Task 17: Mix-weighted multiplier helper
 
 **Files:**
+
 - Create: `lib/engine/mix.ts`, `lib/engine/mix.test.ts`
 
 - [ ] **Step 1: Write failing test**
@@ -1913,6 +1930,7 @@ git commit -m "feat(engine): add mix-weighted multiplier helper"
 ### Task 18: SaaS per-seat variable cost
 
 **Files:**
+
 - Create: `lib/engine/saas-cost.ts`, `lib/engine/saas-cost.test.ts`
 
 - [ ] **Step 1: Write failing test**
@@ -2028,18 +2046,24 @@ Append to `lib/engine/saas-cost.test.ts`:
 ```ts
 describe('saasInfraCostPerSeatPerMonth', () => {
   it('returns 0 when activeUsersAtScale is 0', () => {
-    const p = { ...product, activeUsersAtScale: 0, fixedCosts: [
-      { id: 'f', name: 'ec2', monthlyUsd: d('1000') },
-    ] };
+    const p = {
+      ...product,
+      activeUsersAtScale: 0,
+      fixedCosts: [{ id: 'f', name: 'ec2', monthlyUsd: d('1000') }],
+    };
     expect(saasInfraCostPerSeatPerMonth(p).toString()).toBe('0');
   });
 
   it('divides total fixed by active users', () => {
-    const p = { ...product, activeUsersAtScale: 1000, fixedCosts: [
-      { id: 'a', name: 'ec2', monthlyUsd: d('5000') },
-      { id: 'b', name: 'posthog', monthlyUsd: d('500') },
-      { id: 'c', name: 'sentry', monthlyUsd: d('200') },
-    ] };
+    const p = {
+      ...product,
+      activeUsersAtScale: 1000,
+      fixedCosts: [
+        { id: 'a', name: 'ec2', monthlyUsd: d('5000') },
+        { id: 'b', name: 'posthog', monthlyUsd: d('500') },
+        { id: 'c', name: 'sentry', monthlyUsd: d('200') },
+      ],
+    };
     // 5700 / 1000 = 5.70
     expect(saasInfraCostPerSeatPerMonth(p).toString()).toBe('5.7');
   });
@@ -2070,6 +2094,7 @@ git commit -m "feat(engine): compute SaaS variable and infra cost per seat per m
 ### Task 19: SaaS discounts
 
 **Files:**
+
 - Create: `lib/engine/saas-discount.ts`, `lib/engine/saas-discount.test.ts`
 
 - [ ] **Step 1: Write failing test**
@@ -2144,17 +2169,12 @@ export function pickVolumeDiscount(tiers: VolumeTierSnap[], seats: number): Deci
 export function pickContractDiscount(tiers: ContractModifierSnap[], months: number): Decimal {
   let best = d(0);
   for (const t of tiers) {
-    if (months >= t.minMonths && t.additionalDiscountPct.gt(best))
-      best = t.additionalDiscountPct;
+    if (months >= t.minMonths && t.additionalDiscountPct.gt(best)) best = t.additionalDiscountPct;
   }
   return best;
 }
 
-export function effectiveDiscount(
-  volume: Decimal,
-  contract: Decimal,
-  override?: Decimal,
-): Decimal {
+export function effectiveDiscount(volume: Decimal, contract: Decimal, override?: Decimal): Decimal {
   const raw = override ?? volume.plus(contract);
   return raw.gt(1) ? d(1) : raw;
 }
@@ -2178,6 +2198,7 @@ git commit -m "feat(engine): compute SaaS volume/contract discounts"
 ### Task 20: SaaS tab compute
 
 **Files:**
+
 - Create: `lib/engine/saas-tab.ts`, `lib/engine/saas-tab.test.ts`
 
 - [ ] **Step 1: Write failing test**
@@ -2193,9 +2214,7 @@ import type { SaaSProductSnap, SaaSTabInput } from './types';
 const product: SaaSProductSnap = {
   kind: 'SAAS_USAGE',
   productId: 'notes',
-  vendorRates: [
-    { id: 'dg', name: 'Deepgram', unitLabel: 'per min', rateUsd: d('0.0043') },
-  ],
+  vendorRates: [{ id: 'dg', name: 'Deepgram', unitLabel: 'per min', rateUsd: d('0.0043') }],
   baseUsage: [{ vendorRateId: 'dg', usagePerMonth: d('200') }],
   otherVariableUsdPerUserPerMonth: d('2.00'),
   personas: [{ id: 'p', name: 'Avg', multiplier: d('1') }],
@@ -2249,15 +2268,8 @@ Create `lib/engine/saas-tab.ts`:
 import Decimal from 'decimal.js';
 import { d, toCents } from '@/lib/utils/money';
 import type { SaaSProductSnap, SaaSTabInput, TabResult } from './types';
-import {
-  saasVariableCostPerSeatPerMonth,
-  saasInfraCostPerSeatPerMonth,
-} from './saas-cost';
-import {
-  pickVolumeDiscount,
-  pickContractDiscount,
-  effectiveDiscount,
-} from './saas-discount';
+import { saasVariableCostPerSeatPerMonth, saasInfraCostPerSeatPerMonth } from './saas-cost';
+import { pickVolumeDiscount, pickContractDiscount, effectiveDiscount } from './saas-discount';
 import { ValidationError } from '@/lib/utils/errors';
 
 export function computeSaaSTab(
@@ -2322,6 +2334,7 @@ git commit -m "feat(engine): compute SaaS tab monthly/contract totals"
 ### Task 21: Packaged labor tab compute
 
 **Files:**
+
 - Create: `lib/engine/packaged-labor-tab.ts`, `lib/engine/packaged-labor-tab.test.ts`
 
 - [ ] **Step 1: Write failing test**
@@ -2426,6 +2439,7 @@ git commit -m "feat(engine): compute packaged labor tab"
 ### Task 22: Custom labor tab compute
 
 **Files:**
+
 - Create: `lib/engine/custom-labor-tab.ts`, `lib/engine/custom-labor-tab.test.ts`
 
 - [ ] **Step 1: Write failing test**
@@ -2549,6 +2563,7 @@ git commit -m "feat(engine): compute custom labor tab"
 ### Task 23: Commission tier progressive evaluation
 
 **Files:**
+
 - Create: `lib/engine/commissions.ts`, `lib/engine/commissions.test.ts`
 
 - [ ] **Step 1: Write failing test**
@@ -2630,9 +2645,7 @@ export function applyProgressiveTiers(
   if (baseAmount.lte(0) || tiers.length === 0) {
     return { commissionCents: 0, breakdown: [] };
   }
-  const sorted = [...tiers].sort((a, b) =>
-    a.thresholdFromUsd.cmp(b.thresholdFromUsd),
-  );
+  const sorted = [...tiers].sort((a, b) => a.thresholdFromUsd.cmp(b.thresholdFromUsd));
   const breakdown: CommissionBreakdownTier[] = [];
   let total = d(0);
   for (let i = 0; i < sorted.length; i++) {
@@ -2653,23 +2666,16 @@ export function applyProgressiveTiers(
   return { commissionCents: toCents(total), breakdown };
 }
 
-export function resolveBaseAmount(
-  rule: CommissionRuleSnap,
-  perTab: TabResult[],
-): Decimal {
+export function resolveBaseAmount(rule: CommissionRuleSnap, perTab: TabResult[]): Decimal {
   const byProduct = (kind: 'rev' | 'margin') => {
     const match = perTab.find((t) =>
       rule.scopeProductId ? t.productId === rule.scopeProductId : false,
     );
     if (!match) return d(0);
-    return d(kind === 'rev' ? match.contractRevenueCents : match.contributionMarginCents).div(
-      100,
-    );
+    return d(kind === 'rev' ? match.contractRevenueCents : match.contributionMarginCents).div(100);
   };
-  const allRev = () =>
-    d(perTab.reduce((s, t) => s + t.contractRevenueCents, 0)).div(100);
-  const allMargin = () =>
-    d(perTab.reduce((s, t) => s + t.contributionMarginCents, 0)).div(100);
+  const allRev = () => d(perTab.reduce((s, t) => s + t.contractRevenueCents, 0)).div(100);
+  const allMargin = () => d(perTab.reduce((s, t) => s + t.contributionMarginCents, 0)).div(100);
 
   switch (rule.baseMetric) {
     case 'REVENUE':
@@ -2787,6 +2793,7 @@ git commit -m "feat(engine): evaluate progressive-tier commission rules"
 ### Task 24: Rail evaluation
 
 **Files:**
+
 - Create: `lib/engine/rails.ts`, `lib/engine/rails.test.ts`
 
 - [ ] **Step 1: Write failing test**
@@ -2932,9 +2939,7 @@ function measureRail(
     case 'MIN_MARGIN_PCT': {
       if (tab.contractRevenueCents === 0) return null;
       if (rail.marginBasis === 'NET') {
-        return contractRevenueCentsAll === 0
-          ? null
-          : netMarginCentsAll / contractRevenueCentsAll;
+        return contractRevenueCentsAll === 0 ? null : netMarginCentsAll / contractRevenueCentsAll;
       }
       return tab.contributionMarginCents / tab.contractRevenueCents;
     }
@@ -2979,6 +2984,7 @@ git commit -m "feat(engine): evaluate product rails with soft/hard severity"
 ### Task 25: Top-level compute() entry point
 
 **Files:**
+
 - Create: `lib/engine/compute.ts`, `lib/engine/index.ts`
 
 - [ ] **Step 1: Create the top-level compute function**
@@ -3019,10 +3025,7 @@ export function compute(req: ComputeRequest): ComputeResult {
   const monthlyRevenueCents = perTab.reduce((s, t) => s + t.monthlyRevenueCents, 0);
   const contractCostCents = perTab.reduce((s, t) => s + t.contractCostCents, 0);
   const contractRevenueCents = perTab.reduce((s, t) => s + t.contractRevenueCents, 0);
-  const contributionMarginCents = perTab.reduce(
-    (s, t) => s + t.contributionMarginCents,
-    0,
-  );
+  const contributionMarginCents = perTab.reduce((s, t) => s + t.contributionMarginCents, 0);
 
   const commissions = req.commissionRules
     .filter((r) => r.tiers.length > 0)
@@ -3032,8 +3035,7 @@ export function compute(req: ComputeRequest): ComputeResult {
 
   const marginPctContribution =
     contractRevenueCents === 0 ? 0 : contributionMarginCents / contractRevenueCents;
-  const marginPctNet =
-    contractRevenueCents === 0 ? 0 : netMarginCents / contractRevenueCents;
+  const marginPctNet = contractRevenueCents === 0 ? 0 : netMarginCents / contractRevenueCents;
 
   const warnings = evaluateRails(req.rails, perTab, netMarginCents, contractRevenueCents);
 
@@ -3076,6 +3078,7 @@ git commit -m "feat(engine): top-level compute() entry point"
 ### Task 26: Golden fixture — end-to-end multi-tab scenario
 
 **Files:**
+
 - Create: `lib/engine/tests/golden-multi-tab.test.ts`
 
 - [ ] **Step 1: Write the golden-fixture test**
@@ -3211,9 +3214,7 @@ describe('Golden fixture: multi-tab scenario', () => {
     expect(r.commissions[0]?.commissionAmountCents).toBe(expectedCommission);
 
     // ── Net margin ──
-    expect(r.totals.netMarginCents).toBe(
-      expectedRevenue - expectedCost - expectedCommission,
-    );
+    expect(r.totals.netMarginCents).toBe(expectedRevenue - expectedCost - expectedCommission);
   });
 });
 ```
@@ -3238,6 +3239,7 @@ git commit -m "test(engine): golden multi-tab end-to-end fixture"
 ### Task 27: Golden fixture — rail warning
 
 **Files:**
+
 - Create: `lib/engine/tests/golden-rails.test.ts`
 
 - [ ] **Step 1: Write a fixture with a margin-breaching scenario**
@@ -3267,9 +3269,7 @@ describe('Golden fixture: rail warnings', () => {
         notes: {
           kind: 'SAAS_USAGE',
           productId: 'notes',
-          vendorRates: [
-            { id: 'dg', name: 'Deepgram', unitLabel: 'per min', rateUsd: d('0.0043') },
-          ],
+          vendorRates: [{ id: 'dg', name: 'Deepgram', unitLabel: 'per min', rateUsd: d('0.0043') }],
           baseUsage: [{ vendorRateId: 'dg', usagePerMonth: d('200') }],
           otherVariableUsdPerUserPerMonth: d('5.00'),
           personas: [{ id: 'avg', name: 'Avg', multiplier: d('1') }],
@@ -3344,6 +3344,7 @@ git commit -m "test(engine): golden fixture for rail warnings"
 ### Task 28: GitHub Actions workflow
 
 **Files:**
+
 - Create: `.github/workflows/ci.yml`
 
 - [ ] **Step 1: Create the workflow**

@@ -19,6 +19,7 @@ This document captures the phased implementation strategy for Ninja Pricer v1. E
 **Goal:** Working scaffolded app with login, role-protected route shells, a complete DB schema ready for later CRUD, and a fully unit-tested pure pricing engine.
 
 **Scope:**
+
 - Next.js 14 app router, TypeScript strict, ESLint, Prettier, Vitest.
 - Railway-ready Postgres + Prisma ORM with the full v1 schema migrated (all entities from the spec).
 - NextAuth with Microsoft Entra provider, domain-allowlisted, admin vs. sales role on User.
@@ -32,6 +33,7 @@ This document captures the phased implementation strategy for Ninja Pricer v1. E
 **Deliverable:** The foundation is trustworthy. You can log in, see role-appropriate shells, the DB is ready for features to be built on top, and the math engine has been proven correct in isolation.
 
 **Key decisions locked here (don't revisit in later phases):**
+
 - Folder layout under `/lib` (engine / db / services / auth).
 - Error type hierarchy (`NotFoundError`, `ValidationError`, `RailHardBlockError`).
 - Test fixture patterns.
@@ -45,6 +47,7 @@ This document captures the phased implementation strategy for Ninja Pricer v1. E
 **Goal:** Admin can fully configure the product catalog and all associated data — vendor rates, personas, costs, pricing, labor, employees, burdens, commissions, bundles, rails.
 
 **Scope:**
+
 - `/admin` layout + sidebar nav.
 - **Products** index + detail pages. Per-product sub-sections: vendor rates, base usage, other variable, personas, fixed costs, active-user scale, list price, volume tiers, contract modifiers, rails.
 - **Labor SKUs** CRUD.
@@ -61,7 +64,7 @@ This document captures the phased implementation strategy for Ninja Pricer v1. E
 
 **Dependencies on Phase 1:** DB schema, auth, role helpers, typed-error module, Zod conventions.
 
-**Deferred to later phases:** All of these admin screens read/write data but don't need the engine *yet* (it's already testable standalone). The sales UI in Phase 3 is where engine + services + UI come together.
+**Deferred to later phases:** All of these admin screens read/write data but don't need the engine _yet_ (it's already testable standalone). The sales UI in Phase 3 is where engine + services + UI come together.
 
 ---
 
@@ -70,6 +73,7 @@ This document captures the phased implementation strategy for Ninja Pricer v1. E
 **Goal:** Sales users can create scenarios, configure tabs, apply bundles, and see live-updating margin summaries with rail warnings.
 
 **Scope:**
+
 - `/scenarios` list page with filters (owner, status, customer).
 - `/scenarios/[id]` builder page:
   - Header (name, customer, contract months, bundle apply, save, generate-quote stub, archive).
@@ -94,6 +98,7 @@ This document captures the phased implementation strategy for Ninja Pricer v1. E
 **Goal:** Sales can generate customer-facing quote PDFs; admin can pull internal summaries with costs and margins. Quote history is immutable and persisted.
 
 **Scope:**
+
 - `react-pdf` templates: customer quote + internal summary variants.
 - Object storage wiring (Railway volume or S3-compatible — decide at implementation time).
 - `Quote` entity write path: re-run engine, render PDF, upload, create row with sequential version + frozen totals snapshot.
@@ -111,6 +116,7 @@ This document captures the phased implementation strategy for Ninja Pricer v1. E
 ## V2 (Post-v1, Not Planned Here)
 
 Captured in the spec under "Out of v1." To be planned in separate cycles:
+
 - MCP server for Cowork / HubSpot.
 - Additional SaaS products (Omni, Concierge, Sales).
 - Rate-card historical versioning if the frozen-totals-in-quotes approach proves insufficient.

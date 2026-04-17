@@ -98,7 +98,7 @@ Entities grouped by purpose.
 
 - `Burden` — named overhead loaded onto labor. Fields: name, rate_pct, cap_usd (nullable, for things like FUTA's $7k cap), scope (`ALL_DEPARTMENTS` or specific department).
 - `Employee` — name, department_id, compensation (`annual_salary` or `hourly_rate` + `standard_hours_per_year`), is_active.
-- `DepartmentBillRate` — department_id, bill_rate_per_hour (admin-set). Department surface also shows the *computed* avg loaded rate (blended from active employees with burdens applied).
+- `DepartmentBillRate` — department_id, bill_rate_per_hour (admin-set). Department surface also shows the _computed_ avg loaded rate (blended from active employees with burdens applied).
 
 ### Commissions
 
