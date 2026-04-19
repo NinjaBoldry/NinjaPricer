@@ -10,3 +10,8 @@ export { ProductScaleService } from './productScale';
 export { ListPriceService } from './listPrice';
 export { VolumeDiscountTierService } from './volumeDiscountTier';
 export { ContractLengthModifierService } from './contractLengthModifier';
+export { LaborSKUService } from './laborSku';
+export { DepartmentService } from './department';
+export { EmployeeService } from './employee';
+export { BurdenService } from './burden';
+export { computeLoadedHourlyRate } from './labor';

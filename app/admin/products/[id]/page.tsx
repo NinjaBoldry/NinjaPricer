@@ -37,6 +37,7 @@ const SUBSECTIONS = [
   { href: 'volume-tiers', label: 'Volume Discount Tiers' },
   { href: 'contract-modifiers', label: 'Contract Length Modifiers' },
   { href: 'rails', label: 'Pricing Rails' },
+  { href: 'labor-skus', label: 'Labor SKUs' },
 ];
 
 const KIND_LABELS: Record<string, string> = {

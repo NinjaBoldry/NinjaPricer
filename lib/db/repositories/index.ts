@@ -16,3 +16,7 @@ export { ProductScaleRepository } from './productScale';
 export { ListPriceRepository } from './listPrice';
 export { VolumeDiscountTierRepository } from './volumeDiscountTier';
 export { ContractLengthModifierRepository } from './contractLengthModifier';
+export { LaborSKURepository } from './laborSku';
+export { DepartmentRepository } from './department';
+export { EmployeeRepository } from './employee';
+export { BurdenRepository } from './burden';
