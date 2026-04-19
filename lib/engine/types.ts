@@ -140,6 +140,10 @@ export interface ComputeRequest {
 
 // ────── Outputs ──────
 
+export interface SaaSMeta {
+  effectiveDiscountPct: Decimal;
+}
+
 export interface TabResult {
   productId: string;
   kind: 'SAAS_USAGE' | 'PACKAGED_LABOR' | 'CUSTOM_LABOR';
@@ -150,6 +154,7 @@ export interface TabResult {
   contractCostCents: number;
   contractRevenueCents: number;
   contributionMarginCents: number;
+  saasMeta?: SaaSMeta;
   breakdown?: Record<string, unknown>;
 }
 

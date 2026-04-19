@@ -7,9 +7,17 @@ export function mixWeightedMultiplier(
   personas: PersonaSnap[],
   mix: { personaId: string; pct: number }[],
 ): Decimal {
-  const total = mix.reduce((s, m) => s + m.pct, 0);
-  if (Math.abs(total - 100) > 0.001) {
-    throw new ValidationError('personaMix', `must sum to 100, got ${total}`);
+  // pct values are typed as number (form inputs). d(number) preserves float imprecision,
+  // so use a small tolerance rather than exact equality.
+  const totalPct = mix.reduce((acc, m) => acc.plus(d(m.pct)), d(0));
+  if (totalPct.minus(100).abs().gt(d('0.001'))) {
+    throw new ValidationError('personaMix', `must sum to 100, got ${totalPct.toFixed(3)}`);
+  }
+  const seen = new Set<string>();
+  for (const m of mix) {
+    if (seen.has(m.personaId))
+      throw new ValidationError('personaMix', `duplicate personaId ${m.personaId}`);
+    seen.add(m.personaId);
   }
   const byId = new Map(personas.map((p) => [p.id, p]));
   let out = d(0);

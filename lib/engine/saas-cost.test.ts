@@ -6,6 +6,7 @@ import {
   saasInfraCostPerSeatPerMonth,
 } from './saas-cost';
 import type { SaaSProductSnap } from './types';
+import { ValidationError } from '@/lib/utils/errors';
 
 const product: SaaSProductSnap = {
   kind: 'SAAS_USAGE',
@@ -31,6 +32,23 @@ const product: SaaSProductSnap = {
 };
 
 describe('saas-cost', () => {
+  it('throws ValidationError when baseUsage references unknown vendorRateId', () => {
+    const p: SaaSProductSnap = {
+      kind: 'SAAS_USAGE',
+      productId: 'p1',
+      vendorRates: [], // empty — no rates defined
+      baseUsage: [{ vendorRateId: 'ghost', usagePerMonth: d('100') }], // ghost id
+      otherVariableUsdPerUserPerMonth: d('0'),
+      personas: [],
+      fixedCosts: [],
+      activeUsersAtScale: 0,
+      listPriceUsdPerSeatPerMonth: d('10'),
+      volumeTiers: [],
+      contractModifiers: [],
+    };
+    expect(() => baseVariablePerUser(p)).toThrow(ValidationError);
+  });
+
   it('baseVariablePerUser sums vendor usage × rate + otherVariable', () => {
     const v = baseVariablePerUser(product);
     expect(v.toString()).toBe('3.11');

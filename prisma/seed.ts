@@ -9,6 +9,10 @@ async function main() {
     return;
   }
 
+  // microsoftSub is left null here. When this admin user first signs in via Microsoft Entra,
+  // the NextAuth Prisma adapter creates an Account row and the signIn callback updates
+  // microsoftSub on the User. If the user gets duplicate Account rows, verify the adapter's
+  // linkAccount hook is setting microsoftSub on the User record.
   await prisma.user.upsert({
     where: { email: adminEmail },
     update: { role: Role.ADMIN },

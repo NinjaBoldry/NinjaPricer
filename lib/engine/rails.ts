@@ -6,12 +6,13 @@ export function evaluateRails(
   perTab: TabResult[],
   netMarginCentsAll: number,
   contractRevenueCentsAll: number,
+  contractMonths: number,
 ): WarningResult[] {
   const warnings: WarningResult[] = [];
   for (const rail of rails) {
     const tab = perTab.find((t) => t.productId === rail.productId);
     if (!tab) continue;
-    const measured = measureRail(rail, tab, netMarginCentsAll, contractRevenueCentsAll);
+    const measured = measureRail(rail, tab, netMarginCentsAll, contractRevenueCentsAll, contractMonths);
     if (measured == null) continue;
 
     const mDec = d(measured);
@@ -48,6 +49,7 @@ function measureRail(
   tab: TabResult,
   netMarginCentsAll: number,
   contractRevenueCentsAll: number,
+  contractMonths: number,
 ): number | null {
   switch (rail.kind) {
     case 'MIN_MARGIN_PCT': {
@@ -58,11 +60,7 @@ function measureRail(
       return tab.contributionMarginCents / tab.contractRevenueCents;
     }
     case 'MAX_DISCOUNT_PCT': {
-      const raw =
-        tab.breakdown && typeof tab.breakdown.effectiveDiscount === 'string'
-          ? Number(tab.breakdown.effectiveDiscount)
-          : null;
-      return Number.isFinite(raw ?? NaN) ? (raw as number) : null;
+      return tab.saasMeta?.effectiveDiscountPct.toNumber() ?? null;
     }
     case 'MIN_SEAT_PRICE': {
       if (tab.kind !== 'SAAS_USAGE') return null;
@@ -70,8 +68,11 @@ function measureRail(
       return tab.monthlyRevenueCents / 100;
     }
     case 'MIN_CONTRACT_MONTHS': {
-      if (tab.kind !== 'SAAS_USAGE' || tab.monthlyCostCents <= 0) return null;
-      return tab.contractCostCents / tab.monthlyCostCents;
+      if (tab.kind !== 'SAAS_USAGE') return null;
+      // Suppress the rail if the tab has no real cost activity (e.g. seatCount == 0).
+      // Enforcing a contract-months floor on a zero-cost tab has no economic meaning.
+      if (tab.monthlyCostCents <= 0) return null;
+      return contractMonths;
     }
   }
 }

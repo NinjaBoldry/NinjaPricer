@@ -14,6 +14,7 @@ const perTab: TabResult[] = [
     contractCostCents: 1200,
     contractRevenueCents: 2400,
     contributionMarginCents: 1200,
+    saasMeta: { effectiveDiscountPct: d('0.25') },
     breakdown: { effectiveDiscount: '0.25' },
   },
 ];
@@ -30,7 +31,7 @@ describe('evaluateRails', () => {
         hardThreshold: d('0.6'),
       },
     ];
-    const w = evaluateRails(rails, perTab, 0, 0);
+    const w = evaluateRails(rails, perTab, 0, 0, 12);
     expect(w).toHaveLength(1);
     expect(w[0]?.severity).toBe('hard');
   });
@@ -46,7 +47,7 @@ describe('evaluateRails', () => {
         hardThreshold: d('0.4'),
       },
     ];
-    const w = evaluateRails(rails, perTab, 0, 0);
+    const w = evaluateRails(rails, perTab, 0, 0, 12);
     expect(w).toHaveLength(1);
     expect(w[0]?.severity).toBe('soft');
   });
@@ -62,6 +63,48 @@ describe('evaluateRails', () => {
         hardThreshold: d('0.3'),
       },
     ];
-    expect(evaluateRails(rails, perTab, 0, 0)).toHaveLength(0);
+    expect(evaluateRails(rails, perTab, 0, 0, 12)).toHaveLength(0);
+  });
+
+  it('reads effectiveDiscountPct from saasMeta (not stringly-typed breakdown)', () => {
+    const tabWithMeta: TabResult[] = [
+      {
+        ...perTab[0]!,
+        saasMeta: { effectiveDiscountPct: d('0.30') },
+      },
+    ];
+    const rails: RailSnap[] = [
+      {
+        id: 'max-disc',
+        productId: 'notes',
+        kind: 'MAX_DISCOUNT_PCT',
+        marginBasis: 'CONTRIBUTION',
+        softThreshold: d('0.25'),
+        hardThreshold: d('0.35'),
+      },
+    ];
+    // 0.30 > softThreshold 0.25 → soft warning for MAX_DISCOUNT_PCT
+    const w = evaluateRails(rails, tabWithMeta, 0, 0, 12);
+    expect(w).toHaveLength(1);
+    expect(w[0]?.severity).toBe('soft');
+    expect(w[0]?.measured).toBeCloseTo(0.30);
+  });
+
+  it('uses contractMonths directly for MIN_CONTRACT_MONTHS rail', () => {
+    const rails: RailSnap[] = [
+      {
+        id: 'min-months',
+        productId: 'notes',
+        kind: 'MIN_CONTRACT_MONTHS',
+        marginBasis: 'CONTRIBUTION',
+        softThreshold: d('24'),
+        hardThreshold: d('6'),
+      },
+    ];
+    // contractMonths=12: below soft(24) but above hard(6) → soft warning
+    const w = evaluateRails(rails, perTab, 0, 0, 12);
+    expect(w).toHaveLength(1);
+    expect(w[0]?.severity).toBe('soft');
+    expect(w[0]?.measured).toBe(12);
   });
 });

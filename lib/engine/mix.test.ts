@@ -33,9 +33,31 @@ describe('mixWeightedMultiplier', () => {
     ).toThrow(/sum to 100/);
   });
 
+  it('does not throw for float pcts that sum to 100 within tolerance', () => {
+    // 1/3 + 2/3 has float imprecision in native JS but is valid input.
+    // The Decimal tolerance check (0.001) should accept it.
+    const third = (1 / 3) * 100;
+    const twoThirds = (2 / 3) * 100;
+    expect(() =>
+      mixWeightedMultiplier(personas, [
+        { personaId: 'p1', pct: third },
+        { personaId: 'p2', pct: twoThirds },
+      ]),
+    ).not.toThrow();
+  });
+
   it('throws when persona id is unknown', () => {
     expect(() =>
       mixWeightedMultiplier(personas, [{ personaId: 'does-not-exist', pct: 100 }]),
     ).toThrow(/unknown persona/);
+  });
+
+  it('throws when the same personaId appears twice', () => {
+    expect(() =>
+      mixWeightedMultiplier(personas, [
+        { personaId: 'p1', pct: 60 },
+        { personaId: 'p1', pct: 40 },
+      ]),
+    ).toThrow(/duplicate personaId/);
   });
 });

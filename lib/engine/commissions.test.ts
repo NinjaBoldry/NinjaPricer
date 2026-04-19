@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { d } from '@/lib/utils/money';
-import { applyProgressiveTiers, evaluateCommissionRule } from './commissions';
+import { applyProgressiveTiers, evaluateCommissionRule, resolveBaseAmount } from './commissions';
+import { ValidationError } from '@/lib/utils/errors';
 import type { CommissionRuleSnap, CommissionTierSnap, TabResult } from './types';
 
 const tiers: CommissionTierSnap[] = [
@@ -82,5 +83,42 @@ describe('resolveBaseAmount / evaluateCommissionRule', () => {
     };
     const r = evaluateCommissionRule(rule, perTab);
     expect(r.commissionAmountCents).toBe(144400);
+  });
+});
+
+describe('resolveBaseAmount validation', () => {
+  it('throws ValidationError when TAB_REVENUE rule has no scopeProductId', () => {
+    const rule: CommissionRuleSnap = {
+      id: 'r1',
+      name: 'Test',
+      scopeType: 'PRODUCT',
+      baseMetric: 'TAB_REVENUE',
+      tiers: [{ thresholdFromUsd: d('0'), ratePct: d('0.10') }],
+    };
+    expect(() => resolveBaseAmount(rule, [])).toThrow(ValidationError);
+  });
+
+  it('throws ValidationError when TAB_MARGIN rule has no scopeProductId', () => {
+    const rule: CommissionRuleSnap = {
+      id: 'r2',
+      name: 'Test',
+      scopeType: 'PRODUCT',
+      baseMetric: 'TAB_MARGIN',
+      tiers: [{ thresholdFromUsd: d('0'), ratePct: d('0.10') }],
+    };
+    expect(() => resolveBaseAmount(rule, [])).toThrow(ValidationError);
+  });
+
+  it('throws ValidationError when DEPARTMENT-scoped rule has no scopeDepartmentId', () => {
+    // baseMetric: 'REVENUE' so the TAB_REVENUE/TAB_MARGIN guard cannot fire first —
+    // only the DEPARTMENT scope guard should trigger.
+    const rule: CommissionRuleSnap = {
+      id: 'r3',
+      name: 'Test',
+      scopeType: 'DEPARTMENT',
+      baseMetric: 'REVENUE',
+      tiers: [{ thresholdFromUsd: d('0'), ratePct: d('0.10') }],
+    };
+    expect(() => resolveBaseAmount(rule, [])).toThrow(ValidationError);
   });
 });

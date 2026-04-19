@@ -20,5 +20,9 @@ export function pickContractDiscount(tiers: ContractModifierSnap[], months: numb
 
 export function effectiveDiscount(volume: Decimal, contract: Decimal, override?: Decimal): Decimal {
   const raw = override ?? volume.plus(contract);
-  return raw.gt(1) ? d(1) : raw;
+  if (raw.gt(d(1))) return d(1);
+  // Lower bound guards against a negative discountOverridePct (caller-controlled).
+  // volume + contract cannot go negative since both pickers start at 0.
+  if (raw.lt(d(0))) return d(0);
+  return raw;
 }

@@ -36,4 +36,9 @@ describe('saas-discount', () => {
   it('effectiveDiscount clamps to <= 1.0', () => {
     expect(effectiveDiscount(d('0.8'), d('0.5')).toString()).toBe('1');
   });
+
+  it('clamps effectiveDiscount to 0 when override is negative', () => {
+    const result = effectiveDiscount(d('0'), d('0'), d('-0.05'));
+    expect(result.toNumber()).toBe(0);
+  });
 });

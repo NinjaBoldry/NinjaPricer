@@ -17,6 +17,7 @@ export function computePackagedLaborTab(tab: PackagedLaborTabInput): TabResult {
     monthlyRevenueCents: 0,
     oneTimeCostCents,
     oneTimeRevenueCents,
+    // One-time labor: no monthly × contractMonths multiplication, so no double-rounding risk.
     contractCostCents: oneTimeCostCents,
     contractRevenueCents: oneTimeRevenueCents,
     contributionMarginCents: oneTimeRevenueCents - oneTimeCostCents,

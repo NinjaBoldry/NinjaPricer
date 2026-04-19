@@ -1,5 +1,6 @@
 import Decimal from 'decimal.js';
 import { d, toCents } from '@/lib/utils/money';
+import { ValidationError } from '@/lib/utils/errors';
 import type {
   CommissionBreakdownTier,
   CommissionResult,
@@ -42,6 +43,19 @@ export function applyProgressiveTiers(
 }
 
 export function resolveBaseAmount(rule: CommissionRuleSnap, perTab: TabResult[]): Decimal {
+  if ((rule.baseMetric === 'TAB_REVENUE' || rule.baseMetric === 'TAB_MARGIN') && !rule.scopeProductId) {
+    throw new ValidationError(
+      'commissionRule',
+      `rule "${rule.id}" uses ${rule.baseMetric} but has no scopeProductId`,
+    );
+  }
+  if (rule.scopeType === 'DEPARTMENT' && !rule.scopeDepartmentId) {
+    throw new ValidationError(
+      'commissionRule',
+      `rule "${rule.id}" is DEPARTMENT-scoped but has no scopeDepartmentId`,
+    );
+  }
+
   const byProduct = (kind: 'rev' | 'margin') => {
     const match = perTab.find((t) =>
       rule.scopeProductId ? t.productId === rule.scopeProductId : false,

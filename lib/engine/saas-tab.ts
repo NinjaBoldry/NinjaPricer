@@ -1,5 +1,5 @@
 import { d, toCents } from '@/lib/utils/money';
-import type { SaaSProductSnap, SaaSTabInput, TabResult } from './types';
+import type { SaaSProductSnap, SaaSTabInput, TabResult, SaaSMeta } from './types';
 import { saasVariableCostPerSeatPerMonth, saasInfraCostPerSeatPerMonth } from './saas-cost';
 import { pickVolumeDiscount, pickContractDiscount, effectiveDiscount } from './saas-discount';
 import { ValidationError } from '@/lib/utils/errors';
@@ -24,9 +24,11 @@ export function computeSaaSTab(
 
   const monthlyCostCents = toCents(totalCostPerMonth);
   const monthlyRevenueCents = toCents(netRevenuePerMonth);
-  const contractCostCents = monthlyCostCents * contractMonths;
-  const contractRevenueCents = monthlyRevenueCents * contractMonths;
+  const contractCostCents = toCents(totalCostPerMonth.mul(contractMonths));
+  const contractRevenueCents = toCents(netRevenuePerMonth.mul(contractMonths));
   const contributionMarginCents = contractRevenueCents - contractCostCents;
+
+  const saasMeta: SaaSMeta = { effectiveDiscountPct: discount };
 
   return {
     productId: tab.productId,
@@ -38,6 +40,8 @@ export function computeSaaSTab(
     contractCostCents,
     contractRevenueCents,
     contributionMarginCents,
+    saasMeta,
+    // breakdown is for debugging/logging only. Rail logic reads from saasMeta, not breakdown.
     breakdown: {
       variableCostPerSeatPerMonth: varPerSeat.toString(),
       infraCostPerSeatPerMonth: infraPerSeat.toString(),

@@ -5,6 +5,7 @@ import { computeCustomLaborTab } from './custom-labor-tab';
 import { evaluateCommissionRule } from './commissions';
 import { evaluateRails } from './rails';
 import { ValidationError } from '@/lib/utils/errors';
+import { logger } from '@/lib/utils/logger';
 
 export function compute(req: ComputeRequest): ComputeResult {
   if (req.contractMonths <= 0) {
@@ -33,7 +34,13 @@ export function compute(req: ComputeRequest): ComputeResult {
   const contributionMarginCents = perTab.reduce((s, t) => s + t.contributionMarginCents, 0);
 
   const commissions = req.commissionRules
-    .filter((r) => r.tiers.length > 0)
+    .filter((r) => {
+      if (r.tiers.length === 0) {
+        logger.warn('Commission rule has no tiers and will be skipped', { ruleId: r.id });
+        return false;
+      }
+      return true;
+    })
     .map((r) => evaluateCommissionRule(r, perTab));
   const totalCommissionCents = commissions.reduce((s, c) => s + c.commissionAmountCents, 0);
   const netMarginCents = contributionMarginCents - totalCommissionCents;
@@ -42,7 +49,7 @@ export function compute(req: ComputeRequest): ComputeResult {
     contractRevenueCents === 0 ? 0 : contributionMarginCents / contractRevenueCents;
   const marginPctNet = contractRevenueCents === 0 ? 0 : netMarginCents / contractRevenueCents;
 
-  const warnings = evaluateRails(req.rails, perTab, netMarginCents, contractRevenueCents);
+  const warnings = evaluateRails(req.rails, perTab, netMarginCents, contractRevenueCents, req.contractMonths);
 
   return {
     perTab,

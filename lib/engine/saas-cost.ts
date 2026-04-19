@@ -2,13 +2,14 @@ import Decimal from 'decimal.js';
 import { d } from '@/lib/utils/money';
 import type { SaaSProductSnap } from './types';
 import { mixWeightedMultiplier } from './mix';
+import { ValidationError } from '@/lib/utils/errors';
 
 export function baseVariablePerUser(product: SaaSProductSnap): Decimal {
   const byId = new Map(product.vendorRates.map((r) => [r.id, r]));
   let sum = d(0);
   for (const b of product.baseUsage) {
     const rate = byId.get(b.vendorRateId);
-    if (!rate) continue;
+    if (!rate) throw new ValidationError('vendorRateId', `unknown vendor rate ${b.vendorRateId}`);
     sum = sum.plus(b.usagePerMonth.mul(rate.rateUsd));
   }
   return sum.plus(product.otherVariableUsdPerUserPerMonth);

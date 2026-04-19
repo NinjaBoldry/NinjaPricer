@@ -13,12 +13,7 @@ export interface AuthedUser {
 export async function getSessionUser(): Promise<AuthedUser | null> {
   const session = await auth();
   if (!session?.user) return null;
-  const u = session.user as {
-    id?: string;
-    email?: string | null;
-    name?: string | null;
-    role?: UserRole;
-  };
+  const u = session.user;
   if (!u.id || !u.email) return null;
   return {
     id: u.id,
