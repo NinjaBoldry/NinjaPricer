@@ -1,12 +1,14 @@
-import { requireAdmin } from '@/lib/auth/session';
+import { headers } from 'next/headers';
 import { TopNav } from '@/components/TopNav';
+import AdminShell from '@/components/admin/AdminShell';
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  await requireAdmin();
+  const headersList = headers();
+  const pathname = headersList.get('x-pathname') ?? '/admin';
   return (
     <>
       <TopNav />
-      <main className="mx-auto max-w-7xl p-6">{children}</main>
+      <AdminShell currentPath={pathname}>{children}</AdminShell>
     </>
   );
 }
