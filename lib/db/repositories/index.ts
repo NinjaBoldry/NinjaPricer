@@ -24,3 +24,4 @@ export { CommissionRuleRepository } from './commissionRule';
 export { CommissionTierRepository } from './commissionTier';
 export { BundleRepository } from './bundle';
 export { BundleItemRepository } from './bundleItem';
+export { UserRepository } from './user';
