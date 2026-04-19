@@ -1,8 +1,9 @@
-import { auth } from '@/auth';
+import NextAuth from 'next-auth';
+import { authConfig } from './auth.config';
 import { isAdminPath, userHasAdminRole } from '@/lib/auth/middleware-helpers';
 import { NextResponse } from 'next/server';
 
-export default auth((req) => {
+export default NextAuth(authConfig).auth((req) => {
   const { pathname } = req.nextUrl;
   const user = req.auth?.user ?? null;
   const isAuthed = !!req.auth;
@@ -13,15 +14,11 @@ export default auth((req) => {
     pathname.startsWith('/favicon');
 
   if (!isPublic && !isAuthed) {
-    const url = req.nextUrl.clone();
-    url.pathname = '/api/auth/signin';
-    return NextResponse.redirect(url);
+    return NextResponse.redirect(new URL('/api/auth/signin', req.url));
   }
 
   if (isAdminPath(pathname) && !userHasAdminRole(user)) {
-    const url = req.nextUrl.clone();
-    url.pathname = isAuthed ? '/scenarios' : '/api/auth/signin';
-    return NextResponse.redirect(url);
+    return NextResponse.redirect(new URL(isAuthed ? '/scenarios' : '/api/auth/signin', req.url));
   }
 
   const requestHeaders = new Headers(req.headers);

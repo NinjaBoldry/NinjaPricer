@@ -2,12 +2,13 @@ import NextAuth from 'next-auth';
 import MicrosoftEntraID from 'next-auth/providers/microsoft-entra-id';
 import { PrismaAdapter } from '@auth/prisma-adapter';
 import { prisma } from '@/lib/db/client';
+import { authConfig } from './auth.config';
 
 const allowedDomain = process.env.ALLOWED_EMAIL_DOMAIN ?? '';
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  ...authConfig,
   adapter: PrismaAdapter(prisma),
-  session: { strategy: 'database' },
   providers: [
     MicrosoftEntraID({
       clientId: process.env.MICROSOFT_ENTRA_CLIENT_ID!,
@@ -16,6 +17,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
+    ...authConfig.callbacks,
     async signIn({ user }) {
       const email = user.email ?? '';
       if (allowedDomain && !email.toLowerCase().endsWith(`@${allowedDomain.toLowerCase()}`)) {
@@ -23,12 +25,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
       return true;
     },
-    async session({ session, user }) {
-      if (session.user) {
-        session.user.id = user.id;
-        session.user.role = user.role ?? 'SALES';
+    jwt({ token, user }) {
+      if (user) {
+        token.role = user.role ?? 'SALES';
+        token.id = user.id;
       }
-      return session;
+      return token;
     },
   },
 });
