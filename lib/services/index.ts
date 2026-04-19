@@ -15,3 +15,7 @@ export { DepartmentService } from './department';
 export { EmployeeService } from './employee';
 export { BurdenService } from './burden';
 export { computeLoadedHourlyRate } from './labor';
+export { CommissionRuleService } from './commissionRule';
+export { CommissionTierService } from './commissionTier';
+export { BundleService } from './bundle';
+export { BundleItemService } from './bundleItem';

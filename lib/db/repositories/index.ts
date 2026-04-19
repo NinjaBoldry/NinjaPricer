@@ -20,3 +20,7 @@ export { LaborSKURepository } from './laborSku';
 export { DepartmentRepository } from './department';
 export { EmployeeRepository } from './employee';
 export { BurdenRepository } from './burden';
+export { CommissionRuleRepository } from './commissionRule';
+export { CommissionTierRepository } from './commissionTier';
+export { BundleRepository } from './bundle';
+export { BundleItemRepository } from './bundleItem';
