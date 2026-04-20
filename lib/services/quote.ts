@@ -3,6 +3,7 @@ import { QuoteRepository } from '@/lib/db/repositories/quote';
 import { buildComputeRequest } from '@/lib/services/rateSnapshot';
 import { writeQuotePdf } from '@/lib/utils/quoteStorage';
 import { prisma } from '@/lib/db/client';
+import type { Prisma } from '@prisma/client';
 import type { ComputeResult } from '@/lib/engine/types';
 
 export interface QuotePdfRenderer {
@@ -50,14 +51,23 @@ export async function generateQuote(args: GenerateArgs, deps: Deps) {
   const { scenario, request } = await buildComputeRequest(scenarioId);
   const result = compute(request);
 
-  const customerSnapshot = {
-    customerName: scenario.customerName,
-    scenarioName: scenario.name,
-    contractMonths: scenario.contractMonths,
-    owner: scenario.owner,
-    tabs: request.tabs,
-  };
-  const totals = { ...result.totals, commissions: result.commissions, warnings: result.warnings };
+  const customerSnapshot = JSON.parse(
+    JSON.stringify({
+      customerName: scenario.customerName,
+      scenarioName: scenario.name,
+      contractMonths: scenario.contractMonths,
+      owner: scenario.owner,
+      tabs: request.tabs,
+    }),
+  ) as Prisma.InputJsonValue;
+
+  const totals = JSON.parse(
+    JSON.stringify({
+      ...result.totals,
+      commissions: result.commissions,
+      warnings: result.warnings,
+    }),
+  ) as Prisma.InputJsonValue;
 
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     const version = await repo.nextVersion(scenarioId);

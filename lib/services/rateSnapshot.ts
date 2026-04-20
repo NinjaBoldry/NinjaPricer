@@ -31,7 +31,7 @@ export async function buildComputeRequest(scenarioId: string): Promise<{
   request: ComputeRequest;
 }> {
   const scenario = await fetchScenarioWithConfigs(scenarioId);
-  if (!scenario) throw new NotFoundError(`Scenario ${scenarioId} not found`);
+  if (!scenario) throw new NotFoundError('Scenario', scenarioId);
 
   const saasProductIds = scenario.saasConfigs.map((c) => c.productId);
   const laborProductIds = Array.from(new Set(scenario.laborLines.map((l) => l.productId)));
