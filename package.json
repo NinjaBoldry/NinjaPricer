@@ -11,7 +11,8 @@
     "format:check": "prettier --check .",
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage --passWithNoTests"
+    "test:coverage": "vitest run --coverage --passWithNoTests",
+    "test:integration": "DATABASE_URL=postgresql://ninja:ninja_dev@localhost:5433/ninja_pricer?schema=public vitest run --passWithNoTests --fileParallelism=false"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
