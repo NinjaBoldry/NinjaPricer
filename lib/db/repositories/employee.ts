@@ -1,5 +1,7 @@
-import type { PrismaClient, Employee, EmployeeCompensationType } from '@prisma/client';
+import type { PrismaClient, Employee, EmployeeCompensationType, Department } from '@prisma/client';
 import type { Decimal } from '@prisma/client/runtime/library';
+
+export type EmployeeWithDepartment = Employee & { department: Department };
 
 export class EmployeeRepository {
   constructor(private db: PrismaClient) {}
@@ -23,6 +25,14 @@ export class EmployeeRepository {
     return this.db.employee.findMany({
       where: { departmentId, isActive: true },
       orderBy: { name: 'asc' },
+    });
+  }
+
+  async listAllWithDepartment(): Promise<EmployeeWithDepartment[]> {
+    return this.db.employee.findMany({
+      where: { isActive: true },
+      include: { department: true },
+      orderBy: [{ department: { name: 'asc' } }, { name: 'asc' }],
     });
   }
 
