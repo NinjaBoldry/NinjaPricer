@@ -13,6 +13,7 @@ vi.mock('@/lib/services/rateSnapshot', () => ({
 
 import { POST } from './route';
 import { generateQuote } from '@/lib/services/quote';
+import type { Quote } from '@prisma/client';
 
 describe('POST /api/quotes/generate', () => {
   it('returns 400 if scenarioId missing', async () => {
@@ -21,7 +22,7 @@ describe('POST /api/quotes/generate', () => {
   });
 
   it('returns 201 with the created quote on success', async () => {
-    (generateQuote as any).mockResolvedValue({ id: 'q1', version: 1 });
+    vi.mocked(generateQuote).mockResolvedValue({ id: 'q1', version: 1 } as unknown as Quote);
     const res = await POST(
       new Request('http://x', {
         method: 'POST',

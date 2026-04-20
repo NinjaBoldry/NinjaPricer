@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import Decimal from 'decimal.js';
 
 vi.mock('@/lib/services/rateSnapshot', () => ({
   buildComputeRequest: vi.fn(),
@@ -19,7 +18,9 @@ vi.mock('@/lib/utils/quoteStorage', () => ({
 vi.mock('@/lib/db/client', () => ({ prisma: {} }));
 
 import { buildComputeRequest } from '@/lib/services/rateSnapshot';
+import type { ScenarioWithConfigs } from '@/lib/services/rateSnapshot';
 import { compute } from '@/lib/engine';
+import type { ComputeRequest } from '@/lib/engine/types';
 import { QuoteRepository } from '@/lib/db/repositories/quote';
 import { writeQuotePdf } from '@/lib/utils/quoteStorage';
 import { generateQuote } from './quote';
@@ -33,7 +34,7 @@ const mockScenario = {
   saasConfigs: [],
   laborLines: [],
   owner: { id: 'u1', email: 'o@x.com', name: 'Owner' },
-} as any;
+} as unknown as ScenarioWithConfigs;
 
 const mockResult = {
   perTab: [],
@@ -59,14 +60,14 @@ describe('generateQuote', () => {
     vi.clearAllMocks();
     nextVersion = vi.fn();
     create = vi.fn();
-    (QuoteRepository as any).mockImplementation(function () {
+    vi.mocked(QuoteRepository).mockImplementation(function () {
       return { nextVersion, create };
     });
-    (buildComputeRequest as any).mockResolvedValue({
+    vi.mocked(buildComputeRequest).mockResolvedValue({
       scenario: mockScenario,
-      request: { contractMonths: 12 },
+      request: { contractMonths: 12 } as unknown as ComputeRequest,
     });
-    (compute as any).mockReturnValue(mockResult);
+    vi.mocked(compute).mockReturnValue(mockResult);
   });
 
   it('renders PDFs, writes them, and persists a quote row', async () => {

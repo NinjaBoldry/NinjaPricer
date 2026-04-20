@@ -38,7 +38,7 @@ const args: RenderArgs = {
 describe('renderInternalPdf', () => {
   it('includes cost, margin, and commission text', async () => {
     await renderInternalPdf(args);
-    const doc = (toBuffer as any).mock.calls[0][0];
+    const doc = vi.mocked(toBuffer).mock.calls[0]![0];
     const serialized = JSON.stringify(doc, (_k, v) => (typeof v === 'function' ? undefined : v));
     expect(serialized.toLowerCase()).toContain('contract cost');
     expect(serialized.toLowerCase()).toContain('contribution margin');

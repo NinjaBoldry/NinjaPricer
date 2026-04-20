@@ -43,11 +43,11 @@ describe('renderCustomerPdf', () => {
   it('returns a Buffer and does not render any cost/margin fields into the doc', async () => {
     const buf = await renderCustomerPdf(args);
     expect(Buffer.isBuffer(buf)).toBe(true);
-    expect((toBuffer as any).mock.calls.length).toBe(1);
+    expect(vi.mocked(toBuffer).mock.calls.length).toBe(1);
 
     // Shallow-inspect the React element passed to the renderer — walk the children
     // looking for any Text containing 'margin' or 'cost' (case-insensitive).
-    const doc = (toBuffer as any).mock.calls[0][0];
+    const doc = vi.mocked(toBuffer).mock.calls[0]![0];
     const serialized = JSON.stringify(doc, (_k, v) => (typeof v === 'function' ? undefined : v));
     expect(serialized.toLowerCase()).not.toContain('margin');
     expect(serialized.toLowerCase()).not.toContain('cost');
