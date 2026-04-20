@@ -69,7 +69,9 @@ enum ScenarioStatus {
 model User {
   id              String           @id @default(cuid())
   email           String           @unique
-  name            String
+  name            String?
+  image           String?
+  emailVerified   DateTime?
   role            Role             @default(SALES)
   microsoftSub    String?          @unique
   createdAt       DateTime         @default(now())
