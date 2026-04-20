@@ -1,5 +1,4 @@
-import { prisma } from '@/lib/db/client';
-import type { Prisma } from '@prisma/client';
+import type { PrismaClient, Prisma } from '@prisma/client';
 
 export interface CreateQuoteInput {
   scenarioId: string;
@@ -12,8 +11,10 @@ export interface CreateQuoteInput {
 }
 
 export class QuoteRepository {
+  constructor(private db: PrismaClient) {}
+
   async nextVersion(scenarioId: string): Promise<number> {
-    const agg = await prisma.quote.aggregate({
+    const agg = await this.db.quote.aggregate({
       where: { scenarioId },
       _max: { version: true },
     });
@@ -21,11 +22,11 @@ export class QuoteRepository {
   }
 
   async create(data: CreateQuoteInput) {
-    return prisma.quote.create({ data });
+    return this.db.quote.create({ data });
   }
 
   async listByScenario(scenarioId: string) {
-    return prisma.quote.findMany({
+    return this.db.quote.findMany({
       where: { scenarioId },
       orderBy: { version: 'desc' },
       include: { generatedBy: { select: { id: true, email: true, name: true } } },
@@ -33,7 +34,7 @@ export class QuoteRepository {
   }
 
   async findById(id: string) {
-    return prisma.quote.findUnique({
+    return this.db.quote.findUnique({
       where: { id },
       include: { scenario: { select: { id: true, ownerId: true } } },
     });

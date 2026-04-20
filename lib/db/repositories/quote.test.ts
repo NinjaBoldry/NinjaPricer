@@ -1,42 +1,47 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { PrismaClient } from '@prisma/client';
 import { QuoteRepository } from './quote';
 
-vi.mock('@/lib/db/client', () => {
-  const quote = {
-    aggregate: vi.fn(),
-    create: vi.fn(),
-    findMany: vi.fn(),
-    findUnique: vi.fn(),
-  };
-  return { prisma: { quote } };
-});
-
-import { prisma } from '@/lib/db/client';
-
 describe('QuoteRepository', () => {
+  let mockDb: {
+    quote: {
+      aggregate: ReturnType<typeof vi.fn>;
+      create: ReturnType<typeof vi.fn>;
+      findMany: ReturnType<typeof vi.fn>;
+      findUnique: ReturnType<typeof vi.fn>;
+    };
+  };
   let repo: QuoteRepository;
+
   beforeEach(() => {
-    vi.clearAllMocks();
-    repo = new QuoteRepository();
+    mockDb = {
+      quote: {
+        aggregate: vi.fn(),
+        create: vi.fn(),
+        findMany: vi.fn(),
+        findUnique: vi.fn(),
+      },
+    };
+    repo = new QuoteRepository(mockDb as unknown as PrismaClient);
   });
 
   it('nextVersion returns max+1 for a scenario', async () => {
-    (prisma.quote.aggregate as any).mockResolvedValue({ _max: { version: 3 } });
+    mockDb.quote.aggregate.mockResolvedValue({ _max: { version: 3 } });
     const v = await repo.nextVersion('scen_1');
     expect(v).toBe(4);
-    expect(prisma.quote.aggregate).toHaveBeenCalledWith({
+    expect(mockDb.quote.aggregate).toHaveBeenCalledWith({
       where: { scenarioId: 'scen_1' },
       _max: { version: true },
     });
   });
 
   it('nextVersion returns 1 when no prior quotes', async () => {
-    (prisma.quote.aggregate as any).mockResolvedValue({ _max: { version: null } });
+    mockDb.quote.aggregate.mockResolvedValue({ _max: { version: null } });
     expect(await repo.nextVersion('scen_1')).toBe(1);
   });
 
   it('create forwards its data to prisma.quote.create', async () => {
-    (prisma.quote.create as any).mockResolvedValue({ id: 'q1' });
+    mockDb.quote.create.mockResolvedValue({ id: 'q1' });
     await repo.create({
       scenarioId: 'scen_1',
       version: 1,
@@ -46,7 +51,7 @@ describe('QuoteRepository', () => {
       customerSnapshot: { name: 'Acme' },
       totals: { contractRevenueCents: 100 },
     });
-    expect(prisma.quote.create).toHaveBeenCalledWith({
+    expect(mockDb.quote.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         scenarioId: 'scen_1',
         version: 1,
@@ -57,9 +62,9 @@ describe('QuoteRepository', () => {
   });
 
   it('listByScenario orders by version desc', async () => {
-    (prisma.quote.findMany as any).mockResolvedValue([]);
+    mockDb.quote.findMany.mockResolvedValue([]);
     await repo.listByScenario('scen_1');
-    expect(prisma.quote.findMany).toHaveBeenCalledWith({
+    expect(mockDb.quote.findMany).toHaveBeenCalledWith({
       where: { scenarioId: 'scen_1' },
       orderBy: { version: 'desc' },
       include: { generatedBy: { select: { id: true, email: true, name: true } } },
@@ -67,10 +72,10 @@ describe('QuoteRepository', () => {
   });
 
   it('findById returns a row', async () => {
-    (prisma.quote.findUnique as any).mockResolvedValue({ id: 'q1' });
+    mockDb.quote.findUnique.mockResolvedValue({ id: 'q1' });
     const q = await repo.findById('q1');
     expect(q).toEqual({ id: 'q1' });
-    expect(prisma.quote.findUnique).toHaveBeenCalledWith({
+    expect(mockDb.quote.findUnique).toHaveBeenCalledWith({
       where: { id: 'q1' },
       include: { scenario: { select: { id: true, ownerId: true } } },
     });
