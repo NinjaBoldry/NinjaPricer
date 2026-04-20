@@ -32,6 +32,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       clientId: process.env.MICROSOFT_ENTRA_CLIENT_ID!,
       clientSecret: process.env.MICROSOFT_ENTRA_CLIENT_SECRET!,
       issuer: `https://login.microsoftonline.com/${process.env.MICROSOFT_ENTRA_TENANT_ID}/v2.0`,
+      // Entra returns tenant-verified emails, so it's safe to link an Entra account
+      // to an existing User row matched by email. This is what lets admin-invited
+      // users (created by email before their first sign-in) log in and have the
+      // OAuth account linked to their pre-provisioned User + role.
+      allowDangerousEmailAccountLinking: true,
     }),
     ...(isDev ? [devCredentialsProvider] : []),
   ],
