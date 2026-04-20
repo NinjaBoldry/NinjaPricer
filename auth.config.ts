@@ -10,7 +10,6 @@ import type { NextAuthConfig } from 'next-auth';
 // with infrequent role changes. If tighter enforcement is needed, reduce `session.maxAge`.
 export const authConfig = {
   session: { strategy: 'jwt' as const },
-  pages: { signIn: '/api/auth/signin' },
   callbacks: {
     session({ session, token }) {
       if (session.user && token) {

@@ -1,10 +1,25 @@
 import NextAuth from 'next-auth';
 import MicrosoftEntraID from 'next-auth/providers/microsoft-entra-id';
+import Credentials from 'next-auth/providers/credentials';
 import { PrismaAdapter } from '@auth/prisma-adapter';
 import { prisma } from '@/lib/db/client';
 import { authConfig } from './auth.config';
 
 const allowedDomain = process.env.ALLOWED_EMAIL_DOMAIN ?? '';
+const isDev = process.env.NODE_ENV === 'development';
+
+const devCredentialsProvider = Credentials({
+  id: 'dev-credentials',
+  name: 'Dev Login',
+  credentials: { email: { label: 'Email', type: 'email' } },
+  async authorize({ email }) {
+    if (!isDev || !email) return null;
+    const existing = await prisma.user.findUnique({ where: { email: email as string } });
+    if (existing) return { id: existing.id, email: existing.email, name: existing.name, role: existing.role };
+    const created = await prisma.user.create({ data: { email: email as string, name: email as string, role: 'ADMIN' } });
+    return { id: created.id, email: created.email, name: created.name, role: created.role };
+  },
+});
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
@@ -15,7 +30,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       clientSecret: process.env.MICROSOFT_ENTRA_CLIENT_SECRET!,
       issuer: `https://login.microsoftonline.com/${process.env.MICROSOFT_ENTRA_TENANT_ID}/v2.0`,
     }),
+    ...(isDev ? [devCredentialsProvider] : []),
   ],
+  session: { strategy: 'jwt' },
   callbacks: {
     ...authConfig.callbacks,
     async signIn({ user }) {
