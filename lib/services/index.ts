@@ -21,3 +21,5 @@ export { BundleService } from './bundle';
 export { BundleItemService } from './bundleItem';
 export { UserService } from './user';
 export { ScenarioService } from './scenario';
+export { generateQuote } from './quote';
+export type { QuotePdfRenderer, RenderArgs } from './quote';
