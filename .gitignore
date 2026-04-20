@@ -14,3 +14,4 @@ dist/
 *.tsbuildinfo
 
 /lib/generated/prisma
+.quote-storage/
