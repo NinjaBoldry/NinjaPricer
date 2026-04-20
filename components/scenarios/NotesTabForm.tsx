@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useScenarioCompute } from './ScenarioComputeContext';
+import { buildEvenMix } from './personaMix';
 
 interface Persona {
   id: string;
@@ -37,7 +38,7 @@ export default function NotesTabForm({
   const [mix, setMix] = useState<Mix[]>(
     initialMix.length > 0
       ? initialMix
-      : personas.map((p) => ({ personaId: p.id, pct: Math.floor(100 / personas.length) })),
+      : buildEvenMix(personas.map((p) => p.id)),
   );
   const mixInputRef = useRef<HTMLInputElement>(null);
 

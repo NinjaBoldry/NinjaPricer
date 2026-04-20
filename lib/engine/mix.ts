@@ -7,6 +7,9 @@ export function mixWeightedMultiplier(
   personas: PersonaSnap[],
   mix: { personaId: string; pct: number }[],
 ): Decimal {
+  // When a product has no personas configured, skip mix validation and return a
+  // neutral multiplier of 1 — there's no persona-based cost adjustment to apply.
+  if (personas.length === 0) return d(1);
   // pct values are typed as number (form inputs). d(number) preserves float imprecision,
   // so use a small tolerance rather than exact equality.
   const totalPct = mix.reduce((acc, m) => acc.plus(d(m.pct)), d(0));

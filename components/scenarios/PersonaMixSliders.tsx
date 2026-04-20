@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { Label } from '@/components/ui/label';
+import { buildEvenMix } from './personaMix';
 
 interface Persona {
   id: string;
@@ -19,9 +20,10 @@ interface Props {
 }
 
 export default function PersonaMixSliders({ personas, initialMix, onChange }: Props) {
-  const seed: Mix[] = personas.map((p) => {
+  const defaults = buildEvenMix(personas.map((p) => p.id));
+  const seed: Mix[] = personas.map((p, i) => {
     const found = initialMix.find((m) => m.personaId === p.id);
-    return { personaId: p.id, pct: found?.pct ?? Math.floor(100 / personas.length) };
+    return { personaId: p.id, pct: found?.pct ?? defaults[i]!.pct };
   });
 
   const [mix, setMix] = useState<Mix[]>(seed);
