@@ -25,3 +25,6 @@ export { CommissionTierRepository } from './commissionTier';
 export { BundleRepository } from './bundle';
 export { BundleItemRepository } from './bundleItem';
 export { UserRepository } from './user';
+export { ScenarioRepository } from './scenario';
+export { ScenarioSaaSConfigRepository } from './scenarioSaaSConfig';
+export { ScenarioLaborLineRepository } from './scenarioLaborLine';

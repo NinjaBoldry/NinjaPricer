@@ -1,4 +1,6 @@
 import type { PrismaClient, User, Role } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+import { ValidationError } from '@/lib/utils/errors';
 
 export class UserRepository {
   constructor(private db: PrismaClient) {}
@@ -32,10 +34,17 @@ export class UserRepository {
   }
 
   async setRole(id: string, role: Role): Promise<Pick<User, 'id' | 'role'>> {
-    return this.db.user.update({
-      where: { id },
-      data: { role },
-      select: { id: true, role: true },
-    });
+    try {
+      return await this.db.user.update({
+        where: { id },
+        data: { role },
+        select: { id: true, role: true },
+      });
+    } catch (e) {
+      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2025') {
+        throw new ValidationError('userId', 'not found');
+      }
+      throw e;
+    }
   }
 }

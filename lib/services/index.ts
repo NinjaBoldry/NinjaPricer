@@ -20,3 +20,4 @@ export { CommissionTierService } from './commissionTier';
 export { BundleService } from './bundle';
 export { BundleItemService } from './bundleItem';
 export { UserService } from './user';
+export { ScenarioService } from './scenario';
