@@ -12,9 +12,12 @@ export async function addTier(ruleId: string, formData: FormData) {
   try {
     await service.upsert({
       ruleId,
-      thresholdFromUsd: parseDecimalField('thresholdFromUsd', formData.get('thresholdFromUsd') as string | null),
+      thresholdFromUsd: parseDecimalField(
+        'thresholdFromUsd',
+        formData.get('thresholdFromUsd') as string | null,
+      ),
       ratePct: parseDecimalField('ratePct', formData.get('ratePct') as string | null).div(100),
-      sortOrder: parseInt(formData.get('sortOrder') as string | null ?? '', 10) || 0,
+      sortOrder: parseInt((formData.get('sortOrder') as string | null) ?? '', 10) || 0,
     });
   } catch (e) {
     if (e instanceof ValidationError) errorMsg = e.message;

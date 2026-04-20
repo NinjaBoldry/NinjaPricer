@@ -20,12 +20,8 @@ const UpsertLaborSKUSchema = z.object({
   productId: z.string().min(1, 'is required'),
   name: z.string().min(1, 'is required'),
   unit: z.nativeEnum(LaborSKUUnit),
-  costPerUnitUsd: z
-    .instanceof(Decimal)
-    .refine((d) => d.gte(0), { message: 'must be >= 0' }),
-  defaultRevenueUsd: z
-    .instanceof(Decimal)
-    .refine((d) => d.gte(0), { message: 'must be >= 0' }),
+  costPerUnitUsd: z.instanceof(Decimal).refine((d) => d.gte(0), { message: 'must be >= 0' }),
+  defaultRevenueUsd: z.instanceof(Decimal).refine((d) => d.gte(0), { message: 'must be >= 0' }),
 });
 
 export class LaborSKUService {

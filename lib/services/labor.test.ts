@@ -58,9 +58,9 @@ describe('computeLoadedHourlyRate — ANNUAL_SALARY', () => {
       annualSalaryUsd: BASE_SALARY,
       standardHoursPerYear: HOURS,
       burdens: [
-        { ratePct: new Decimal('0.0765') },                             // FICA: 7650
-        { ratePct: new Decimal('0.06'), capUsd: new Decimal('420') },   // FUTA capped: 420
-        { ratePct: new Decimal('0.02') },                               // SUI: 2000
+        { ratePct: new Decimal('0.0765') }, // FICA: 7650
+        { ratePct: new Decimal('0.06'), capUsd: new Decimal('420') }, // FUTA capped: 420
+        { ratePct: new Decimal('0.02') }, // SUI: 2000
       ],
     });
     // total burden = 7650 + 420 + 2000 = 10070; total cost = 110070; /2080 = 52.9183...

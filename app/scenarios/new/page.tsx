@@ -3,11 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 
-export default function NewScenarioPage({
-  searchParams,
-}: {
-  searchParams: { error?: string };
-}) {
+export default function NewScenarioPage({ searchParams }: { searchParams: { error?: string } }) {
   return (
     <div className="max-w-md mx-auto">
       <h1 className="text-2xl font-semibold mb-6">New scenario</h1>

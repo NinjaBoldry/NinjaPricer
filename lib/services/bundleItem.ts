@@ -17,9 +17,7 @@ export interface IBundleItemRepository {
 const SaaSConfigSchema = z.object({
   kind: z.literal('SAAS_USAGE'),
   seatCount: z.number().int().positive('must be > 0'),
-  personaMix: z.array(
-    z.object({ personaId: z.string().min(1), pct: z.number().gt(0).lte(1) })
-  ),
+  personaMix: z.array(z.object({ personaId: z.string().min(1), pct: z.number().gt(0).lte(1) })),
 });
 
 const PackagedLaborConfigSchema = z.object({

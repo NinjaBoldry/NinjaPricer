@@ -21,7 +21,12 @@ describe.skipIf(!process.env.DATABASE_URL)('ScenarioSaaSConfigRepository', () =>
       data: { name: 'SaaS Config Test Product', kind: 'SAAS_USAGE' },
     });
     const scenario = await prisma.scenario.create({
-      data: { name: 'SaaS Config Test Scenario', customerName: 'Test Co', ownerId: user.id, contractMonths: 12 },
+      data: {
+        name: 'SaaS Config Test Scenario',
+        customerName: 'Test Co',
+        ownerId: user.id,
+        contractMonths: 12,
+      },
     });
     productId = product.id;
     scenarioId = scenario.id;

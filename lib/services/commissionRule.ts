@@ -14,16 +14,19 @@ export interface ICommissionRuleRepository {
   }): Promise<unknown>;
   findAll(): Promise<unknown[]>;
   findById(id: string): Promise<unknown>;
-  update(id: string, data: {
-    name?: string | undefined;
-    scopeType?: CommissionScopeType | undefined;
-    baseMetric?: CommissionBaseMetric | undefined;
-    scopeProductId?: string | null | undefined;
-    scopeDepartmentId?: string | null | undefined;
-    recipientEmployeeId?: string | null | undefined;
-    notes?: string | null | undefined;
-    isActive?: boolean | undefined;
-  }): Promise<unknown>;
+  update(
+    id: string,
+    data: {
+      name?: string | undefined;
+      scopeType?: CommissionScopeType | undefined;
+      baseMetric?: CommissionBaseMetric | undefined;
+      scopeProductId?: string | null | undefined;
+      scopeDepartmentId?: string | null | undefined;
+      recipientEmployeeId?: string | null | undefined;
+      notes?: string | null | undefined;
+      isActive?: boolean | undefined;
+    },
+  ): Promise<unknown>;
 }
 
 const CreateRuleSchema = z.object({
@@ -63,7 +66,10 @@ function validateScope(data: {
     (data.baseMetric === 'TAB_REVENUE' || data.baseMetric === 'TAB_MARGIN') &&
     !data.scopeProductId
   ) {
-    throw new ValidationError('scopeProductId', `is required when baseMetric is ${data.baseMetric}`);
+    throw new ValidationError(
+      'scopeProductId',
+      `is required when baseMetric is ${data.baseMetric}`,
+    );
   }
 }
 
@@ -80,8 +86,12 @@ export class CommissionRuleService {
     return this.repo.create(parsed.data);
   }
 
-  async findAll() { return this.repo.findAll(); }
-  async findById(id: string) { return this.repo.findById(id); }
+  async findAll() {
+    return this.repo.findAll();
+  }
+  async findById(id: string) {
+    return this.repo.findById(id);
+  }
 
   async update(id: string, data: unknown) {
     const parsed = UpdateRuleSchema.safeParse(data);
@@ -89,7 +99,7 @@ export class CommissionRuleService {
       const issue = parsed.error.issues[0]!;
       throw new ValidationError(issue.path.join('.') || 'commissionRule', issue.message);
     }
-    const current = await this.repo.findById(id) as {
+    const current = (await this.repo.findById(id)) as {
       scopeType: string;
       baseMetric: string;
       scopeProductId: string | null;
@@ -101,12 +111,14 @@ export class CommissionRuleService {
     const merged = {
       scopeType: (parsed.data.scopeType ?? current.scopeType) as CommissionScopeType,
       baseMetric: (parsed.data.baseMetric ?? current.baseMetric) as CommissionBaseMetric,
-      scopeProductId: parsed.data.scopeProductId !== undefined
-        ? (parsed.data.scopeProductId ?? undefined)
-        : (current.scopeProductId ?? undefined),
-      scopeDepartmentId: parsed.data.scopeDepartmentId !== undefined
-        ? (parsed.data.scopeDepartmentId ?? undefined)
-        : (current.scopeDepartmentId ?? undefined),
+      scopeProductId:
+        parsed.data.scopeProductId !== undefined
+          ? (parsed.data.scopeProductId ?? undefined)
+          : (current.scopeProductId ?? undefined),
+      scopeDepartmentId:
+        parsed.data.scopeDepartmentId !== undefined
+          ? (parsed.data.scopeDepartmentId ?? undefined)
+          : (current.scopeDepartmentId ?? undefined),
     };
     validateScope(merged);
     return this.repo.update(id, parsed.data);

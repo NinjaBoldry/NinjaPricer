@@ -57,7 +57,10 @@ export class RailService {
     if (kind === 'MAX_DISCOUNT_PCT') {
       // For MAX rails: hard ≤ soft (stricter = lower max, so the block threshold is the lower one)
       if (hardThreshold.gt(softThreshold)) {
-        throw new ValidationError('hardThreshold', 'must be ≤ softThreshold for MAX_DISCOUNT_PCT (lower is stricter)');
+        throw new ValidationError(
+          'hardThreshold',
+          'must be ≤ softThreshold for MAX_DISCOUNT_PCT (lower is stricter)',
+        );
       }
     } else {
       // For MIN rails: soft ≤ hard (warning fires first, then block)

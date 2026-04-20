@@ -44,10 +44,7 @@ export default async function ProductsPage() {
           {products.map((p) => (
             <TableRow key={p.id}>
               <TableCell>
-                <Link
-                  href={`/admin/products/${p.id}`}
-                  className="font-medium hover:underline"
-                >
+                <Link href={`/admin/products/${p.id}`} className="font-medium hover:underline">
                   {p.name}
                 </Link>
               </TableCell>
@@ -61,10 +58,7 @@ export default async function ProductsPage() {
           ))}
           {products.length === 0 && (
             <TableRow>
-              <TableCell
-                colSpan={3}
-                className="text-center text-muted-foreground py-8"
-              >
+              <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
                 No products yet.
               </TableCell>
             </TableRow>

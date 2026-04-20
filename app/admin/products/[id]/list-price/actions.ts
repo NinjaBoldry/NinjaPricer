@@ -22,9 +22,7 @@ export async function upsertListPrice(productId: string, formData: FormData) {
     else throw e;
   }
   if (errorMsg) {
-    redirect(
-      `/admin/products/${productId}/list-price?error=${encodeURIComponent(errorMsg)}`,
-    );
+    redirect(`/admin/products/${productId}/list-price?error=${encodeURIComponent(errorMsg)}`);
   }
   redirect(`/admin/products/${productId}/list-price`);
 }

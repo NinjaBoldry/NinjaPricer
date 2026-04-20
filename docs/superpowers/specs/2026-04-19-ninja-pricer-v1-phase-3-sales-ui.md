@@ -51,14 +51,14 @@
 
 ## Sub-phase Overview
 
-| Sub-phase | Theme | Key output |
-|-----------|-------|------------|
-| 3.0 | Intake — quick-wins + scaffolding | `UserRepository.setRole` P2025 fix; `ScenarioRepository`, `ScenarioService`, `ScenarioSaaSConfigRepository`, `ScenarioLaborLineRepository`; `POST /api/compute` |
-| 3.1 | Scenarios list page | `/scenarios` with filters + "New scenario" action; role-aware owner scoping |
-| 3.2 | Builder shell + Notes tab | `/scenarios/[id]` layout, header, static sticky rail, Notes tab with seat count + persona mix sliders |
-| 3.3 | Training/White-glove + Service tabs | SKU picker + department picker; cost hidden from sales; mutations via server actions |
-| 3.4 | Live recalc + bundle apply | Static rail replaced with live compute; debounced `/api/compute` calls; bundle picker that materialises configs |
-| 3.5 | Polish + smoke test | Neutral rail copy audit, Generate Quote stub, archive action wired, Playwright smoke |
+| Sub-phase | Theme                               | Key output                                                                                                                                                      |
+| --------- | ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 3.0       | Intake — quick-wins + scaffolding   | `UserRepository.setRole` P2025 fix; `ScenarioRepository`, `ScenarioService`, `ScenarioSaaSConfigRepository`, `ScenarioLaborLineRepository`; `POST /api/compute` |
+| 3.1       | Scenarios list page                 | `/scenarios` with filters + "New scenario" action; role-aware owner scoping                                                                                     |
+| 3.2       | Builder shell + Notes tab           | `/scenarios/[id]` layout, header, static sticky rail, Notes tab with seat count + persona mix sliders                                                           |
+| 3.3       | Training/White-glove + Service tabs | SKU picker + department picker; cost hidden from sales; mutations via server actions                                                                            |
+| 3.4       | Live recalc + bundle apply          | Static rail replaced with live compute; debounced `/api/compute` calls; bundle picker that materialises configs                                                 |
+| 3.5       | Polish + smoke test                 | Neutral rail copy audit, Generate Quote stub, archive action wired, Playwright smoke                                                                            |
 
 **Parallel workstream (explicit handoff points below):** Integration test wiring — test Postgres (dockerised or CI-managed), wire CI to run the 67 currently-skipped `it.skip` repository tests against a real Postgres instance. This workstream can start immediately after Phase 3.0 completes (scenario repos exist) and must land before phase-level acceptance is declared.
 
@@ -177,7 +177,12 @@ describe('ScenarioRepository', () => {
 
   it('lists scenarios filtered by ownerId', async () => {
     await repo.create({ name: 'Mine', customerName: 'A', ownerId: testUserId, contractMonths: 12 });
-    await repo.create({ name: 'Theirs', customerName: 'B', ownerId: otherUserId, contractMonths: 6 });
+    await repo.create({
+      name: 'Theirs',
+      customerName: 'B',
+      ownerId: otherUserId,
+      contractMonths: 6,
+    });
     const mine = await repo.list({ ownerId: testUserId });
     expect(mine).toHaveLength(1);
     expect(mine[0].name).toBe('Mine');
@@ -191,13 +196,23 @@ describe('ScenarioRepository', () => {
   });
 
   it('filters by customerName (case-insensitive)', async () => {
-    await repo.create({ name: 'Deal', customerName: 'Acme Corp', ownerId: testUserId, contractMonths: 12 });
+    await repo.create({
+      name: 'Deal',
+      customerName: 'Acme Corp',
+      ownerId: testUserId,
+      contractMonths: 12,
+    });
     const found = await repo.list({ customerName: 'acme' });
     expect(found).toHaveLength(1);
   });
 
   it('archives a scenario and excludes it from default list', async () => {
-    const s = await repo.create({ name: 'Old', customerName: 'X', ownerId: testUserId, contractMonths: 12 });
+    const s = await repo.create({
+      name: 'Old',
+      customerName: 'X',
+      ownerId: testUserId,
+      contractMonths: 12,
+    });
     await repo.archive(s.id);
     const found = await repo.findById(s.id);
     expect(found?.isArchived).toBe(true);
@@ -280,7 +295,7 @@ export class ScenarioRepository {
       notes: string | null;
       appliedBundleId: string | null;
       status: ScenarioStatus;
-    }>
+    }>,
   ): Promise<Scenario> {
     return this.db.scenario.update({ where: { id }, data });
   }
@@ -315,6 +330,7 @@ git commit -m "feat(scenario): ScenarioRepository with CRUD, list filters, and a
 - [ ] **Step 1: Write failing tests**
 
 Create `lib/db/repositories/scenario-saas-config.test.ts`. Cover:
+
 - `upsert` creates on first call; updates `seatCount` on a second call for the same `(scenarioId, productId)`.
 - `findByScenario` returns all configs for a scenario.
 - `personaMix` round-trips through JSON correctly (values survive a write + read cycle).
@@ -372,6 +388,7 @@ git commit -m "feat(scenario): ScenarioSaaSConfigRepository with upsert"
 - [ ] **Step 1: Write failing tests**
 
 Create `lib/db/repositories/scenario-labor-line.test.ts`. Cover:
+
 - `create` returns the new row with the correct `sortOrder`.
 - `findByScenario` returns rows ordered by `sortOrder` ascending.
 - `update` changes `qty` without affecting other fields.
@@ -416,7 +433,7 @@ export class ScenarioLaborLineRepository {
       revenuePerUnitUsd: Decimal;
       customDescription: string | null;
       sortOrder: number;
-    }>
+    }>,
   ): Promise<ScenarioLaborLine> {
     return this.db.scenarioLaborLine.update({ where: { id }, data });
   }
@@ -456,9 +473,17 @@ import { ValidationError } from '../utils/errors';
 function mockScenarioRepo() {
   return {
     create: vi.fn().mockResolvedValue({
-      id: 's1', name: 'Test', customerName: 'Corp', ownerId: 'u1',
-      contractMonths: 12, status: 'DRAFT', isArchived: false,
-      appliedBundleId: null, notes: null, createdAt: new Date(), updatedAt: new Date(),
+      id: 's1',
+      name: 'Test',
+      customerName: 'Corp',
+      ownerId: 'u1',
+      contractMonths: 12,
+      status: 'DRAFT',
+      isArchived: false,
+      appliedBundleId: null,
+      notes: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     }),
     findById: vi.fn().mockResolvedValue(null),
     list: vi.fn().mockResolvedValue([]),
@@ -471,21 +496,31 @@ describe('ScenarioService.createScenario', () => {
   it('throws ValidationError when customerName is empty', async () => {
     const service = new ScenarioService(mockScenarioRepo() as any, {} as any, {} as any);
     await expect(
-      service.createScenario({ name: 'Deal', customerName: '', contractMonths: 12, ownerId: 'u1' })
+      service.createScenario({ name: 'Deal', customerName: '', contractMonths: 12, ownerId: 'u1' }),
     ).rejects.toThrow(ValidationError);
   });
 
   it('throws ValidationError when contractMonths is 0', async () => {
     const service = new ScenarioService(mockScenarioRepo() as any, {} as any, {} as any);
     await expect(
-      service.createScenario({ name: 'Deal', customerName: 'Corp', contractMonths: 0, ownerId: 'u1' })
+      service.createScenario({
+        name: 'Deal',
+        customerName: 'Corp',
+        contractMonths: 0,
+        ownerId: 'u1',
+      }),
     ).rejects.toThrow(ValidationError);
   });
 
   it('creates a scenario when data is valid', async () => {
     const repo = mockScenarioRepo();
     const service = new ScenarioService(repo as any, {} as any, {} as any);
-    const result = await service.createScenario({ name: 'Big Deal', customerName: 'Acme', contractMonths: 12, ownerId: 'u1' });
+    const result = await service.createScenario({
+      name: 'Big Deal',
+      customerName: 'Acme',
+      contractMonths: 12,
+      ownerId: 'u1',
+    });
     expect(result.name).toBe('Test');
     expect(repo.create).toHaveBeenCalledOnce();
   });
@@ -496,9 +531,14 @@ describe('ScenarioService.upsertSaaSConfig', () => {
     const service = new ScenarioService({} as any, { upsert: vi.fn() } as any, {} as any);
     await expect(
       service.upsertSaaSConfig({
-        scenarioId: 's1', productId: 'p1', seatCount: 10,
-        personaMix: [{ personaId: 'pa1', pct: 60 }, { personaId: 'pa2', pct: 30 }],
-      })
+        scenarioId: 's1',
+        productId: 'p1',
+        seatCount: 10,
+        personaMix: [
+          { personaId: 'pa1', pct: 60 },
+          { personaId: 'pa2', pct: 30 },
+        ],
+      }),
     ).rejects.toThrow(ValidationError);
   });
 });
@@ -566,7 +606,7 @@ export class ScenarioService {
   constructor(
     private scenarioRepo: ScenarioRepository,
     private saasConfigRepo: ScenarioSaaSConfigRepository,
-    private laborLineRepo: ScenarioLaborLineRepository
+    private laborLineRepo: ScenarioLaborLineRepository,
   ) {}
 
   async createScenario(data: unknown) {
@@ -605,7 +645,7 @@ export class ScenarioService {
   async archiveScenario(
     id: string,
     requestingUserId: string,
-    requestingUserRole: 'ADMIN' | 'SALES'
+    requestingUserRole: 'ADMIN' | 'SALES',
   ) {
     const scenario = await this.scenarioRepo.findById(id);
     if (!scenario) throw new NotFoundError('Scenario', id);
@@ -633,6 +673,7 @@ git commit -m "feat(scenario): ScenarioService with Zod validation and role-scop
 **Why a route handler (not a server action):** Live recalc is a client-side debounced `fetch()`; Next.js server actions cannot be called from `fetch()`. The endpoint is authenticated via the session.
 
 **Two-module design:**
+
 1. `lib/services/compute-snapshot.ts` — `fetchRateSnapshot(db, productIds)` fetches all rate data for the given product IDs; `buildComputeRequest(inputs, snapshot)` is a pure function that assembles a `ComputeRequest` from the fetched data and the scenario inputs. Keeping fetch and transform separate makes `buildComputeRequest` unit-testable without a DB.
 2. `app/api/compute/route.ts` — authenticates, validates body, calls `fetchRateSnapshot`, calls `buildComputeRequest`, calls `compute()`, returns JSON.
 
@@ -664,7 +705,9 @@ describe('buildComputeRequest', () => {
   it('assembles a ComputeRequest with one SaaS tab', () => {
     const result = buildComputeRequest({
       contractMonths: 12,
-      saasInputs: [{ productId: 'p1', seatCount: 10, personaMix: [{ personaId: 'pa1', pct: 100 }] }],
+      saasInputs: [
+        { productId: 'p1', seatCount: 10, personaMix: [{ personaId: 'pa1', pct: 100 }] },
+      ],
       laborInputs: [],
       saasProducts: { p1: MOCK_SAAS_SNAP },
       commissionRules: [],
@@ -683,14 +726,16 @@ describe('buildComputeRequest', () => {
     expect(() =>
       buildComputeRequest({
         contractMonths: 12,
-        saasInputs: [{ productId: 'ghost', seatCount: 5, personaMix: [{ personaId: 'pa1', pct: 100 }] }],
+        saasInputs: [
+          { productId: 'ghost', seatCount: 5, personaMix: [{ personaId: 'pa1', pct: 100 }] },
+        ],
         laborInputs: [],
         saasProducts: {},
         commissionRules: [],
         rails: [],
         departments: {},
         laborSKUs: {},
-      })
+      }),
     ).toThrow();
   });
 });
@@ -724,7 +769,7 @@ export interface RateSnapshot {
 
 export async function fetchRateSnapshot(
   db: PrismaClient,
-  productIds: string[]
+  productIds: string[],
 ): Promise<RateSnapshot> {
   // Fetch products with all related rate data
   const products = await db.product.findMany({
@@ -764,7 +809,7 @@ export async function fetchRateSnapshot(
           usagePerMonth: new Decimal(bu.usagePerMonth.toString()),
         })),
         otherVariableUsdPerUserPerMonth: new Decimal(
-          p.otherVariable?.usdPerUserPerMonth.toString() ?? '0'
+          p.otherVariable?.usdPerUserPerMonth.toString() ?? '0',
         ),
         personas: p.personas.map((pe) => ({
           id: pe.id,
@@ -777,9 +822,7 @@ export async function fetchRateSnapshot(
           monthlyUsd: new Decimal(fc.monthlyUsd.toString()),
         })),
         activeUsersAtScale: p.scale?.activeUsersAtScale ?? 1,
-        listPriceUsdPerSeatPerMonth: new Decimal(
-          p.listPrice?.usdPerSeatPerMonth.toString() ?? '0'
-        ),
+        listPriceUsdPerSeatPerMonth: new Decimal(p.listPrice?.usdPerSeatPerMonth.toString() ?? '0'),
         volumeTiers: p.volumeTiers.map((t) => ({
           minSeats: t.minSeats,
           discountPct: new Decimal(t.discountPct.toString()),
@@ -861,11 +904,27 @@ export async function fetchRateSnapshot(
 }
 
 // Pure transform — receives pre-fetched snapshot data.
-export function buildComputeRequest(input: {
-  contractMonths: number;
-  saasInputs: { productId: string; seatCount: number; personaMix: { personaId: string; pct: number }[]; discountOverridePct?: number | null }[];
-  laborInputs: { productId: string; skuId?: string | null; departmentId?: string | null; customDescription?: string | null; qty: number; unit: string; costPerUnitUsd: number; revenuePerUnitUsd: number }[];
-} & RateSnapshot): ComputeRequest {
+export function buildComputeRequest(
+  input: {
+    contractMonths: number;
+    saasInputs: {
+      productId: string;
+      seatCount: number;
+      personaMix: { personaId: string; pct: number }[];
+      discountOverridePct?: number | null;
+    }[];
+    laborInputs: {
+      productId: string;
+      skuId?: string | null;
+      departmentId?: string | null;
+      customDescription?: string | null;
+      qty: number;
+      unit: string;
+      costPerUnitUsd: number;
+      revenuePerUnitUsd: number;
+    }[];
+  } & RateSnapshot,
+): ComputeRequest {
   const tabs: ComputeRequest['tabs'] = [];
 
   for (const si of input.saasInputs) {
@@ -887,24 +946,28 @@ export function buildComputeRequest(input: {
       tabs.push({
         kind: 'PACKAGED_LABOR',
         productId: li.productId,
-        lineItems: [{
-          skuId: li.skuId,
-          customDescription: li.customDescription ?? undefined,
-          qty: new Decimal(li.qty),
-          unit: li.unit,
-          costPerUnitUsd: new Decimal(li.costPerUnitUsd),
-          revenuePerUnitUsd: new Decimal(li.revenuePerUnitUsd),
-        }],
+        lineItems: [
+          {
+            skuId: li.skuId,
+            customDescription: li.customDescription ?? undefined,
+            qty: new Decimal(li.qty),
+            unit: li.unit,
+            costPerUnitUsd: new Decimal(li.costPerUnitUsd),
+            revenuePerUnitUsd: new Decimal(li.revenuePerUnitUsd),
+          },
+        ],
       });
     } else {
       tabs.push({
         kind: 'CUSTOM_LABOR',
         productId: li.productId,
-        lineItems: [{
-          departmentId: li.departmentId ?? undefined,
-          customDescription: li.customDescription ?? undefined,
-          hours: new Decimal(li.qty),
-        }],
+        lineItems: [
+          {
+            departmentId: li.departmentId ?? undefined,
+            customDescription: li.customDescription ?? undefined,
+            hours: new Decimal(li.qty),
+          },
+        ],
       });
     }
   }
@@ -935,7 +998,9 @@ function computeDeptLoadedRate(dept: {
       ? new Decimal(e.annualSalaryUsd.toString())
       : new Decimal(e.hourlyRateUsd?.toString() ?? '0').mul(hoursPerYear);
     const burdenTotal = dept.burdens.reduce((acc, b) => {
-      const base = b.capUsd ? Decimal.min(baseAnnual, new Decimal(b.capUsd.toString())) : baseAnnual;
+      const base = b.capUsd
+        ? Decimal.min(baseAnnual, new Decimal(b.capUsd.toString()))
+        : baseAnnual;
       return acc.plus(base.mul(new Decimal(b.ratePct.toString())).div(100));
     }, new Decimal(0));
     return baseAnnual.plus(burdenTotal).div(hoursPerYear);
@@ -957,22 +1022,26 @@ import { z } from 'zod';
 
 const ComputeBodySchema = z.object({
   contractMonths: z.number().int().min(1),
-  saasConfigs: z.array(z.object({
-    productId: z.string(),
-    seatCount: z.number().int().min(0),
-    personaMix: z.array(z.object({ personaId: z.string(), pct: z.number() })),
-    discountOverridePct: z.number().nullable().optional(),
-  })),
-  laborLines: z.array(z.object({
-    productId: z.string(),
-    skuId: z.string().nullable().optional(),
-    departmentId: z.string().nullable().optional(),
-    customDescription: z.string().nullable().optional(),
-    qty: z.number(),
-    unit: z.string(),
-    costPerUnitUsd: z.number(),
-    revenuePerUnitUsd: z.number(),
-  })),
+  saasConfigs: z.array(
+    z.object({
+      productId: z.string(),
+      seatCount: z.number().int().min(0),
+      personaMix: z.array(z.object({ personaId: z.string(), pct: z.number() })),
+      discountOverridePct: z.number().nullable().optional(),
+    }),
+  ),
+  laborLines: z.array(
+    z.object({
+      productId: z.string(),
+      skuId: z.string().nullable().optional(),
+      departmentId: z.string().nullable().optional(),
+      customDescription: z.string().nullable().optional(),
+      qty: z.number(),
+      unit: z.string(),
+      costPerUnitUsd: z.number(),
+      revenuePerUnitUsd: z.number(),
+    }),
+  ),
 });
 
 export async function POST(req: NextRequest) {
@@ -1355,7 +1424,11 @@ import type { Role } from '@prisma/client';
 import type { ComputeResult } from '@/lib/engine/types';
 
 function formatCents(cents: number): string {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(cents / 100);
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 0,
+  }).format(cents / 100);
 }
 
 interface Props {
@@ -1390,7 +1463,7 @@ export default function ScenarioRail({ computeResult, userRole }: Props) {
           <dd className="font-medium">
             {t
               ? formatCents(
-                  computeResult!.commissions.reduce((s, c) => s + c.commissionAmountCents, 0)
+                  computeResult!.commissions.reduce((s, c) => s + c.commissionAmountCents, 0),
                 )
               : '—'}
           </dd>
@@ -1398,9 +1471,7 @@ export default function ScenarioRail({ computeResult, userRole }: Props) {
         <div className="flex justify-between border-t pt-3">
           <dt className="font-medium">Net margin</dt>
           <dd className="font-semibold" data-testid="rail-net-margin">
-            {t
-              ? `${formatCents(t.netMarginCents)} (${(t.marginPctNet * 100).toFixed(1)}%)`
-              : '—'}
+            {t ? `${formatCents(t.netMarginCents)} (${(t.marginPctNet * 100).toFixed(1)}%)` : '—'}
           </dd>
         </div>
       </dl>
@@ -1409,9 +1480,7 @@ export default function ScenarioRail({ computeResult, userRole }: Props) {
         <div
           key={w.railId}
           className={`mt-3 rounded p-2 text-xs leading-snug ${
-            w.severity === 'hard'
-              ? 'bg-red-100 text-red-800'
-              : 'bg-yellow-100 text-yellow-800'
+            w.severity === 'hard' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'
           }`}
         >
           {userRole === 'SALES'
@@ -1449,8 +1518,14 @@ import { useState } from 'react';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
 
-interface Persona { id: string; name: string }
-interface Mix { personaId: string; pct: number }
+interface Persona {
+  id: string;
+  name: string;
+}
+interface Mix {
+  personaId: string;
+  pct: number;
+}
 
 export default function PersonaMixSliders({
   personas,
@@ -1474,9 +1549,10 @@ export default function PersonaMixSliders({
     const otherTotal = others.reduce((s, m) => s + m.pct, 0);
     const adjusted: Mix[] = others.map((m) => ({
       ...m,
-      pct: otherTotal === 0
-        ? Math.floor(remainingBudget / others.length)
-        : Math.round((m.pct / otherTotal) * remainingBudget),
+      pct:
+        otherTotal === 0
+          ? Math.floor(remainingBudget / others.length)
+          : Math.round((m.pct / otherTotal) * remainingBudget),
     }));
     // Snap the first other to absorb rounding drift
     const snapTotal = adjusted.reduce((s, m) => s + m.pct, 0) + newPct;
@@ -1484,7 +1560,9 @@ export default function PersonaMixSliders({
       adjusted[0].pct = Math.max(0, adjusted[0].pct + (100 - snapTotal));
     }
     const newMix = [...adjusted, { personaId: changedId, pct: newPct }].sort(
-      (a, b) => personas.findIndex((p) => p.id === a.personaId) - personas.findIndex((p) => p.id === b.personaId)
+      (a, b) =>
+        personas.findIndex((p) => p.id === a.personaId) -
+        personas.findIndex((p) => p.id === b.personaId),
     );
     setMix(newMix);
     onChange(newMix);
@@ -1512,9 +1590,7 @@ export default function PersonaMixSliders({
           </div>
         );
       })}
-      <p
-        className={`text-xs ${total === 100 ? 'text-slate-400' : 'text-red-600 font-medium'}`}
-      >
+      <p className={`text-xs ${total === 100 ? 'text-slate-400' : 'text-red-600 font-medium'}`}>
         Mix total: {total}%{total !== 100 ? ' — must equal 100%' : ''}
       </p>
     </div>
@@ -1554,9 +1630,7 @@ export default async function NotesTabPage({ params }: { params: { id: string } 
         personas={notesProduct.personas.map((p) => ({ id: p.id, name: p.name }))}
         initialSeatCount={saasConfig?.seatCount ?? 0}
         initialMix={
-          saasConfig
-            ? (saasConfig.personaMix as { personaId: string; pct: number }[])
-            : []
+          saasConfig ? (saasConfig.personaMix as { personaId: string; pct: number }[]) : []
         }
       />
     </div>
@@ -1586,7 +1660,7 @@ export async function upsertSaaSConfigAction(formData: FormData) {
   const service = new ScenarioService(
     new ScenarioRepository(db),
     new ScenarioSaaSConfigRepository(db),
-    new ScenarioLaborLineRepository(db)
+    new ScenarioLaborLineRepository(db),
   );
 
   try {
@@ -1692,9 +1766,7 @@ export default function LaborLineTable({
               <td className="py-2">{label}</td>
               <td className="py-2 text-right">{qty.toFixed(2)}</td>
               <td className="py-2 text-slate-500">{l.unit}</td>
-              {userRole === 'ADMIN' && (
-                <td className="py-2 text-right">${cost.toFixed(2)}</td>
-              )}
+              {userRole === 'ADMIN' && <td className="py-2 text-right">${cost.toFixed(2)}</td>}
               <td className="py-2 text-right">${rev.toFixed(2)}</td>
               {userRole === 'ADMIN' && (
                 <td className="py-2 text-right">${qty.mul(cost).toFixed(2)}</td>
@@ -1762,9 +1834,11 @@ export async function addTrainingLineFromSKU(formData: FormData) {
     qty: new Decimal(String(formData.get('qty') ?? '1')),
     unit: sku.unit,
     costPerUnitUsd: new Decimal(sku.costPerUnitUsd.toString()),
-    revenuePerUnitUsd: new Decimal(formData.get('revenuePerUnit')
-      ? String(formData.get('revenuePerUnit'))
-      : sku.defaultRevenueUsd.toString()),
+    revenuePerUnitUsd: new Decimal(
+      formData.get('revenuePerUnit')
+        ? String(formData.get('revenuePerUnit'))
+        : sku.defaultRevenueUsd.toString(),
+    ),
   });
   revalidatePath(`/scenarios/${formData.get('scenarioId')}/training`);
 }
@@ -1882,8 +1956,21 @@ import { createContext, useContext } from 'react';
 
 interface ScenarioComputeContextValue {
   triggerCompute: (
-    saasConfigs: { productId: string; seatCount: number; personaMix: { personaId: string; pct: number }[]; discountOverridePct?: number | null }[],
-    laborLines: { productId: string; skuId?: string | null; departmentId?: string | null; qty: number; unit: string; costPerUnitUsd: number; revenuePerUnitUsd: number }[]
+    saasConfigs: {
+      productId: string;
+      seatCount: number;
+      personaMix: { personaId: string; pct: number }[];
+      discountOverridePct?: number | null;
+    }[],
+    laborLines: {
+      productId: string;
+      skuId?: string | null;
+      departmentId?: string | null;
+      qty: number;
+      unit: string;
+      costPerUnitUsd: number;
+      revenuePerUnitUsd: number;
+    }[],
   ) => void;
 }
 
@@ -1965,7 +2052,7 @@ export default function ScenarioBuilderClient({
         }
       }, DEBOUNCE_MS);
     },
-    [contractMonths]
+    [contractMonths],
   );
 
   // Fire compute on mount with the initial persisted state
@@ -1976,11 +2063,7 @@ export default function ScenarioBuilderClient({
   return (
     <ScenarioComputeContext.Provider value={{ triggerCompute }}>
       <div className="flex flex-1 overflow-hidden">
-        <ScenarioRail
-          scenario={scenario}
-          userRole={userRole}
-          computeResult={computeResult}
-        />
+        <ScenarioRail scenario={scenario} userRole={userRole} computeResult={computeResult} />
         <div className="flex-1 overflow-auto">{children}</div>
       </div>
     </ScenarioComputeContext.Provider>
@@ -2016,6 +2099,7 @@ git commit -m "feat(builder): live compute rail with 300ms debounce and AbortCon
 ### Task 3.4-B: Bundle apply
 
 **Design from spec:** Bundle picker shows active bundles. Applying a bundle:
+
 1. Iterates the bundle's `BundleItem[]`. For each SaaS item, upserts `ScenarioSaaSConfig`. For each labor item, creates `ScenarioLaborLine` rows.
 2. Sets `Scenario.appliedBundleId`.
 
@@ -2098,7 +2182,7 @@ export async function applyBundleAction(scenarioId: string, bundleId: string) {
     new ScenarioRepository(db),
     new ScenarioSaaSConfigRepository(db),
     new ScenarioLaborLineRepository(db),
-    new BundleRepository(db)
+    new BundleRepository(db),
   );
   await service.applyBundle(scenarioId, bundleId, session.user.id, session.user.role);
   revalidatePath(`/scenarios/${scenarioId}`);
@@ -2134,6 +2218,7 @@ git commit -m "feat(builder): bundle apply writes saas configs and labor lines, 
 - [ ] **Step 1: Wire "Generate Quote" button**
 
 Create `app/api/quotes/generate/route.ts` — a stub `POST` handler that:
+
 1. Authenticates the session.
 2. Validates `scenarioId` is present in the body.
 3. Returns `{ status: 'pending', message: 'Quote generation coming in Phase 4' }`.
@@ -2186,6 +2271,7 @@ npx playwright install chromium
 ```
 
 `playwright.config.ts`:
+
 ```typescript
 import { defineConfig } from '@playwright/test';
 export default defineConfig({
@@ -2312,6 +2398,7 @@ git commit -m "test(e2e): Playwright smoke — scenario builder happy path; sale
 **Goal:** Wire CI to run the 67 currently-skipped `it.skip` repository integration tests against a real Postgres instance. This workstream can start immediately after Phase 3.0 completes.
 
 **Handoff points:**
+
 - **Start gate:** Phase 3.0 complete. All four scenario repositories exist with test files.
 - **Input needed from main workstream:** test DB connection string pattern; which seed fixtures are required for FK constraints (minimum: a `User` row for `ownerId`, `Product` rows for `productId` in scenario tests).
 - **Output to main workstream:** CI passes with integration tests green; `npm run test:integration` is documented in `package.json`.
@@ -2341,7 +2428,7 @@ import { PrismaClient } from '@prisma/client';
 export async function seedTestUser(
   db: PrismaClient,
   email: string,
-  role: 'ADMIN' | 'SALES' = 'ADMIN'
+  role: 'ADMIN' | 'SALES' = 'ADMIN',
 ) {
   return db.user.upsert({
     where: { email },
@@ -2490,29 +2577,29 @@ vitest.config.ts                     (integration project added)
 
 ## Risks
 
-| Risk | Likelihood | Impact | Mitigation |
-|------|-----------|--------|-----------|
-| Role staleness from JWT sessions — a user's role can change server-side while their JWT remains valid for the session lifetime | Low | Medium | Accepted for v1. Session lifetime is short (NextAuth default). If it bites in practice, add a per-request DB role check inside sensitive server actions as a follow-up. |
-| `ALLOWED_EMAIL_DOMAIN` must be set in prod deploy config before go-live | High (ops item) | High | Add to Railway deploy checklist and README. The NextAuth `signIn` callback should throw if the env var is missing to prevent silent open sign-in. |
-| `microsoftSub` seed gap — seeded users aren't linked to Entra accounts until first sign-in | Medium | Low | Documented in `prisma/seed.ts` (Phase 2.0-G). Not a production safety issue; the gap only affects the seeded admin's first login sequence. |
-| Live compute hammers `/api/compute` even with 300ms debounce if each request takes longer than 300ms | Medium | Low | Implemented with `AbortController` — in-flight request is cancelled before the next one fires. If p95 compute latency remains < 100ms (expected for v1 scenario sizes), queuing is a non-issue. |
-| Bundle apply materialises lines without validation of referenced entities — a deleted SKU or department silently omits lines | Medium | Low | `applyBundle` in `ScenarioService` should validate all entity references and wrap the writes in a Prisma transaction. If any reference is missing, roll back and throw `ValidationError`. |
-| Test-login endpoint ships to production and allows role impersonation | High | High | Guarded by `if (process.env.NODE_ENV === 'production') return 404`. Verified by a CI assertion that hits the endpoint in a production-mode build and expects 404. |
-| `personaMix` JSON round-trip — Prisma returns `ScenarioSaaSConfig.personaMix` as `unknown`; unsafe type assertions could fail silently if the shape changes | Low | Medium | Validate with `PersonaMixSchema` (Zod) whenever reading `personaMix` in the compute snapshot assembler. Never assume the shape from a type cast. |
+| Risk                                                                                                                                                        | Likelihood      | Impact | Mitigation                                                                                                                                                                                      |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Role staleness from JWT sessions — a user's role can change server-side while their JWT remains valid for the session lifetime                              | Low             | Medium | Accepted for v1. Session lifetime is short (NextAuth default). If it bites in practice, add a per-request DB role check inside sensitive server actions as a follow-up.                         |
+| `ALLOWED_EMAIL_DOMAIN` must be set in prod deploy config before go-live                                                                                     | High (ops item) | High   | Add to Railway deploy checklist and README. The NextAuth `signIn` callback should throw if the env var is missing to prevent silent open sign-in.                                               |
+| `microsoftSub` seed gap — seeded users aren't linked to Entra accounts until first sign-in                                                                  | Medium          | Low    | Documented in `prisma/seed.ts` (Phase 2.0-G). Not a production safety issue; the gap only affects the seeded admin's first login sequence.                                                      |
+| Live compute hammers `/api/compute` even with 300ms debounce if each request takes longer than 300ms                                                        | Medium          | Low    | Implemented with `AbortController` — in-flight request is cancelled before the next one fires. If p95 compute latency remains < 100ms (expected for v1 scenario sizes), queuing is a non-issue. |
+| Bundle apply materialises lines without validation of referenced entities — a deleted SKU or department silently omits lines                                | Medium          | Low    | `applyBundle` in `ScenarioService` should validate all entity references and wrap the writes in a Prisma transaction. If any reference is missing, roll back and throw `ValidationError`.       |
+| Test-login endpoint ships to production and allows role impersonation                                                                                       | High            | High   | Guarded by `if (process.env.NODE_ENV === 'production') return 404`. Verified by a CI assertion that hits the endpoint in a production-mode build and expects 404.                               |
+| `personaMix` JSON round-trip — Prisma returns `ScenarioSaaSConfig.personaMix` as `unknown`; unsafe type assertions could fail silently if the shape changes | Low             | Medium | Validate with `PersonaMixSchema` (Zod) whenever reading `personaMix` in the compute snapshot assembler. Never assume the shape from a type cast.                                                |
 
 ---
 
 ## Milestones
 
-| Milestone | Definition of done |
-|-----------|-------------------|
-| **M1: Scaffolding complete (3.0)** | `UserRepository.setRole` throws `NotFoundError` on P2025; all four scenario repositories and `ScenarioService` pass tests; `POST /api/compute` returns a valid `ComputeResult`; `npx vitest run`, `npx tsc --noEmit`, `npx eslint . --max-warnings 0` all green. |
-| **M2: Scenarios list (3.1)** | Sales user sees only their own scenarios; admin sees all; "New scenario" creates a DRAFT and redirects to the builder at `/scenarios/[id]/notes`. |
-| **M3: Notes tab working (3.2)** | Builder shell renders with header, tab nav, and static rail; Notes tab saves seat count + persona mix (100% sum enforced server-side and in UI); layout enforces that a sales user cannot view another user's scenario. |
-| **M4: All three tabs (3.3)** | Training/White-glove SKU picker adds lines; custom line item form works; Service department picker adds lines; cost columns are absent for sales role. |
-| **M5: Live recalc + bundle apply (3.4)** | Sticky rail updates within 300ms of any input change; in-flight requests are aborted on rapid changes; bundle apply materialises configs and sets `appliedBundleId`; unapply clears the bundle link without deleting lines. |
-| **M6: Phase complete (3.5)** | Generate Quote stub is wired; archive action works from the list; sales-role copy is neutral throughout all components; Playwright smoke test passes end-to-end. |
-| **M7: Integration tests green (parallel workstream)** | All 67 previously-skipped repo tests pass in CI against real Postgres. This milestone may land concurrently with M6 and is required before phase-level acceptance is declared. |
+| Milestone                                             | Definition of done                                                                                                                                                                                                                                               |
+| ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **M1: Scaffolding complete (3.0)**                    | `UserRepository.setRole` throws `NotFoundError` on P2025; all four scenario repositories and `ScenarioService` pass tests; `POST /api/compute` returns a valid `ComputeResult`; `npx vitest run`, `npx tsc --noEmit`, `npx eslint . --max-warnings 0` all green. |
+| **M2: Scenarios list (3.1)**                          | Sales user sees only their own scenarios; admin sees all; "New scenario" creates a DRAFT and redirects to the builder at `/scenarios/[id]/notes`.                                                                                                                |
+| **M3: Notes tab working (3.2)**                       | Builder shell renders with header, tab nav, and static rail; Notes tab saves seat count + persona mix (100% sum enforced server-side and in UI); layout enforces that a sales user cannot view another user's scenario.                                          |
+| **M4: All three tabs (3.3)**                          | Training/White-glove SKU picker adds lines; custom line item form works; Service department picker adds lines; cost columns are absent for sales role.                                                                                                           |
+| **M5: Live recalc + bundle apply (3.4)**              | Sticky rail updates within 300ms of any input change; in-flight requests are aborted on rapid changes; bundle apply materialises configs and sets `appliedBundleId`; unapply clears the bundle link without deleting lines.                                      |
+| **M6: Phase complete (3.5)**                          | Generate Quote stub is wired; archive action works from the list; sales-role copy is neutral throughout all components; Playwright smoke test passes end-to-end.                                                                                                 |
+| **M7: Integration tests green (parallel workstream)** | All 67 previously-skipped repo tests pass in CI against real Postgres. This milestone may land concurrently with M6 and is required before phase-level acceptance is declared.                                                                                   |
 
 ---
 

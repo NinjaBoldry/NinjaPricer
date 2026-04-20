@@ -3,7 +3,11 @@ import Decimal from 'decimal.js';
 import { ValidationError } from '../utils/errors';
 
 export interface IContractLengthModifierRepository {
-  upsert(data: { productId: string; minMonths: number; additionalDiscountPct: Decimal }): Promise<unknown>;
+  upsert(data: {
+    productId: string;
+    minMonths: number;
+    additionalDiscountPct: Decimal;
+  }): Promise<unknown>;
   findByProduct(productId: string): Promise<unknown[]>;
   delete(id: string): Promise<void>;
 }

@@ -17,7 +17,7 @@ describe('BundleItemService.add', () => {
           personaMix: [{ personaId: 'persona1', pct: 1.0 }],
         },
         sortOrder: 0,
-      })
+      }),
     ).resolves.toBeDefined();
     expect(repo.add).toHaveBeenCalledOnce();
   });
@@ -32,7 +32,7 @@ describe('BundleItemService.add', () => {
         skuId: 'sku1',
         config: { kind: 'PACKAGED_LABOR', qty: 3, unit: 'PER_DAY' },
         sortOrder: 1,
-      })
+      }),
     ).resolves.toBeDefined();
   });
 
@@ -46,7 +46,7 @@ describe('BundleItemService.add', () => {
         departmentId: 'd1',
         config: { kind: 'CUSTOM_LABOR', hours: 40 },
         sortOrder: 2,
-      })
+      }),
     ).resolves.toBeDefined();
   });
 
@@ -58,7 +58,7 @@ describe('BundleItemService.add', () => {
         productId: 'p1',
         config: { kind: 'SAAS_USAGE', seatCount: 10, personaMix: [] },
         sortOrder: 0,
-      })
+      }),
     ).rejects.toMatchObject({ field: 'bundleId' });
   });
 
@@ -70,7 +70,7 @@ describe('BundleItemService.add', () => {
         productId: 'p1',
         config: { kind: 'SAAS_USAGE', seatCount: 0, personaMix: [] },
         sortOrder: 0,
-      })
+      }),
     ).rejects.toThrow(ValidationError);
   });
 
@@ -82,7 +82,7 @@ describe('BundleItemService.add', () => {
         productId: 'p2',
         config: { kind: 'PACKAGED_LABOR', qty: 0, unit: 'PER_DAY' },
         sortOrder: 0,
-      })
+      }),
     ).rejects.toThrow(ValidationError);
   });
 
@@ -94,7 +94,7 @@ describe('BundleItemService.add', () => {
         productId: 'p3',
         config: { kind: 'CUSTOM_LABOR', hours: -1 },
         sortOrder: 0,
-      })
+      }),
     ).rejects.toThrow(ValidationError);
   });
 
@@ -106,7 +106,7 @@ describe('BundleItemService.add', () => {
         productId: 'p1',
         config: { kind: 'UNKNOWN_KIND', seatCount: 10 },
         sortOrder: 0,
-      })
+      }),
     ).rejects.toThrow(ValidationError);
   });
 });

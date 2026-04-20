@@ -14,16 +14,14 @@ export async function upsertPersona(productId: string, formData: FormData) {
       productId,
       name: formData.get('name') as string,
       multiplier: parseDecimalField('multiplier', formData.get('multiplier') as string | null, '1'),
-      sortOrder: parseInt(formData.get('sortOrder') as string ?? '', 10),
+      sortOrder: parseInt((formData.get('sortOrder') as string) ?? '', 10),
     });
   } catch (e) {
     if (e instanceof ValidationError) errorMsg = e.message;
     else throw e;
   }
   if (errorMsg) {
-    redirect(
-      `/admin/products/${productId}/personas?error=${encodeURIComponent(errorMsg)}`,
-    );
+    redirect(`/admin/products/${productId}/personas?error=${encodeURIComponent(errorMsg)}`);
   }
   redirect(`/admin/products/${productId}/personas`);
 }

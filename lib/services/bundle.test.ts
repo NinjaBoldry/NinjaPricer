@@ -14,7 +14,7 @@ describe('BundleService.create', () => {
     const repo = mockBundleRepo();
     const service = new BundleService(repo);
     await expect(
-      service.create({ name: 'Pro Bundle', description: 'Includes all core SKUs' })
+      service.create({ name: 'Pro Bundle', description: 'Includes all core SKUs' }),
     ).resolves.toBeDefined();
   });
 

@@ -7,14 +7,12 @@ import { ValidationError } from '@/lib/utils/errors';
 import { parseDecimalField } from '@/lib/utils/form';
 
 export async function upsertContractModifier(productId: string, formData: FormData) {
-  const service = new ContractLengthModifierService(
-    new ContractLengthModifierRepository(prisma),
-  );
+  const service = new ContractLengthModifierService(new ContractLengthModifierRepository(prisma));
   let errorMsg: string | null = null;
   try {
     await service.upsert({
       productId,
-      minMonths: parseInt(formData.get('minMonths') as string ?? '', 10),
+      minMonths: parseInt((formData.get('minMonths') as string) ?? '', 10),
       additionalDiscountPct: parseDecimalField(
         'additionalDiscountPct',
         formData.get('additionalDiscountPct') as string | null,
@@ -33,9 +31,7 @@ export async function upsertContractModifier(productId: string, formData: FormDa
 }
 
 export async function deleteContractModifier(id: string, productId: string) {
-  const service = new ContractLengthModifierService(
-    new ContractLengthModifierRepository(prisma),
-  );
+  const service = new ContractLengthModifierService(new ContractLengthModifierRepository(prisma));
   await service.delete(id);
   redirect(`/admin/products/${productId}/contract-modifiers`);
 }

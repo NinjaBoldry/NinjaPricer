@@ -21,7 +21,12 @@ describe.skipIf(!process.env.DATABASE_URL)('ScenarioLaborLineRepository', () => 
       data: { name: 'Labor Line Test Product', kind: 'PACKAGED_LABOR' },
     });
     const scenario = await prisma.scenario.create({
-      data: { name: 'Test Scenario', customerName: 'Test Co', ownerId: user.id, contractMonths: 12 },
+      data: {
+        name: 'Test Scenario',
+        customerName: 'Test Co',
+        ownerId: user.id,
+        contractMonths: 12,
+      },
     });
     productId = product.id;
     scenarioId = scenario.id;
@@ -82,8 +87,24 @@ describe.skipIf(!process.env.DATABASE_URL)('ScenarioLaborLineRepository', () => 
   });
 
   it('listByScenarioId returns all labor lines for a scenario, ordered by sortOrder', async () => {
-    await repo.create({ scenarioId, productId, qty: '1', unit: 'hr', costPerUnitUsd: '0', revenuePerUnitUsd: '0', sortOrder: 2 });
-    await repo.create({ scenarioId, productId, qty: '1', unit: 'hr', costPerUnitUsd: '0', revenuePerUnitUsd: '0', sortOrder: 1 });
+    await repo.create({
+      scenarioId,
+      productId,
+      qty: '1',
+      unit: 'hr',
+      costPerUnitUsd: '0',
+      revenuePerUnitUsd: '0',
+      sortOrder: 2,
+    });
+    await repo.create({
+      scenarioId,
+      productId,
+      qty: '1',
+      unit: 'hr',
+      costPerUnitUsd: '0',
+      revenuePerUnitUsd: '0',
+      sortOrder: 1,
+    });
     const lines = await repo.listByScenarioId(scenarioId);
     expect(lines.length).toBe(2);
     expect(Number(lines[0]!.sortOrder)).toBeLessThanOrEqual(Number(lines[1]!.sortOrder));

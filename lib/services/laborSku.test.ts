@@ -24,7 +24,9 @@ describe('LaborSKUService.upsert', () => {
     const service = new LaborSKUService(mockLaborSKURepo());
     const call = service.upsert({ ...validInput, name: '' });
     await expect(call).rejects.toThrow(ValidationError);
-    await expect(service.upsert({ ...validInput, name: '' })).rejects.toMatchObject({ field: 'name' });
+    await expect(service.upsert({ ...validInput, name: '' })).rejects.toMatchObject({
+      field: 'name',
+    });
   });
 
   it('throws when costPerUnitUsd is negative', async () => {
@@ -32,21 +34,21 @@ describe('LaborSKUService.upsert', () => {
     const call = service.upsert({ ...validInput, costPerUnitUsd: new Decimal('-1') });
     await expect(call).rejects.toThrow(ValidationError);
     await expect(
-      service.upsert({ ...validInput, costPerUnitUsd: new Decimal('-1') })
+      service.upsert({ ...validInput, costPerUnitUsd: new Decimal('-1') }),
     ).rejects.toMatchObject({ field: 'costPerUnitUsd' });
   });
 
   it('throws when defaultRevenueUsd is negative', async () => {
     const service = new LaborSKUService(mockLaborSKURepo());
     await expect(
-      service.upsert({ ...validInput, defaultRevenueUsd: new Decimal('-0.01') })
+      service.upsert({ ...validInput, defaultRevenueUsd: new Decimal('-0.01') }),
     ).rejects.toMatchObject({ field: 'defaultRevenueUsd' });
   });
 
   it('throws when unit is invalid', async () => {
     const service = new LaborSKUService(mockLaborSKURepo());
     await expect(
-      service.upsert({ ...validInput, unit: 'INVALID' as 'PER_DAY' })
+      service.upsert({ ...validInput, unit: 'INVALID' as 'PER_DAY' }),
     ).rejects.toMatchObject({ field: 'unit' });
   });
 
@@ -54,7 +56,11 @@ describe('LaborSKUService.upsert', () => {
     const repo = mockLaborSKURepo();
     const service = new LaborSKUService(repo);
     await expect(
-      service.upsert({ ...validInput, costPerUnitUsd: new Decimal('0'), defaultRevenueUsd: new Decimal('0') })
+      service.upsert({
+        ...validInput,
+        costPerUnitUsd: new Decimal('0'),
+        defaultRevenueUsd: new Decimal('0'),
+      }),
     ).resolves.toBeDefined();
     expect(repo.upsert).toHaveBeenCalledOnce();
   });

@@ -23,14 +23,16 @@ export default async function EmployeesPage() {
       .filter(
         (b) =>
           b.scope === 'ALL_DEPARTMENTS' ||
-          (b.scope === 'DEPARTMENT' && b.departmentId === departmentId)
+          (b.scope === 'DEPARTMENT' && b.departmentId === departmentId),
       )
       .map((b) => ({ ratePct: b.ratePct, capUsd: b.capUsd ?? undefined }));
 
   return (
     <div className="p-6">
       <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
-        <Link href="/admin" className="hover:underline">Admin</Link>
+        <Link href="/admin" className="hover:underline">
+          Admin
+        </Link>
         <span>/</span>
         <span className="text-foreground font-medium">Employees</span>
       </div>
@@ -56,7 +58,9 @@ export default async function EmployeesPage() {
             const burdens = burdensFor(emp.departmentId);
 
             const loaded =
-              emp.compensationType === 'ANNUAL_SALARY' && emp.annualSalaryUsd && emp.standardHoursPerYear
+              emp.compensationType === 'ANNUAL_SALARY' &&
+              emp.annualSalaryUsd &&
+              emp.standardHoursPerYear
                 ? computeLoadedHourlyRate({
                     compensationType: 'ANNUAL_SALARY',
                     annualSalaryUsd: emp.annualSalaryUsd,
@@ -64,13 +68,13 @@ export default async function EmployeesPage() {
                     burdens,
                   })
                 : emp.compensationType === 'HOURLY' && emp.hourlyRateUsd && emp.standardHoursPerYear
-                ? computeLoadedHourlyRate({
-                    compensationType: 'HOURLY',
-                    hourlyRateUsd: emp.hourlyRateUsd,
-                    standardHoursPerYear: emp.standardHoursPerYear,
-                    burdens,
-                  })
-                : null;
+                  ? computeLoadedHourlyRate({
+                      compensationType: 'HOURLY',
+                      hourlyRateUsd: emp.hourlyRateUsd,
+                      standardHoursPerYear: emp.standardHoursPerYear,
+                      burdens,
+                    })
+                  : null;
 
             const base =
               emp.compensationType === 'ANNUAL_SALARY'
@@ -78,8 +82,8 @@ export default async function EmployeesPage() {
                   ? `$${emp.annualSalaryUsd.toString()} / yr`
                   : '—'
                 : emp.hourlyRateUsd
-                ? `$${emp.hourlyRateUsd.toString()} / hr`
-                : '—';
+                  ? `$${emp.hourlyRateUsd.toString()} / hr`
+                  : '—';
 
             return (
               <TableRow key={emp.id}>
@@ -92,7 +96,9 @@ export default async function EmployeesPage() {
                     {emp.department.name}
                   </Link>
                 </TableCell>
-                <TableCell>{emp.compensationType === 'ANNUAL_SALARY' ? 'Salary' : 'Hourly'}</TableCell>
+                <TableCell>
+                  {emp.compensationType === 'ANNUAL_SALARY' ? 'Salary' : 'Hourly'}
+                </TableCell>
                 <TableCell>{base}</TableCell>
                 <TableCell>{emp.standardHoursPerYear ?? '—'}</TableCell>
                 <TableCell>{loaded ? `$${loaded.toFixed(2)}` : '—'}</TableCell>

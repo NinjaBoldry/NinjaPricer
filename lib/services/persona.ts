@@ -3,7 +3,12 @@ import Decimal from 'decimal.js';
 import { ValidationError } from '../utils/errors';
 
 export interface IPersonaRepository {
-  upsert(data: { productId: string; name: string; multiplier: Decimal; sortOrder: number }): Promise<unknown>;
+  upsert(data: {
+    productId: string;
+    name: string;
+    multiplier: Decimal;
+    sortOrder: number;
+  }): Promise<unknown>;
   findByProduct(productId: string): Promise<unknown[]>;
   delete(id: string): Promise<void>;
 }

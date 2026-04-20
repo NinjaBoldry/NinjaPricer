@@ -20,7 +20,14 @@ const minimalProduct: SaaSProductSnap = {
 
 const minimalReq: ComputeRequest = {
   contractMonths: 12,
-  tabs: [{ kind: 'SAAS_USAGE', productId: 'p1', seatCount: 1, personaMix: [{ personaId: 'avg', pct: 100 }] }],
+  tabs: [
+    {
+      kind: 'SAAS_USAGE',
+      productId: 'p1',
+      seatCount: 1,
+      personaMix: [{ personaId: 'avg', pct: 100 }],
+    },
+  ],
   products: { saas: { p1: minimalProduct }, laborSKUs: {}, departments: {} },
   commissionRules: [],
   rails: [],

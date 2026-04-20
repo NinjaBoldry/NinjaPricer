@@ -49,18 +49,13 @@ export default async function ScenariosPage({
           {scenarios.map((s) => (
             <tr key={s.id} className="border-b last:border-0">
               <td className="py-3 pr-6">
-                <Link
-                  href={`/scenarios/${s.id}`}
-                  className="font-medium hover:underline"
-                >
+                <Link href={`/scenarios/${s.id}`} className="font-medium hover:underline">
                   {s.name}
                 </Link>
               </td>
               <td className="py-3 pr-6 text-slate-600">{s.customerName}</td>
               <td className="py-3 pr-6">
-                <Badge variant={s.status === 'DRAFT' ? 'secondary' : 'default'}>
-                  {s.status}
-                </Badge>
+                <Badge variant={s.status === 'DRAFT' ? 'secondary' : 'default'}>{s.status}</Badge>
               </td>
               <td className="py-3 text-slate-500 text-xs">
                 {new Date(s.updatedAt).toLocaleDateString()}

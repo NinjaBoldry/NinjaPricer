@@ -73,10 +73,7 @@ export default async function FixedCostsPage({
           ))}
           {fixedCosts.length === 0 && (
             <TableRow>
-              <TableCell
-                colSpan={3}
-                className="text-center text-muted-foreground py-8"
-              >
+              <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
                 No fixed costs yet.
               </TableCell>
             </TableRow>

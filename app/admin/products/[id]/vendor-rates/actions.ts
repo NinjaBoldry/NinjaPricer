@@ -21,9 +21,7 @@ export async function upsertVendorRate(productId: string, formData: FormData) {
     else throw e;
   }
   if (errorMsg) {
-    redirect(
-      `/admin/products/${productId}/vendor-rates?error=${encodeURIComponent(errorMsg)}`,
-    );
+    redirect(`/admin/products/${productId}/vendor-rates?error=${encodeURIComponent(errorMsg)}`);
   }
   redirect(`/admin/products/${productId}/vendor-rates`);
 }

@@ -40,9 +40,13 @@ export default async function DepartmentDetailPage({
   return (
     <div className="p-6">
       <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
-        <Link href="/admin" className="hover:underline">Admin</Link>
+        <Link href="/admin" className="hover:underline">
+          Admin
+        </Link>
         <span>/</span>
-        <Link href="/admin/labor/departments" className="hover:underline">Departments</Link>
+        <Link href="/admin/labor/departments" className="hover:underline">
+          Departments
+        </Link>
         <span>/</span>
         <span className="text-foreground font-medium">{department.name}</span>
       </div>
@@ -69,7 +73,9 @@ export default async function DepartmentDetailPage({
               placeholder="150.00"
             />
           </div>
-          <Button type="submit" size="sm">Save Bill Rate</Button>
+          <Button type="submit" size="sm">
+            Save Bill Rate
+          </Button>
         </form>
       </section>
 
@@ -90,7 +96,9 @@ export default async function DepartmentDetailPage({
           <TableBody>
             {employees.map((emp) => {
               const loaded =
-                emp.compensationType === 'ANNUAL_SALARY' && emp.annualSalaryUsd && emp.standardHoursPerYear
+                emp.compensationType === 'ANNUAL_SALARY' &&
+                emp.annualSalaryUsd &&
+                emp.standardHoursPerYear
                   ? computeLoadedHourlyRate({
                       compensationType: 'ANNUAL_SALARY',
                       annualSalaryUsd: emp.annualSalaryUsd,
@@ -100,17 +108,19 @@ export default async function DepartmentDetailPage({
                         capUsd: b.capUsd ?? undefined,
                       })),
                     })
-                  : emp.compensationType === 'HOURLY' && emp.hourlyRateUsd && emp.standardHoursPerYear
-                  ? computeLoadedHourlyRate({
-                      compensationType: 'HOURLY',
-                      hourlyRateUsd: emp.hourlyRateUsd,
-                      standardHoursPerYear: emp.standardHoursPerYear,
-                      burdens: burdens.map((b) => ({
-                        ratePct: b.ratePct,
-                        capUsd: b.capUsd ?? undefined,
-                      })),
-                    })
-                  : null;
+                  : emp.compensationType === 'HOURLY' &&
+                      emp.hourlyRateUsd &&
+                      emp.standardHoursPerYear
+                    ? computeLoadedHourlyRate({
+                        compensationType: 'HOURLY',
+                        hourlyRateUsd: emp.hourlyRateUsd,
+                        standardHoursPerYear: emp.standardHoursPerYear,
+                        burdens: burdens.map((b) => ({
+                          ratePct: b.ratePct,
+                          capUsd: b.capUsd ?? undefined,
+                        })),
+                      })
+                    : null;
 
               const base =
                 emp.compensationType === 'ANNUAL_SALARY'
@@ -118,13 +128,15 @@ export default async function DepartmentDetailPage({
                     ? `$${emp.annualSalaryUsd.toString()} / yr`
                     : '—'
                   : emp.hourlyRateUsd
-                  ? `$${emp.hourlyRateUsd.toString()} / hr`
-                  : '—';
+                    ? `$${emp.hourlyRateUsd.toString()} / hr`
+                    : '—';
 
               return (
                 <TableRow key={emp.id}>
                   <TableCell className="font-medium">{emp.name}</TableCell>
-                  <TableCell>{emp.compensationType === 'ANNUAL_SALARY' ? 'Salary' : 'Hourly'}</TableCell>
+                  <TableCell>
+                    {emp.compensationType === 'ANNUAL_SALARY' ? 'Salary' : 'Hourly'}
+                  </TableCell>
                   <TableCell>{base}</TableCell>
                   <TableCell>{emp.standardHoursPerYear ?? '—'}</TableCell>
                   <TableCell>{loaded ? `$${loaded.toFixed(2)}` : '—'}</TableCell>

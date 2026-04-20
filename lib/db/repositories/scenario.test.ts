@@ -15,8 +15,16 @@ let userBId: string;
 
 describe.skipIf(!process.env.DATABASE_URL)('ScenarioRepository', () => {
   beforeAll(async () => {
-    const a = await prisma.user.upsert({ where: { email: USER_A.email }, create: USER_A, update: {} });
-    const b = await prisma.user.upsert({ where: { email: USER_B.email }, create: USER_B, update: {} });
+    const a = await prisma.user.upsert({
+      where: { email: USER_A.email },
+      create: USER_A,
+      update: {},
+    });
+    const b = await prisma.user.upsert({
+      where: { email: USER_B.email },
+      create: USER_B,
+      update: {},
+    });
     userAId = a.id;
     userBId = b.id;
   });
@@ -32,14 +40,24 @@ describe.skipIf(!process.env.DATABASE_URL)('ScenarioRepository', () => {
   });
 
   it('create inserts a DRAFT scenario with isArchived=false', async () => {
-    const s = await repo.create({ name: 'Acme Deal', customerName: 'Acme', ownerId: userAId, contractMonths: 12 });
+    const s = await repo.create({
+      name: 'Acme Deal',
+      customerName: 'Acme',
+      ownerId: userAId,
+      contractMonths: 12,
+    });
     expect(s.status).toBe('DRAFT');
     expect(s.isArchived).toBe(false);
     expect(s.name).toBe('Acme Deal');
   });
 
   it('findById returns scenario with saasConfigs and laborLines included', async () => {
-    const s = await repo.create({ name: 'Beta Deal', customerName: 'Beta', ownerId: userAId, contractMonths: 6 });
+    const s = await repo.create({
+      name: 'Beta Deal',
+      customerName: 'Beta',
+      ownerId: userAId,
+      contractMonths: 6,
+    });
     const found = await repo.findById(s.id);
     expect(found).not.toBeNull();
     expect(found!.name).toBe('Beta Deal');
@@ -56,15 +74,38 @@ describe.skipIf(!process.env.DATABASE_URL)('ScenarioRepository', () => {
   });
 
   it('listWithFilters: ADMIN role sees all non-archived scenarios', async () => {
-    await repo.create({ name: 'A Deal', customerName: 'AdminScopeTest', ownerId: userAId, contractMonths: 12 });
-    await repo.create({ name: 'B Deal', customerName: 'AdminScopeTest', ownerId: userBId, contractMonths: 12 });
-    const results = await repo.listWithFilters({ actingUser: { id: userAId, role: 'ADMIN' }, customerName: 'AdminScopeTest' });
+    await repo.create({
+      name: 'A Deal',
+      customerName: 'AdminScopeTest',
+      ownerId: userAId,
+      contractMonths: 12,
+    });
+    await repo.create({
+      name: 'B Deal',
+      customerName: 'AdminScopeTest',
+      ownerId: userBId,
+      contractMonths: 12,
+    });
+    const results = await repo.listWithFilters({
+      actingUser: { id: userAId, role: 'ADMIN' },
+      customerName: 'AdminScopeTest',
+    });
     expect(results.length).toBe(2);
   });
 
   it('listWithFilters: customerName filter does case-insensitive partial match', async () => {
-    await repo.create({ name: 'Deal 1', customerName: 'GlobalCorp', ownerId: userAId, contractMonths: 12 });
-    await repo.create({ name: 'Deal 2', customerName: 'Acme Inc', ownerId: userAId, contractMonths: 12 });
+    await repo.create({
+      name: 'Deal 1',
+      customerName: 'GlobalCorp',
+      ownerId: userAId,
+      contractMonths: 12,
+    });
+    await repo.create({
+      name: 'Deal 2',
+      customerName: 'Acme Inc',
+      ownerId: userAId,
+      contractMonths: 12,
+    });
     const results = await repo.listWithFilters({
       actingUser: { id: userAId, role: 'ADMIN' },
       customerName: 'globalcorp',
@@ -74,7 +115,12 @@ describe.skipIf(!process.env.DATABASE_URL)('ScenarioRepository', () => {
   });
 
   it('listWithFilters: status filter narrows results', async () => {
-    const s = await repo.create({ name: 'Draft', customerName: 'X', ownerId: userAId, contractMonths: 12 });
+    const s = await repo.create({
+      name: 'Draft',
+      customerName: 'X',
+      ownerId: userAId,
+      contractMonths: 12,
+    });
     await prisma.scenario.update({ where: { id: s.id }, data: { status: 'QUOTED' } });
     await repo.create({ name: 'Draft2', customerName: 'Y', ownerId: userAId, contractMonths: 12 });
     const results = await repo.listWithFilters({
@@ -86,7 +132,12 @@ describe.skipIf(!process.env.DATABASE_URL)('ScenarioRepository', () => {
   });
 
   it('listWithFilters: excludes archived scenarios by default', async () => {
-    const s = await repo.create({ name: 'Active', customerName: 'X', ownerId: userAId, contractMonths: 12 });
+    const s = await repo.create({
+      name: 'Active',
+      customerName: 'X',
+      ownerId: userAId,
+      contractMonths: 12,
+    });
     await repo.archive(s.id);
     await repo.create({ name: 'Live', customerName: 'Y', ownerId: userAId, contractMonths: 12 });
     const results = await repo.listWithFilters({ actingUser: { id: userAId, role: 'ADMIN' } });
@@ -95,7 +146,12 @@ describe.skipIf(!process.env.DATABASE_URL)('ScenarioRepository', () => {
   });
 
   it('update changes specified fields and leaves others untouched', async () => {
-    const s = await repo.create({ name: 'Original', customerName: 'Acme', ownerId: userAId, contractMonths: 12 });
+    const s = await repo.create({
+      name: 'Original',
+      customerName: 'Acme',
+      ownerId: userAId,
+      contractMonths: 12,
+    });
     const updated = await repo.update(s.id, { name: 'Revised' });
     expect(updated.name).toBe('Revised');
     expect(updated.customerName).toBe('Acme');
@@ -103,7 +159,12 @@ describe.skipIf(!process.env.DATABASE_URL)('ScenarioRepository', () => {
   });
 
   it('archive sets isArchived=true and status=ARCHIVED', async () => {
-    const s = await repo.create({ name: 'To Archive', customerName: 'X', ownerId: userAId, contractMonths: 6 });
+    const s = await repo.create({
+      name: 'To Archive',
+      customerName: 'X',
+      ownerId: userAId,
+      contractMonths: 6,
+    });
     const result = await repo.archive(s.id);
     expect(result.isArchived).toBe(true);
     expect(result.status).toBe('ARCHIVED');

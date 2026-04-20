@@ -26,7 +26,11 @@ export class UserRepository {
     });
   }
 
-  async create(data: { email: string; name: string; role: Role }): Promise<Pick<User, 'id' | 'email' | 'name' | 'role'>> {
+  async create(data: {
+    email: string;
+    name: string;
+    role: Role;
+  }): Promise<Pick<User, 'id' | 'email' | 'name' | 'role'>> {
     return this.db.user.create({
       data,
       select: { id: true, email: true, name: true, role: true },

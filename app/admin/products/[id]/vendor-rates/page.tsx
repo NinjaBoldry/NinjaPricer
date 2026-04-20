@@ -75,10 +75,7 @@ export default async function VendorRatesPage({
           ))}
           {vendorRates.length === 0 && (
             <TableRow>
-              <TableCell
-                colSpan={4}
-                className="text-center text-muted-foreground py-8"
-              >
+              <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
                 No vendor rates yet.
               </TableCell>
             </TableRow>
@@ -97,12 +94,7 @@ export default async function VendorRatesPage({
           </div>
           <div className="space-y-1">
             <Label htmlFor="unitLabel">Unit Label</Label>
-            <Input
-              id="unitLabel"
-              name="unitLabel"
-              required
-              placeholder="e.g. tokens"
-            />
+            <Input id="unitLabel" name="unitLabel" required placeholder="e.g. tokens" />
           </div>
           <div className="space-y-1">
             <Label htmlFor="rateUsd">Rate (USD)</Label>

@@ -40,9 +40,13 @@ export default async function LaborSKUsPage({
   return (
     <div className="p-6">
       <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
-        <Link href="/admin/products" className="hover:underline">Products</Link>
+        <Link href="/admin/products" className="hover:underline">
+          Products
+        </Link>
         <span>/</span>
-        <Link href={`/admin/products/${params.id}`} className="hover:underline">{product.name}</Link>
+        <Link href={`/admin/products/${params.id}`} className="hover:underline">
+          {product.name}
+        </Link>
         <span>/</span>
         <span className="text-foreground font-medium">Labor SKUs</span>
       </div>
@@ -70,7 +74,9 @@ export default async function LaborSKUsPage({
               <TableCell>${s.defaultRevenueUsd.toString()}</TableCell>
               <TableCell>
                 <form action={deleteLaborSKU.bind(null, s.id, params.id)}>
-                  <Button type="submit" variant="destructive" size="sm">Delete</Button>
+                  <Button type="submit" variant="destructive" size="sm">
+                    Delete
+                  </Button>
                 </form>
               </TableCell>
             </TableRow>

@@ -39,40 +39,42 @@ describe('CommissionRuleService.create', () => {
         scopeType: 'DEPARTMENT',
         baseMetric: 'CONTRIBUTION_MARGIN',
         scopeDepartmentId: 'dept1',
-      })
+      }),
     ).resolves.toBeDefined();
   });
 
   it('throws when name is empty', async () => {
     const service = new CommissionRuleService(mockCommissionRuleRepo());
-    await expect(service.create({ ...validAllRevenue, name: '' })).rejects.toMatchObject({ field: 'name' });
+    await expect(service.create({ ...validAllRevenue, name: '' })).rejects.toMatchObject({
+      field: 'name',
+    });
   });
 
   it('throws when PRODUCT scope is missing scopeProductId', async () => {
     const service = new CommissionRuleService(mockCommissionRuleRepo());
     await expect(
-      service.create({ name: 'Test', scopeType: 'PRODUCT', baseMetric: 'REVENUE' })
+      service.create({ name: 'Test', scopeType: 'PRODUCT', baseMetric: 'REVENUE' }),
     ).rejects.toMatchObject({ field: 'scopeProductId' });
   });
 
   it('throws when DEPARTMENT scope is missing scopeDepartmentId', async () => {
     const service = new CommissionRuleService(mockCommissionRuleRepo());
     await expect(
-      service.create({ name: 'Test', scopeType: 'DEPARTMENT', baseMetric: 'REVENUE' })
+      service.create({ name: 'Test', scopeType: 'DEPARTMENT', baseMetric: 'REVENUE' }),
     ).rejects.toMatchObject({ field: 'scopeDepartmentId' });
   });
 
   it('throws when TAB_REVENUE is missing scopeProductId even on ALL scope', async () => {
     const service = new CommissionRuleService(mockCommissionRuleRepo());
     await expect(
-      service.create({ name: 'Test', scopeType: 'ALL', baseMetric: 'TAB_REVENUE' })
+      service.create({ name: 'Test', scopeType: 'ALL', baseMetric: 'TAB_REVENUE' }),
     ).rejects.toMatchObject({ field: 'scopeProductId' });
   });
 
   it('throws when TAB_MARGIN is missing scopeProductId', async () => {
     const service = new CommissionRuleService(mockCommissionRuleRepo());
     await expect(
-      service.create({ name: 'Test', scopeType: 'ALL', baseMetric: 'TAB_MARGIN' })
+      service.create({ name: 'Test', scopeType: 'ALL', baseMetric: 'TAB_MARGIN' }),
     ).rejects.toMatchObject({ field: 'scopeProductId' });
   });
 });
@@ -105,7 +107,9 @@ describe('CommissionRuleService.update', () => {
       scopeDepartmentId: null,
     });
     const service = new CommissionRuleService(repo);
-    await expect(service.update('cr1', { scopeType: 'PRODUCT' })).rejects.toMatchObject({ field: 'scopeProductId' });
+    await expect(service.update('cr1', { scopeType: 'PRODUCT' })).rejects.toMatchObject({
+      field: 'scopeProductId',
+    });
   });
 
   it('throws when patching baseMetric to TAB_REVENUE without scopeProductId on the merged row', async () => {
@@ -119,7 +123,9 @@ describe('CommissionRuleService.update', () => {
       scopeDepartmentId: null,
     });
     const service = new CommissionRuleService(repo);
-    await expect(service.update('cr1', { baseMetric: 'TAB_REVENUE' })).rejects.toMatchObject({ field: 'scopeProductId' });
+    await expect(service.update('cr1', { baseMetric: 'TAB_REVENUE' })).rejects.toMatchObject({
+      field: 'scopeProductId',
+    });
   });
 
   it('throws when rule is not found', async () => {

@@ -24,8 +24,12 @@ const InviteSchema = z.object({
 export class UserService {
   constructor(private repo: IUserRepository) {}
 
-  async listAll() { return this.repo.findAll(); }
-  async findById(id: string) { return this.repo.findById(id); }
+  async listAll() {
+    return this.repo.findAll();
+  }
+  async findById(id: string) {
+    return this.repo.findById(id);
+  }
 
   async setRole(userId: string, role: Role, actingUserId: string) {
     const parsed = SetRoleSchema.safeParse({ userId, role, actingUserId });

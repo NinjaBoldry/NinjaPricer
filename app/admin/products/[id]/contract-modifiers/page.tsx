@@ -75,10 +75,7 @@ export default async function ContractModifiersPage({
           ))}
           {modifiers.length === 0 && (
             <TableRow>
-              <TableCell
-                colSpan={3}
-                className="text-center text-muted-foreground py-8"
-              >
+              <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
                 No contract length modifiers yet.
               </TableCell>
             </TableRow>

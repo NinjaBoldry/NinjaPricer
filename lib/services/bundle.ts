@@ -11,7 +11,7 @@ export interface IBundleRepository {
       name?: string | undefined;
       description?: string | undefined;
       isActive?: boolean | undefined;
-    }
+    },
   ): Promise<unknown>;
 }
 

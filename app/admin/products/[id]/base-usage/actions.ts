@@ -13,16 +13,17 @@ export async function upsertBaseUsage(productId: string, formData: FormData) {
     await service.upsert({
       productId,
       vendorRateId: formData.get('vendorRateId') as string,
-      usagePerMonth: parseDecimalField('usagePerMonth', formData.get('usagePerMonth') as string | null),
+      usagePerMonth: parseDecimalField(
+        'usagePerMonth',
+        formData.get('usagePerMonth') as string | null,
+      ),
     });
   } catch (e) {
     if (e instanceof ValidationError) errorMsg = e.message;
     else throw e;
   }
   if (errorMsg) {
-    redirect(
-      `/admin/products/${productId}/base-usage?error=${encodeURIComponent(errorMsg)}`,
-    );
+    redirect(`/admin/products/${productId}/base-usage?error=${encodeURIComponent(errorMsg)}`);
   }
   redirect(`/admin/products/${productId}/base-usage`);
 }

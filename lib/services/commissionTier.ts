@@ -15,9 +15,7 @@ export interface ICommissionTierRepository {
 
 const UpsertTierSchema = z.object({
   ruleId: z.string().min(1, 'is required'),
-  thresholdFromUsd: z
-    .instanceof(Decimal)
-    .refine((d) => d.gte(0), { message: 'must be >= 0' }),
+  thresholdFromUsd: z.instanceof(Decimal).refine((d) => d.gte(0), { message: 'must be >= 0' }),
   ratePct: z
     .instanceof(Decimal)
     .refine((d) => d.gte(0) && d.lte(1), { message: 'must be between 0 and 1' }),

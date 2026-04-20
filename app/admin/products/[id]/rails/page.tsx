@@ -93,10 +93,7 @@ export default async function RailsPage({
           ))}
           {rails.length === 0 && (
             <TableRow>
-              <TableCell
-                colSpan={5}
-                className="text-center text-muted-foreground py-8"
-              >
+              <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
                 No rails configured yet.
               </TableCell>
             </TableRow>
@@ -110,16 +107,16 @@ export default async function RailsPage({
         </h2>
         <div className="mb-4 p-3 rounded-md bg-muted text-xs text-muted-foreground space-y-1">
           <p>
-            <strong>MIN_* rails:</strong> soft threshold is the warning level; hard
-            threshold blocks the deal. Soft must be &le; hard.
+            <strong>MIN_* rails:</strong> soft threshold is the warning level; hard threshold blocks
+            the deal. Soft must be &le; hard.
           </p>
           <p>
-            <strong>MAX_DISCOUNT_PCT:</strong> hard threshold is stricter (lower = less
-            discount allowed). Hard must be &le; soft.
+            <strong>MAX_DISCOUNT_PCT:</strong> hard threshold is stricter (lower = less discount
+            allowed). Hard must be &le; soft.
           </p>
           <p>
-            <strong>Percentage rails</strong> (MIN_MARGIN_PCT, MAX_DISCOUNT_PCT): enter
-            values as decimals (e.g. 0.15 = 15%).
+            <strong>Percentage rails</strong> (MIN_MARGIN_PCT, MAX_DISCOUNT_PCT): enter values as
+            decimals (e.g. 0.15 = 15%).
           </p>
         </div>
         <form action={upsert} className="space-y-4">

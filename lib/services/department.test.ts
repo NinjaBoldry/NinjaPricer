@@ -30,16 +30,16 @@ describe('DepartmentService.setBillRate', () => {
   it('throws when bill rate is zero', async () => {
     const Decimal = (await import('decimal.js')).default;
     const service = new DepartmentService(mockDepartmentRepo());
-    await expect(
-      service.setBillRate('d1', new Decimal('0'))
-    ).rejects.toMatchObject({ field: 'billRatePerHour' });
+    await expect(service.setBillRate('d1', new Decimal('0'))).rejects.toMatchObject({
+      field: 'billRatePerHour',
+    });
   });
 
   it('throws when bill rate is negative', async () => {
     const Decimal = (await import('decimal.js')).default;
     const service = new DepartmentService(mockDepartmentRepo());
-    await expect(
-      service.setBillRate('d1', new Decimal('-10'))
-    ).rejects.toMatchObject({ field: 'billRatePerHour' });
+    await expect(service.setBillRate('d1', new Decimal('-10'))).rejects.toMatchObject({
+      field: 'billRatePerHour',
+    });
   });
 });

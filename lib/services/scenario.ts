@@ -19,14 +19,17 @@ export interface IScenarioRepository {
     status?: ScenarioStatus;
   }): Promise<unknown[]>;
 
-  update(id: string, data: Partial<{
-    name: string;
-    customerName: string;
-    contractMonths: number;
-    notes: string | null;
-    appliedBundleId: string | null;
-    status: ScenarioStatus;
-  }>): Promise<unknown>;
+  update(
+    id: string,
+    data: Partial<{
+      name: string;
+      customerName: string;
+      contractMonths: number;
+      notes: string | null;
+      appliedBundleId: string | null;
+      status: ScenarioStatus;
+    }>,
+  ): Promise<unknown>;
 
   archive(id: string): Promise<unknown>;
 }

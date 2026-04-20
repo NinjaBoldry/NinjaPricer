@@ -1,7 +1,10 @@
 import type { PrismaClient, ScenarioSaaSConfig } from '@prisma/client';
 import { Prisma } from '@prisma/client';
 
-type SaaSConfigRow = Pick<ScenarioSaaSConfig, 'id' | 'scenarioId' | 'productId' | 'seatCount' | 'personaMix' | 'discountOverridePct'>;
+type SaaSConfigRow = Pick<
+  ScenarioSaaSConfig,
+  'id' | 'scenarioId' | 'productId' | 'seatCount' | 'personaMix' | 'discountOverridePct'
+>;
 
 const saasConfigSelect = {
   id: true,
@@ -27,7 +30,9 @@ export class ScenarioSaaSConfigRepository {
     const updateData = {
       seatCount: data.seatCount,
       personaMix: data.personaMix as Prisma.InputJsonValue,
-      ...(data.discountOverridePct !== undefined && { discountOverridePct: data.discountOverridePct }),
+      ...(data.discountOverridePct !== undefined && {
+        discountOverridePct: data.discountOverridePct,
+      }),
     };
 
     return this.db.scenarioSaaSConfig.upsert({

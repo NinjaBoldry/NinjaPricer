@@ -37,7 +37,9 @@ describe('UserService.setRole', () => {
 
   it('throws when actingUserId is empty', async () => {
     const service = new UserService(mockUserRepo());
-    await expect(service.setRole('u2', 'ADMIN', '')).rejects.toMatchObject({ field: 'actingUserId' });
+    await expect(service.setRole('u2', 'ADMIN', '')).rejects.toMatchObject({
+      field: 'actingUserId',
+    });
   });
 });
 
@@ -48,7 +50,7 @@ describe('UserService.invite', () => {
     const service = new UserService(repo);
     await expect(service.invite('alice@ninja.com', 'SALES', 'ninja.com')).resolves.toBeDefined();
     expect(repo.create).toHaveBeenCalledWith(
-      expect.objectContaining({ email: 'alice@ninja.com', name: 'alice', role: 'SALES' })
+      expect.objectContaining({ email: 'alice@ninja.com', name: 'alice', role: 'SALES' }),
     );
   });
 
@@ -57,23 +59,23 @@ describe('UserService.invite', () => {
     repo.findByEmail = vi.fn().mockResolvedValue(null);
     const service = new UserService(repo);
     await expect(service.invite('bob@ninja.com', 'ADMIN', 'ninja.com')).resolves.toBeDefined();
-    expect(repo.create).toHaveBeenCalledWith(
-      expect.objectContaining({ role: 'ADMIN' })
-    );
+    expect(repo.create).toHaveBeenCalledWith(expect.objectContaining({ role: 'ADMIN' }));
   });
 
   it('throws when email domain does not match allowedDomain', async () => {
     const service = new UserService(mockUserRepo());
-    await expect(service.invite('alice@other.com', 'SALES', 'ninja.com'))
-      .rejects.toMatchObject({ field: 'email' });
+    await expect(service.invite('alice@other.com', 'SALES', 'ninja.com')).rejects.toMatchObject({
+      field: 'email',
+    });
   });
 
   it('throws when user with that email already exists', async () => {
     const repo = mockUserRepo();
     repo.findByEmail = vi.fn().mockResolvedValue(existingSales);
     const service = new UserService(repo);
-    await expect(service.invite('sales@ninja.com', 'SALES', 'ninja.com'))
-      .rejects.toMatchObject({ field: 'email' });
+    await expect(service.invite('sales@ninja.com', 'SALES', 'ninja.com')).rejects.toMatchObject({
+      field: 'email',
+    });
   });
 
   it('skips domain check when allowedDomain is empty string', async () => {
@@ -85,7 +87,9 @@ describe('UserService.invite', () => {
 
   it('throws when email is empty', async () => {
     const service = new UserService(mockUserRepo());
-    await expect(service.invite('', 'SALES', 'ninja.com')).rejects.toMatchObject({ field: 'email' });
+    await expect(service.invite('', 'SALES', 'ninja.com')).rejects.toMatchObject({
+      field: 'email',
+    });
   });
 
   it('normalises email to lowercase before checking domain and creating', async () => {
@@ -93,9 +97,7 @@ describe('UserService.invite', () => {
     repo.findByEmail = vi.fn().mockResolvedValue(null);
     const service = new UserService(repo);
     await service.invite('ALICE@NINJA.COM', 'SALES', 'ninja.com');
-    expect(repo.create).toHaveBeenCalledWith(
-      expect.objectContaining({ email: 'alice@ninja.com' })
-    );
+    expect(repo.create).toHaveBeenCalledWith(expect.objectContaining({ email: 'alice@ninja.com' }));
   });
 });
 

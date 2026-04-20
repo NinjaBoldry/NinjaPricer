@@ -63,10 +63,7 @@ export default async function ProductDetailPage({
   return (
     <div className="p-6">
       <div className="flex items-center gap-3 mb-6">
-        <Link
-          href="/admin/products"
-          className="text-sm text-muted-foreground hover:underline"
-        >
+        <Link href="/admin/products" className="text-sm text-muted-foreground hover:underline">
           Products
         </Link>
         <span className="text-muted-foreground">/</span>
@@ -86,12 +83,7 @@ export default async function ProductDetailPage({
         <form action={update} className="space-y-4">
           <div className="space-y-1">
             <Label htmlFor="name">Name</Label>
-            <Input
-              id="name"
-              name="name"
-              required
-              defaultValue={product.name}
-            />
+            <Input id="name" name="name" required defaultValue={product.name} />
           </div>
           <div className="space-y-1">
             <Label htmlFor="isActive">Status</Label>
@@ -105,7 +97,9 @@ export default async function ProductDetailPage({
               <option value="false">Inactive</option>
             </select>
           </div>
-          <Button type="submit" size="sm">Save Changes</Button>
+          <Button type="submit" size="sm">
+            Save Changes
+          </Button>
         </form>
       </section>
 

@@ -39,7 +39,9 @@ export default function BundlePicker({ scenarioId, bundles, appliedBundleId, onA
           <span className="font-medium">{appliedBundle.name}</span>
           <form action={handleUnapply}>
             <input type="hidden" name="scenarioId" value={scenarioId} />
-            <Button type="submit" variant="outline" size="sm">Remove</Button>
+            <Button type="submit" variant="outline" size="sm">
+              Remove
+            </Button>
           </form>
         </>
       ) : (
@@ -52,12 +54,18 @@ export default function BundlePicker({ scenarioId, bundles, appliedBundleId, onA
             defaultValue=""
             required
           >
-            <option value="" disabled>Select bundle…</option>
+            <option value="" disabled>
+              Select bundle…
+            </option>
             {bundles.map((b) => (
-              <option key={b.id} value={b.id}>{b.name}</option>
+              <option key={b.id} value={b.id}>
+                {b.name}
+              </option>
             ))}
           </select>
-          <Button type="submit" size="sm">Apply</Button>
+          <Button type="submit" size="sm">
+            Apply
+          </Button>
         </form>
       )}
     </div>

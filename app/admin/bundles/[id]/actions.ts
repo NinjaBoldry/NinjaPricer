@@ -19,21 +19,21 @@ export async function addBundleItem(bundleId: string, formData: FormData) {
     case 'SAAS_USAGE':
       config = {
         kind: 'SAAS_USAGE',
-        seatCount: parseInt(formData.get('seatCount') as string | null ?? '', 10) || 1,
+        seatCount: parseInt((formData.get('seatCount') as string | null) ?? '', 10) || 1,
         personaMix: [],
       };
       break;
     case 'PACKAGED_LABOR':
       config = {
         kind: 'PACKAGED_LABOR',
-        qty: parseFloat(formData.get('qty') as string | null ?? '1') || 1,
-        unit: formData.get('unit') as string || 'PER_DAY',
+        qty: parseFloat((formData.get('qty') as string | null) ?? '1') || 1,
+        unit: (formData.get('unit') as string) || 'PER_DAY',
       };
       break;
     case 'CUSTOM_LABOR':
       config = {
         kind: 'CUSTOM_LABOR',
-        hours: parseFloat(formData.get('hours') as string | null ?? '1') || 1,
+        hours: parseFloat((formData.get('hours') as string | null) ?? '1') || 1,
       };
       break;
     default:
@@ -49,7 +49,7 @@ export async function addBundleItem(bundleId: string, formData: FormData) {
       skuId: (formData.get('skuId') as string) || undefined,
       departmentId: (formData.get('departmentId') as string) || undefined,
       config,
-      sortOrder: parseInt(formData.get('sortOrder') as string | null ?? '', 10) || 0,
+      sortOrder: parseInt((formData.get('sortOrder') as string | null) ?? '', 10) || 0,
     });
   } catch (e) {
     if (e instanceof ValidationError) errorMsg = e.message;

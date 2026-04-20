@@ -43,7 +43,10 @@ export async function createEmployee(departmentId: string, formData: FormData) {
         compensationType === 'HOURLY'
           ? parseDecimalField('hourlyRateUsd', formData.get('hourlyRateUsd') as string | null)
           : undefined,
-      standardHoursPerYear: (() => { const v = parseInt(formData.get('standardHoursPerYear') as string | null ?? '', 10); return Number.isNaN(v) ? undefined : v; })(),
+      standardHoursPerYear: (() => {
+        const v = parseInt((formData.get('standardHoursPerYear') as string | null) ?? '', 10);
+        return Number.isNaN(v) ? undefined : v;
+      })(),
     });
   } catch (e) {
     if (e instanceof ValidationError) errorMsg = e.message;

@@ -8,7 +8,9 @@ export class DepartmentRepository {
     return this.db.department.create({ data });
   }
 
-  async findById(id: string): Promise<(Department & { billRate: DepartmentBillRate | null }) | null> {
+  async findById(
+    id: string,
+  ): Promise<(Department & { billRate: DepartmentBillRate | null }) | null> {
     return this.db.department.findUnique({
       where: { id },
       include: { billRate: true },
@@ -23,7 +25,10 @@ export class DepartmentRepository {
     });
   }
 
-  async upsertBillRate(departmentId: string, billRatePerHour: Decimal): Promise<DepartmentBillRate> {
+  async upsertBillRate(
+    departmentId: string,
+    billRatePerHour: Decimal,
+  ): Promise<DepartmentBillRate> {
     return this.db.departmentBillRate.upsert({
       where: { departmentId },
       create: { departmentId, billRatePerHour },

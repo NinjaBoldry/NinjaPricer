@@ -36,9 +36,7 @@ export default function NotesTabForm({
 }: Props) {
   const { triggerCompute } = useScenarioCompute();
   const [mix, setMix] = useState<Mix[]>(
-    initialMix.length > 0
-      ? initialMix
-      : buildEvenMix(personas.map((p) => p.id)),
+    initialMix.length > 0 ? initialMix : buildEvenMix(personas.map((p) => p.id)),
   );
   const mixInputRef = useRef<HTMLInputElement>(null);
 
@@ -60,12 +58,7 @@ export default function NotesTabForm({
     <form onSubmit={handleSubmit} className="space-y-6">
       <input type="hidden" name="scenarioId" value={scenarioId} />
       <input type="hidden" name="productId" value={productId} />
-      <input
-        ref={mixInputRef}
-        type="hidden"
-        name="personaMix"
-        defaultValue={JSON.stringify(mix)}
-      />
+      <input ref={mixInputRef} type="hidden" name="personaMix" defaultValue={JSON.stringify(mix)} />
 
       <div className="space-y-1">
         <Label htmlFor="seatCount">Seat count</Label>
@@ -82,11 +75,7 @@ export default function NotesTabForm({
       {personas.length > 0 && (
         <div className="space-y-2">
           <Label className="text-sm font-medium">Persona mix</Label>
-          <PersonaMixSliders
-            personas={personas}
-            initialMix={mix}
-            onChange={handleMixChange}
-          />
+          <PersonaMixSliders personas={personas} initialMix={mix} onChange={handleMixChange} />
         </div>
       )}
 

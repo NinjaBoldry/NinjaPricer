@@ -37,7 +37,12 @@ describe('computeSaaSTab', () => {
   });
 
   it('returns all-zero financials when seatCount is 0', () => {
-    const t: SaaSTabInput = { kind: 'SAAS_USAGE', productId: 'notes', seatCount: 0, personaMix: [{ personaId: 'p', pct: 100 }] };
+    const t: SaaSTabInput = {
+      kind: 'SAAS_USAGE',
+      productId: 'notes',
+      seatCount: 0,
+      personaMix: [{ personaId: 'p', pct: 100 }],
+    };
     const r = computeSaaSTab(t, product, 12);
     expect(r.monthlyCostCents).toBe(0);
     expect(r.monthlyRevenueCents).toBe(0);
@@ -71,8 +76,8 @@ describe('computeSaaSTab', () => {
       personaMix: [{ personaId: 'avg', pct: 100 }],
     };
     const r = computeSaaSTab(t, p, 3);
-    expect(r.monthlyCostCents).toBe(101);        // toCents(1.005) = 101 ✓
-    expect(r.contractCostCents).toBe(302);        // toCents(1.005 × 3) = toCents(3.015) = 302
+    expect(r.monthlyCostCents).toBe(101); // toCents(1.005) = 101 ✓
+    expect(r.contractCostCents).toBe(302); // toCents(1.005 × 3) = toCents(3.015) = 302
     // NOT 303 (which would be the double-rounded value: 101 × 3)
   });
 });

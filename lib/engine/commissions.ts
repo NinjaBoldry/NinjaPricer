@@ -43,7 +43,10 @@ export function applyProgressiveTiers(
 }
 
 export function resolveBaseAmount(rule: CommissionRuleSnap, perTab: TabResult[]): Decimal {
-  if ((rule.baseMetric === 'TAB_REVENUE' || rule.baseMetric === 'TAB_MARGIN') && !rule.scopeProductId) {
+  if (
+    (rule.baseMetric === 'TAB_REVENUE' || rule.baseMetric === 'TAB_MARGIN') &&
+    !rule.scopeProductId
+  ) {
     throw new ValidationError(
       'commissionRule',
       `rule "${rule.id}" uses ${rule.baseMetric} but has no scopeProductId`,

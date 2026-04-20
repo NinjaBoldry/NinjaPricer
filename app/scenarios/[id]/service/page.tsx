@@ -25,9 +25,7 @@ export default async function ServiceTabPage({ params }: { params: { id: string 
     orderBy: { name: 'asc' },
   });
 
-  const lines = product
-    ? scenario.laborLines.filter((l) => l.productId === product.id)
-    : [];
+  const lines = product ? scenario.laborLines.filter((l) => l.productId === product.id) : [];
 
   return (
     <div className="max-w-2xl">
@@ -79,7 +77,9 @@ export default async function ServiceTabPage({ params }: { params: { id: string 
                 />
               </div>
             </div>
-            <Button type="submit" size="sm">Add line</Button>
+            <Button type="submit" size="sm">
+              Add line
+            </Button>
           </form>
         </details>
       )}

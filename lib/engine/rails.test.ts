@@ -87,7 +87,7 @@ describe('evaluateRails', () => {
     const w = evaluateRails(rails, tabWithMeta, 0, 0, 12);
     expect(w).toHaveLength(1);
     expect(w[0]?.severity).toBe('soft');
-    expect(w[0]?.measured).toBeCloseTo(0.30);
+    expect(w[0]?.measured).toBeCloseTo(0.3);
   });
 
   it('uses contractMonths directly for MIN_CONTRACT_MONTHS rail', () => {

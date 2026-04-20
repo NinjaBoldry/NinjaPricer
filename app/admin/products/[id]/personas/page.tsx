@@ -75,10 +75,7 @@ export default async function PersonasPage({
           ))}
           {personas.length === 0 && (
             <TableRow>
-              <TableCell
-                colSpan={4}
-                className="text-center text-muted-foreground py-8"
-              >
+              <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
                 No personas yet.
               </TableCell>
             </TableRow>

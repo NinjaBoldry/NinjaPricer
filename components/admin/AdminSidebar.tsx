@@ -20,9 +20,7 @@ export default function AdminSidebar({ currentPath }: { currentPath?: string }) 
   const pathname = usePathname() ?? currentPath ?? '/admin';
   return (
     <nav className="w-56 shrink-0 border-r bg-slate-50 p-4 space-y-1">
-      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">
-        Admin
-      </p>
+      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Admin</p>
       {NAV.map(({ href, label }) => {
         const active = pathname === href || pathname.startsWith(href + '/');
         return (
@@ -31,9 +29,7 @@ export default function AdminSidebar({ currentPath }: { currentPath?: string }) 
             href={href}
             {...(active ? { 'aria-current': 'page' as const } : {})}
             className={`block rounded px-3 py-2 text-sm font-medium transition-colors ${
-              active
-                ? 'bg-slate-900 text-white'
-                : 'text-slate-700 hover:bg-slate-200'
+              active ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-slate-200'
             }`}
           >
             {label}

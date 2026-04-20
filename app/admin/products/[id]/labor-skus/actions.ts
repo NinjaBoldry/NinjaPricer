@@ -14,8 +14,14 @@ export async function upsertLaborSKU(productId: string, formData: FormData) {
       productId,
       name: formData.get('name') as string,
       unit: formData.get('unit') as string,
-      costPerUnitUsd: parseDecimalField('costPerUnitUsd', formData.get('costPerUnitUsd') as string | null),
-      defaultRevenueUsd: parseDecimalField('defaultRevenueUsd', formData.get('defaultRevenueUsd') as string | null),
+      costPerUnitUsd: parseDecimalField(
+        'costPerUnitUsd',
+        formData.get('costPerUnitUsd') as string | null,
+      ),
+      defaultRevenueUsd: parseDecimalField(
+        'defaultRevenueUsd',
+        formData.get('defaultRevenueUsd') as string | null,
+      ),
     });
   } catch (e) {
     if (e instanceof ValidationError) errorMsg = e.message;

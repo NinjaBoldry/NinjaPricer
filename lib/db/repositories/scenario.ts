@@ -1,9 +1,25 @@
-import type { PrismaClient, Scenario, ScenarioSaaSConfig, ScenarioLaborLine, ScenarioStatus } from '@prisma/client';
+import type {
+  PrismaClient,
+  Scenario,
+  ScenarioSaaSConfig,
+  ScenarioLaborLine,
+  ScenarioStatus,
+} from '@prisma/client';
 import { Prisma } from '@prisma/client';
 
 type ScenarioRow = Pick<
   Scenario,
-  'id' | 'name' | 'customerName' | 'ownerId' | 'contractMonths' | 'appliedBundleId' | 'notes' | 'status' | 'isArchived' | 'createdAt' | 'updatedAt'
+  | 'id'
+  | 'name'
+  | 'customerName'
+  | 'ownerId'
+  | 'contractMonths'
+  | 'appliedBundleId'
+  | 'notes'
+  | 'status'
+  | 'isArchived'
+  | 'createdAt'
+  | 'updatedAt'
 >;
 
 const scenarioSelect = {
@@ -27,7 +43,16 @@ type SaaSConfigRow = Pick<
 
 type LaborLineRow = Pick<
   ScenarioLaborLine,
-  'id' | 'productId' | 'skuId' | 'departmentId' | 'customDescription' | 'qty' | 'unit' | 'costPerUnitUsd' | 'revenuePerUnitUsd' | 'sortOrder'
+  | 'id'
+  | 'productId'
+  | 'skuId'
+  | 'departmentId'
+  | 'customDescription'
+  | 'qty'
+  | 'unit'
+  | 'costPerUnitUsd'
+  | 'revenuePerUnitUsd'
+  | 'sortOrder'
 >;
 
 type ScenarioWithRelations = ScenarioRow & {
@@ -99,7 +124,9 @@ export class ScenarioRepository {
     const where: Prisma.ScenarioWhereInput = {
       isArchived: false,
       ...(actingUser.role === 'SALES' && { ownerId: actingUser.id }),
-      ...(customerName !== undefined && { customerName: { contains: customerName, mode: 'insensitive' } }),
+      ...(customerName !== undefined && {
+        customerName: { contains: customerName, mode: 'insensitive' },
+      }),
       ...(status !== undefined && { status }),
     };
 

@@ -5,7 +5,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table';
 import { prisma } from '@/lib/db/client';
 import { BundleRepository } from '@/lib/db/repositories/bundle';
@@ -49,9 +54,13 @@ export default async function BundleDetailPage({
   return (
     <div className="p-6">
       <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
-        <Link href="/admin" className="hover:underline">Admin</Link>
+        <Link href="/admin" className="hover:underline">
+          Admin
+        </Link>
         <span>/</span>
-        <Link href="/admin/bundles" className="hover:underline">Bundles</Link>
+        <Link href="/admin/bundles" className="hover:underline">
+          Bundles
+        </Link>
         <span>/</span>
         <span className="text-foreground font-medium">{bundle.name}</span>
       </div>
@@ -86,7 +95,9 @@ export default async function BundleDetailPage({
                 </TableCell>
                 <TableCell>
                   <form action={removeBundleItem.bind(null, item.id, params.id)}>
-                    <Button type="submit" variant="destructive" size="sm">Remove</Button>
+                    <Button type="submit" variant="destructive" size="sm">
+                      Remove
+                    </Button>
                   </form>
                 </TableCell>
               </TableRow>
@@ -108,8 +119,12 @@ export default async function BundleDetailPage({
           <form action={addItem} className="space-y-4">
             <div className="space-y-1">
               <Label htmlFor="productId">Product</Label>
-              <select id="productId" name="productId" required
-                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm">
+              <select
+                id="productId"
+                name="productId"
+                required
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+              >
                 <option value="">— select —</option>
                 {products.map((p) => (
                   <option key={p.id} value={p.id}>
@@ -120,7 +135,14 @@ export default async function BundleDetailPage({
             </div>
             <div className="space-y-1">
               <Label htmlFor="seatCount">Seat Count (SaaS products)</Label>
-              <Input id="seatCount" name="seatCount" type="number" step="1" min="1" defaultValue="10" />
+              <Input
+                id="seatCount"
+                name="seatCount"
+                type="number"
+                step="1"
+                min="1"
+                defaultValue="10"
+              />
             </div>
             <div className="space-y-1">
               <Label htmlFor="qty">Quantity (Packaged Labor)</Label>
@@ -128,8 +150,11 @@ export default async function BundleDetailPage({
             </div>
             <div className="space-y-1">
               <Label htmlFor="unit">Unit (Packaged Labor)</Label>
-              <select id="unit" name="unit"
-                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm">
+              <select
+                id="unit"
+                name="unit"
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+              >
                 <option value="PER_DAY">Per Day</option>
                 <option value="PER_USER">Per User</option>
                 <option value="PER_SESSION">Per Session</option>
@@ -142,7 +167,14 @@ export default async function BundleDetailPage({
             </div>
             <div className="space-y-1">
               <Label htmlFor="sortOrder">Sort Order</Label>
-              <Input id="sortOrder" name="sortOrder" type="number" step="1" min="0" defaultValue="0" />
+              <Input
+                id="sortOrder"
+                name="sortOrder"
+                type="number"
+                step="1"
+                min="0"
+                defaultValue="0"
+              />
             </div>
             <Button type="submit">Add Item</Button>
           </form>

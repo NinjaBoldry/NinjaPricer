@@ -1,6 +1,19 @@
 import type { PrismaClient, ScenarioLaborLine } from '@prisma/client';
 
-type LaborLineRow = Pick<ScenarioLaborLine, 'id' | 'scenarioId' | 'productId' | 'skuId' | 'departmentId' | 'customDescription' | 'qty' | 'unit' | 'costPerUnitUsd' | 'revenuePerUnitUsd' | 'sortOrder'>;
+type LaborLineRow = Pick<
+  ScenarioLaborLine,
+  | 'id'
+  | 'scenarioId'
+  | 'productId'
+  | 'skuId'
+  | 'departmentId'
+  | 'customDescription'
+  | 'qty'
+  | 'unit'
+  | 'costPerUnitUsd'
+  | 'revenuePerUnitUsd'
+  | 'sortOrder'
+>;
 
 const laborLineSelect = {
   id: true,

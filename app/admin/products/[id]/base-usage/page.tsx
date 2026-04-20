@@ -63,18 +63,13 @@ export default async function BaseUsagePage({
         <TableBody>
           {baseUsages.map((bu) => (
             <TableRow key={bu.id}>
-              <TableCell>
-                {vendorRateMap.get(bu.vendorRateId)?.name ?? bu.vendorRateId}
-              </TableCell>
+              <TableCell>{vendorRateMap.get(bu.vendorRateId)?.name ?? bu.vendorRateId}</TableCell>
               <TableCell>{bu.usagePerMonth.toString()}</TableCell>
             </TableRow>
           ))}
           {baseUsages.length === 0 && (
             <TableRow>
-              <TableCell
-                colSpan={2}
-                className="text-center text-muted-foreground py-8"
-              >
+              <TableCell colSpan={2} className="text-center text-muted-foreground py-8">
                 No base usage entries yet.
               </TableCell>
             </TableRow>

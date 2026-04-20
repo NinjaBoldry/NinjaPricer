@@ -30,11 +30,7 @@ export default function ScenarioHeaderButtons({ scenarioId, status, archiveActio
           </Button>
         </form>
       )}
-      <Button
-        size="sm"
-        data-testid="generate-quote-btn"
-        onClick={() => void handleGenerateQuote()}
-      >
+      <Button size="sm" data-testid="generate-quote-btn" onClick={() => void handleGenerateQuote()}>
         Generate Quote
       </Button>
     </div>

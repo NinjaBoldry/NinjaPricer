@@ -6,11 +6,7 @@ import LaborLineTable from '@/components/scenarios/LaborLineTable';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import {
-  addTrainingLineFromSKU,
-  addCustomTrainingLine,
-  deleteTrainingLine,
-} from './actions';
+import { addTrainingLineFromSKU, addCustomTrainingLine, deleteTrainingLine } from './actions';
 
 export default async function TrainingTabPage({ params }: { params: { id: string } }) {
   const user = await requireAuth();
@@ -24,9 +20,7 @@ export default async function TrainingTabPage({ params }: { params: { id: string
     include: { laborSKUs: { where: { isActive: true }, orderBy: { name: 'asc' } } },
   });
 
-  const lines = product
-    ? scenario.laborLines.filter((l) => l.productId === product.id)
-    : [];
+  const lines = product ? scenario.laborLines.filter((l) => l.productId === product.id) : [];
 
   return (
     <div className="max-w-2xl">
@@ -66,10 +60,19 @@ export default async function TrainingTabPage({ params }: { params: { id: string
                 </div>
                 <div className="space-y-1 flex-1">
                   <Label htmlFor="revenuePerUnit">Rev/unit override ($)</Label>
-                  <Input id="revenuePerUnit" name="revenuePerUnit" type="number" step="0.01" min="0" placeholder="Leave blank for SKU default" />
+                  <Input
+                    id="revenuePerUnit"
+                    name="revenuePerUnit"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="Leave blank for SKU default"
+                  />
                 </div>
               </div>
-              <Button type="submit" size="sm">Add line</Button>
+              <Button type="submit" size="sm">
+                Add line
+              </Button>
             </form>
           </details>
 
@@ -82,7 +85,12 @@ export default async function TrainingTabPage({ params }: { params: { id: string
               <input type="hidden" name="productId" value={product.id} />
               <div className="space-y-1">
                 <Label htmlFor="description">Description</Label>
-                <Input id="description" name="description" required placeholder="Custom training session" />
+                <Input
+                  id="description"
+                  name="description"
+                  required
+                  placeholder="Custom training session"
+                />
               </div>
               <div className="flex gap-3">
                 <div className="space-y-1 flex-1">
@@ -95,10 +103,19 @@ export default async function TrainingTabPage({ params }: { params: { id: string
                 </div>
                 <div className="space-y-1 flex-1">
                   <Label htmlFor="revenuePerUnit">Rev/unit ($)</Label>
-                  <Input id="revenuePerUnit" name="revenuePerUnit" type="number" step="0.01" min="0" required />
+                  <Input
+                    id="revenuePerUnit"
+                    name="revenuePerUnit"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    required
+                  />
                 </div>
               </div>
-              <Button type="submit" size="sm">Add line</Button>
+              <Button type="submit" size="sm">
+                Add line
+              </Button>
             </form>
           </details>
         </>

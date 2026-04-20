@@ -15,8 +15,11 @@ const devCredentialsProvider = Credentials({
   async authorize({ email }) {
     if (!isDev || !email) return null;
     const existing = await prisma.user.findUnique({ where: { email: email as string } });
-    if (existing) return { id: existing.id, email: existing.email, name: existing.name, role: existing.role };
-    const created = await prisma.user.create({ data: { email: email as string, name: email as string, role: 'ADMIN' } });
+    if (existing)
+      return { id: existing.id, email: existing.email, name: existing.name, role: existing.role };
+    const created = await prisma.user.create({
+      data: { email: email as string, name: email as string, role: 'ADMIN' },
+    });
     return { id: created.id, email: created.email, name: created.name, role: created.role };
   },
 });

@@ -38,7 +38,7 @@ export class BundleRepository {
       name?: string | undefined;
       description?: string | undefined;
       isActive?: boolean | undefined;
-    }
+    },
   ): Promise<Bundle> {
     return this.db.bundle.update({
       where: { id },

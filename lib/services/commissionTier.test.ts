@@ -13,7 +13,7 @@ describe('CommissionTierService.upsert', () => {
         thresholdFromUsd: new Decimal('0'),
         ratePct: new Decimal('0.10'),
         sortOrder: 0,
-      })
+      }),
     ).resolves.toBeDefined();
     expect(repo.upsert).toHaveBeenCalledOnce();
   });
@@ -27,7 +27,7 @@ describe('CommissionTierService.upsert', () => {
         thresholdFromUsd: new Decimal('100000'),
         ratePct: new Decimal('0.15'),
         sortOrder: 1,
-      })
+      }),
     ).resolves.toBeDefined();
   });
 
@@ -39,7 +39,7 @@ describe('CommissionTierService.upsert', () => {
         thresholdFromUsd: new Decimal('-1'),
         ratePct: new Decimal('0.10'),
         sortOrder: 0,
-      })
+      }),
     ).rejects.toMatchObject({ field: 'thresholdFromUsd' });
   });
 
@@ -51,7 +51,7 @@ describe('CommissionTierService.upsert', () => {
         thresholdFromUsd: new Decimal('0'),
         ratePct: new Decimal('-0.01'),
         sortOrder: 0,
-      })
+      }),
     ).rejects.toMatchObject({ field: 'ratePct' });
   });
 
@@ -63,7 +63,7 @@ describe('CommissionTierService.upsert', () => {
         thresholdFromUsd: new Decimal('0'),
         ratePct: new Decimal('1.01'),
         sortOrder: 0,
-      })
+      }),
     ).rejects.toMatchObject({ field: 'ratePct' });
   });
 
@@ -76,7 +76,7 @@ describe('CommissionTierService.upsert', () => {
         thresholdFromUsd: new Decimal('0'),
         ratePct: new Decimal('1.0'),
         sortOrder: 0,
-      })
+      }),
     ).resolves.toBeDefined();
   });
 
@@ -88,7 +88,7 @@ describe('CommissionTierService.upsert', () => {
         thresholdFromUsd: new Decimal('0'),
         ratePct: new Decimal('0.10'),
         sortOrder: 0,
-      })
+      }),
     ).rejects.toMatchObject({ field: 'ruleId' });
   });
 });

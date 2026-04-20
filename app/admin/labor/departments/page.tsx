@@ -25,7 +25,9 @@ export default async function DepartmentsPage({
   return (
     <div className="p-6">
       <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
-        <Link href="/admin" className="hover:underline">Admin</Link>
+        <Link href="/admin" className="hover:underline">
+          Admin
+        </Link>
         <span>/</span>
         <span className="text-foreground font-medium">Departments</span>
       </div>

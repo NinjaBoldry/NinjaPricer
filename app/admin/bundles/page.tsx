@@ -3,24 +3,27 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table';
 import { prisma } from '@/lib/db/client';
 import { BundleRepository } from '@/lib/db/repositories/bundle';
 import { createBundle } from './actions';
 
-export default async function BundlesPage({
-  searchParams,
-}: {
-  searchParams?: { error?: string };
-}) {
+export default async function BundlesPage({ searchParams }: { searchParams?: { error?: string } }) {
   const bundles = await new BundleRepository(prisma).findAll();
   const error = searchParams?.error ? decodeURIComponent(searchParams.error) : null;
 
   return (
     <div className="p-6">
       <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
-        <Link href="/admin" className="hover:underline">Admin</Link>
+        <Link href="/admin" className="hover:underline">
+          Admin
+        </Link>
         <span>/</span>
         <span className="text-foreground font-medium">Bundles</span>
       </div>
@@ -47,7 +50,9 @@ export default async function BundlesPage({
               </TableCell>
               <TableCell className="text-muted-foreground">{b.description ?? '—'}</TableCell>
               <TableCell>
-                <span className="text-xs text-muted-foreground">{b.items.length} item{b.items.length !== 1 ? 's' : ''}</span>
+                <span className="text-xs text-muted-foreground">
+                  {b.items.length} item{b.items.length !== 1 ? 's' : ''}
+                </span>
               </TableCell>
             </TableRow>
           ))}

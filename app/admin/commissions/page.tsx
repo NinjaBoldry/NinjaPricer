@@ -3,7 +3,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table';
 import { prisma } from '@/lib/db/client';
 import { CommissionRuleRepository } from '@/lib/db/repositories/commissionRule';
@@ -40,7 +45,9 @@ export default async function CommissionsPage({
   return (
     <div className="p-6">
       <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
-        <Link href="/admin" className="hover:underline">Admin</Link>
+        <Link href="/admin" className="hover:underline">
+          Admin
+        </Link>
         <span>/</span>
         <span className="text-foreground font-medium">Commission Rules</span>
       </div>
@@ -70,9 +77,13 @@ export default async function CommissionsPage({
               <TableCell>{METRIC_LABELS[r.baseMetric] ?? r.baseMetric}</TableCell>
               <TableCell>
                 {r.tiers.length === 0 ? (
-                  <span className="text-xs font-medium text-destructive">No tiers — will be skipped</span>
+                  <span className="text-xs font-medium text-destructive">
+                    No tiers — will be skipped
+                  </span>
                 ) : (
-                  <span className="text-xs text-muted-foreground">{r.tiers.length} tier{r.tiers.length !== 1 ? 's' : ''}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {r.tiers.length} tier{r.tiers.length !== 1 ? 's' : ''}
+                  </span>
                 )}
               </TableCell>
             </TableRow>
@@ -94,12 +105,20 @@ export default async function CommissionsPage({
         <form action={createCommissionRule} className="space-y-4">
           <div className="space-y-1">
             <Label htmlFor="rule-name">Name</Label>
-            <Input id="rule-name" name="name" required placeholder="e.g. Engineering Dept Commission" />
+            <Input
+              id="rule-name"
+              name="name"
+              required
+              placeholder="e.g. Engineering Dept Commission"
+            />
           </div>
           <div className="space-y-1">
             <Label htmlFor="scopeType">Scope Type</Label>
-            <select id="scopeType" name="scopeType"
-              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm">
+            <select
+              id="scopeType"
+              name="scopeType"
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+            >
               <option value="ALL">All</option>
               <option value="PRODUCT">Product</option>
               <option value="DEPARTMENT">Department</option>
@@ -107,8 +126,11 @@ export default async function CommissionsPage({
           </div>
           <div className="space-y-1">
             <Label htmlFor="baseMetric">Base Metric</Label>
-            <select id="baseMetric" name="baseMetric"
-              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm">
+            <select
+              id="baseMetric"
+              name="baseMetric"
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+            >
               <option value="REVENUE">Total Revenue</option>
               <option value="CONTRIBUTION_MARGIN">Contribution Margin</option>
               <option value="TAB_REVENUE">Tab Revenue (requires product scope)</option>
@@ -117,21 +139,31 @@ export default async function CommissionsPage({
           </div>
           <div className="space-y-1">
             <Label htmlFor="scopeProductId">Scoped Product (if Product scope or Tab metric)</Label>
-            <select id="scopeProductId" name="scopeProductId"
-              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm">
+            <select
+              id="scopeProductId"
+              name="scopeProductId"
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+            >
               <option value="">— none —</option>
               {products.map((p) => (
-                <option key={p.id} value={p.id}>{p.name}</option>
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
               ))}
             </select>
           </div>
           <div className="space-y-1">
             <Label htmlFor="scopeDepartmentId">Scoped Department (if Department scope)</Label>
-            <select id="scopeDepartmentId" name="scopeDepartmentId"
-              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm">
+            <select
+              id="scopeDepartmentId"
+              name="scopeDepartmentId"
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+            >
               <option value="">— none —</option>
               {departments.map((d) => (
-                <option key={d.id} value={d.id}>{d.name}</option>
+                <option key={d.id} value={d.id}>
+                  {d.name}
+                </option>
               ))}
             </select>
           </div>

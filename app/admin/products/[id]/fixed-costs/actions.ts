@@ -20,9 +20,7 @@ export async function upsertFixedCost(productId: string, formData: FormData) {
     else throw e;
   }
   if (errorMsg) {
-    redirect(
-      `/admin/products/${productId}/fixed-costs?error=${encodeURIComponent(errorMsg)}`,
-    );
+    redirect(`/admin/products/${productId}/fixed-costs?error=${encodeURIComponent(errorMsg)}`);
   }
   redirect(`/admin/products/${productId}/fixed-costs`);
 }

@@ -145,7 +145,8 @@ export async function POST(request: Request) {
   const deptSnaps: Record<string, DepartmentSnap> = {};
   for (const dept of departments) {
     const applicableBurdens = allBurdens.filter(
-      (b) => b.scope === 'ALL_DEPARTMENTS' || (b.scope === 'DEPARTMENT' && b.departmentId === dept.id),
+      (b) =>
+        b.scope === 'ALL_DEPARTMENTS' || (b.scope === 'DEPARTMENT' && b.departmentId === dept.id),
     );
     const burdenInputs = applicableBurdens.map((b) => ({
       ratePct: d(b.ratePct),
@@ -155,7 +156,11 @@ export async function POST(request: Request) {
     let totalLoadedRate = new Decimal(0);
     let empCount = 0;
     for (const emp of dept.employees) {
-      if (emp.compensationType === 'ANNUAL_SALARY' && emp.annualSalaryUsd && emp.standardHoursPerYear) {
+      if (
+        emp.compensationType === 'ANNUAL_SALARY' &&
+        emp.annualSalaryUsd &&
+        emp.standardHoursPerYear
+      ) {
         totalLoadedRate = totalLoadedRate.plus(
           computeLoadedHourlyRate({
             compensationType: 'ANNUAL_SALARY',
@@ -165,7 +170,11 @@ export async function POST(request: Request) {
           }),
         );
         empCount++;
-      } else if (emp.compensationType === 'HOURLY' && emp.hourlyRateUsd && emp.standardHoursPerYear) {
+      } else if (
+        emp.compensationType === 'HOURLY' &&
+        emp.hourlyRateUsd &&
+        emp.standardHoursPerYear
+      ) {
         totalLoadedRate = totalLoadedRate.plus(
           computeLoadedHourlyRate({
             compensationType: 'HOURLY',
@@ -235,10 +244,12 @@ export async function POST(request: Request) {
   }
 
   // Rails (dedup by id)
-  const railsById = new Map([
-    ...saasProducts.flatMap((p) => p.rails),
-    ...laborProducts.flatMap((p) => p.rails),
-  ].map((r) => [r.id, r]));
+  const railsById = new Map(
+    [...saasProducts.flatMap((p) => p.rails), ...laborProducts.flatMap((p) => p.rails)].map((r) => [
+      r.id,
+      r,
+    ]),
+  );
   const rails = Array.from(railsById.values()).map((r) => ({
     id: r.id,
     productId: r.productId,

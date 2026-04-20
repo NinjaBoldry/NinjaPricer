@@ -17,7 +17,8 @@ export async function upsertBurden(formData: FormData) {
       ratePct: parseDecimalField('ratePct', formData.get('ratePct') as string | null),
       capUsd: capRaw?.trim() ? parseDecimalField('capUsd', capRaw) : undefined,
       scope,
-      departmentId: scope === 'DEPARTMENT' ? (formData.get('departmentId') as string) || undefined : undefined,
+      departmentId:
+        scope === 'DEPARTMENT' ? (formData.get('departmentId') as string) || undefined : undefined,
     });
   } catch (e) {
     if (e instanceof ValidationError) errorMsg = e.message;

@@ -15,8 +15,14 @@ export async function upsertRail(productId: string, formData: FormData) {
       productId,
       kind: formData.get('kind'),
       marginBasis: formData.get('marginBasis') || 'CONTRIBUTION',
-      softThreshold: parseDecimalField('softThreshold', formData.get('softThreshold') as string | null),
-      hardThreshold: parseDecimalField('hardThreshold', formData.get('hardThreshold') as string | null),
+      softThreshold: parseDecimalField(
+        'softThreshold',
+        formData.get('softThreshold') as string | null,
+      ),
+      hardThreshold: parseDecimalField(
+        'hardThreshold',
+        formData.get('hardThreshold') as string | null,
+      ),
       isEnabled: formData.get('isEnabled') === 'true',
     });
   } catch (e) {
@@ -25,9 +31,7 @@ export async function upsertRail(productId: string, formData: FormData) {
   }
 
   if (errorMsg) {
-    redirect(
-      `/admin/products/${productId}/rails?error=${encodeURIComponent(errorMsg)}`,
-    );
+    redirect(`/admin/products/${productId}/rails?error=${encodeURIComponent(errorMsg)}`);
   }
   redirect(`/admin/products/${productId}/rails`);
 }

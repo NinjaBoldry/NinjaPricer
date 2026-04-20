@@ -22,9 +22,7 @@ export async function upsertOtherVariable(productId: string, formData: FormData)
     else throw e;
   }
   if (errorMsg) {
-    redirect(
-      `/admin/products/${productId}/other-variable?error=${encodeURIComponent(errorMsg)}`,
-    );
+    redirect(`/admin/products/${productId}/other-variable?error=${encodeURIComponent(errorMsg)}`);
   }
   redirect(`/admin/products/${productId}/other-variable`);
 }

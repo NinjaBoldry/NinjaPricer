@@ -44,7 +44,7 @@ export class EmployeeRepository {
       hourlyRateUsd?: Decimal;
       standardHoursPerYear?: number;
       isActive?: boolean;
-    }
+    },
   ): Promise<Employee> {
     return this.db.employee.update({ where: { id }, data });
   }

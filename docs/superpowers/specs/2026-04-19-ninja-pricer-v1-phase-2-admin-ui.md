@@ -51,14 +51,14 @@
 
 ## Sub-phase Overview
 
-| Sub-phase | Theme | Key output |
-|-----------|-------|------------|
-| 2.0 | Intake — Phase 1 follow-ups | Engine correctness + auth typing hardened |
-| 2.1 | Admin foundation | shadcn, sidebar layout, repo/service scaffolding |
-| 2.2 | Products domain | Full product + rate-card admin |
-| 2.3 | Labor domain | SKUs, departments (with loaded rate), employees, burdens |
-| 2.4 | Commissions + Bundles | Rules/tier editor, bundle builder |
-| 2.5 | Users | User invite + role management |
+| Sub-phase | Theme                       | Key output                                               |
+| --------- | --------------------------- | -------------------------------------------------------- |
+| 2.0       | Intake — Phase 1 follow-ups | Engine correctness + auth typing hardened                |
+| 2.1       | Admin foundation            | shadcn, sidebar layout, repo/service scaffolding         |
+| 2.2       | Products domain             | Full product + rate-card admin                           |
+| 2.3       | Labor domain                | SKUs, departments (with loaded rate), employees, burdens |
+| 2.4       | Commissions + Bundles       | Rules/tier editor, bundle builder                        |
+| 2.5       | Users                       | User invite + role management                            |
 
 **Sequencing rationale:**
 
@@ -75,6 +75,7 @@ shadcn/ui is installed in Phase 2.1 (not earlier) because the engine-and-auth fi
 **Goal:** Close all 7 "important" Phase 1 review items and the 5 related minors before any new code depends on the affected modules. No new features; only correctness and typing hardening.
 
 **Files touched (engine):**
+
 - Modify: `lib/engine/saas-tab.ts` (double-rounding fix #1)
 - Modify: `lib/engine/custom-labor-tab.ts` (double-rounding fix #1)
 - Modify: `lib/engine/packaged-labor-tab.ts` (double-rounding fix #1)
@@ -91,6 +92,7 @@ shadcn/ui is installed in Phase 2.1 (not earlier) because the engine-and-auth fi
 - Tests: `lib/engine/rails.test.ts` (effectiveDiscount clamp #8; contractMonths plumbed #5)
 
 **Files touched (auth / middleware):**
+
 - Modify: `auth.ts` (NextAuth module augmentation #6)
 - Modify: `lib/auth/session.ts` (remove hand-casts #6)
 - Modify: `components/TopNav.tsx` (remove hand-cast #6)
@@ -105,6 +107,7 @@ shadcn/ui is installed in Phase 2.1 (not earlier) because the engine-and-auth fi
 The fix follows the same pattern in all three tab files:
 
 **Before (pattern in all three tab files):**
+
 ```typescript
 const monthlyCostCents = toCents(monthlyCostDec);
 // ...
@@ -112,6 +115,7 @@ contractCostCents: monthlyCostCents * contractMonths,
 ```
 
 **After (pattern in all three tab files):**
+
 ```typescript
 const contractCostDec = monthlyCostDec.mul(contractMonths);
 // ...
@@ -184,13 +188,19 @@ it('throws ValidationError when TAB_REVENUE rule has no scopeProductId', () => {
     evaluateCommissions({
       rules: [
         {
-          rule: { id: 'r1', scopeType: 'PRODUCT', baseMetric: 'TAB_REVENUE', scopeProductId: null, scopeDepartmentId: null },
+          rule: {
+            id: 'r1',
+            scopeType: 'PRODUCT',
+            baseMetric: 'TAB_REVENUE',
+            scopeProductId: null,
+            scopeDepartmentId: null,
+          },
           tiers: [{ thresholdFromUsd: 0, ratePct: new Decimal('10') }],
         },
       ],
       totals: buildTotals(),
       tabResults: [],
-    })
+    }),
   ).toThrow(ValidationError);
 });
 
@@ -199,13 +209,19 @@ it('throws ValidationError when DEPARTMENT rule has no scopeDepartmentId', () =>
     evaluateCommissions({
       rules: [
         {
-          rule: { id: 'r1', scopeType: 'DEPARTMENT', baseMetric: 'TAB_MARGIN', scopeProductId: null, scopeDepartmentId: null },
+          rule: {
+            id: 'r1',
+            scopeType: 'DEPARTMENT',
+            baseMetric: 'TAB_MARGIN',
+            scopeProductId: null,
+            scopeDepartmentId: null,
+          },
           tiers: [{ thresholdFromUsd: 0, ratePct: new Decimal('10') }],
         },
       ],
       totals: buildTotals(),
       tabResults: [],
-    })
+    }),
   ).toThrow(ValidationError);
 });
 ```
@@ -223,12 +239,12 @@ if (
   !ruleInput.rule.scopeProductId
 ) {
   throw new ValidationError(
-    `Commission rule "${rule.id}" uses TAB_REVENUE/TAB_MARGIN but has no scopeProductId`
+    `Commission rule "${rule.id}" uses TAB_REVENUE/TAB_MARGIN but has no scopeProductId`,
   );
 }
 if (rule.scopeType === 'DEPARTMENT' && !ruleInput.rule.scopeDepartmentId) {
   throw new ValidationError(
-    `Commission rule "${rule.id}" is DEPARTMENT-scoped but has no scopeDepartmentId`
+    `Commission rule "${rule.id}" is DEPARTMENT-scoped but has no scopeDepartmentId`,
   );
 }
 ```
@@ -355,7 +371,7 @@ it('throws ValidationError when baseUsage references an unknown vendorRateId', (
       baseUsages: [{ vendorRateId: 'ghost-id', usagePerUserPerMonth: new Decimal('100') }],
       vendorRates: [], // ghost-id not present
       otherVariablePerUser: new Decimal('0'),
-    })
+    }),
   ).toThrow(ValidationError);
 });
 ```
@@ -666,6 +682,7 @@ npx shadcn@latest init
 ```
 
 When prompted:
+
 - Style: Default
 - Base color: Slate
 - CSS variables: Yes
@@ -755,9 +772,7 @@ const NAV = [
 export default function AdminSidebar({ currentPath }: { currentPath: string }) {
   return (
     <nav className="w-56 shrink-0 border-r bg-slate-50 p-4 space-y-1">
-      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">
-        Admin
-      </p>
+      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Admin</p>
       {NAV.map(({ href, label }) => {
         const active = currentPath === href || currentPath.startsWith(href + '/');
         return (
@@ -766,9 +781,7 @@ export default function AdminSidebar({ currentPath }: { currentPath: string }) {
             href={href}
             aria-current={active ? 'page' : undefined}
             className={`block rounded px-3 py-2 text-sm font-medium transition-colors ${
-              active
-                ? 'bg-slate-900 text-white'
-                : 'text-slate-700 hover:bg-slate-200'
+              active ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-slate-200'
             }`}
           >
             {label}
@@ -1055,7 +1068,7 @@ describe('ProductService', () => {
   it('throws ValidationError when name is empty', async () => {
     const service = new ProductService(mockProductRepo());
     await expect(service.createProduct({ name: '', kind: 'SAAS_USAGE' })).rejects.toThrow(
-      ValidationError
+      ValidationError,
     );
   });
 
@@ -1077,11 +1090,21 @@ import type { Product } from '@prisma/client';
 
 export function mockProductRepo() {
   return {
-    create: vi.fn().mockResolvedValue({ id: 'p1', name: 'Ninja Notes', kind: 'SAAS_USAGE', isActive: true } as Product),
+    create: vi.fn().mockResolvedValue({
+      id: 'p1',
+      name: 'Ninja Notes',
+      kind: 'SAAS_USAGE',
+      isActive: true,
+    } as Product),
     findById: vi.fn().mockResolvedValue(null),
     listActive: vi.fn().mockResolvedValue([]),
     listAll: vi.fn().mockResolvedValue([]),
-    update: vi.fn().mockResolvedValue({ id: 'p1', name: 'Ninja Notes', kind: 'SAAS_USAGE', isActive: true } as Product),
+    update: vi.fn().mockResolvedValue({
+      id: 'p1',
+      name: 'Ninja Notes',
+      kind: 'SAAS_USAGE',
+      isActive: true,
+    } as Product),
   };
 }
 ```
@@ -1113,7 +1136,9 @@ export class ProductService {
   }
 
   async updateProduct(id: string, data: unknown) {
-    const parsed = z.object({ name: z.string().min(1).optional(), isActive: z.boolean().optional() }).safeParse(data);
+    const parsed = z
+      .object({ name: z.string().min(1).optional(), isActive: z.boolean().optional() })
+      .safeParse(data);
     if (!parsed.success) {
       throw new ValidationError(parsed.error.issues[0].message);
     }
@@ -1153,6 +1178,7 @@ git commit -m "feat(admin): ProductRepository and ProductService with validation
 **Follow the exact same pattern as Task 2.2-A** for each entity. The mock repository pattern, Zod validation in the service, and barrel export are identical. Details per entity:
 
 **VendorRate** (`lib/db/repositories/vendor-rate.ts`):
+
 - `create(data: { productId, name, unitLabel, usdRate: Decimal })` → `VendorRate`
 - `findByProduct(productId)` → `VendorRate[]`
 - `update(id, data: { name?, unitLabel?, usdRate? })` → `VendorRate`
@@ -1160,15 +1186,18 @@ git commit -m "feat(admin): ProductRepository and ProductService with validation
 - Service validates `usdRate >= 0`.
 
 **BaseUsage** (`lib/db/repositories/base-usage.ts`):
+
 - `upsert(data: { productId, vendorRateId, usagePerUserPerMonth: Decimal })` → `BaseUsage`
 - `findByProduct(productId)` → `BaseUsage[]`
 - Service validates usage is non-negative.
 
 **OtherVariable** (`lib/db/repositories/other-variable.ts`):
+
 - `upsert(data: { productId, amountPerUserPerMonth: Decimal })` → `OtherVariable`
 - Service validates amount >= 0.
 
 **Persona** (`lib/db/repositories/persona.ts`):
+
 - `create(data: { productId, name, multiplier: Decimal })` → `Persona`
 - `findByProduct(productId)` → `Persona[]`
 - `update(id, data: { name?, multiplier? })` → `Persona`
@@ -1176,26 +1205,31 @@ git commit -m "feat(admin): ProductRepository and ProductService with validation
 - Service validates multiplier > 0.
 
 **ProductFixedCost** (`lib/db/repositories/product-fixed-cost.ts`):
+
 - `create(data: { productId, name, monthlyUsd: Decimal })` → `ProductFixedCost`
 - `findByProduct(productId)` → `ProductFixedCost[]`
 - `update(id, data: { name?, monthlyUsd? })` → `ProductFixedCost`
 - `delete(id)` → `void`
 
 **ProductScale** (`lib/db/repositories/product-scale.ts`):
+
 - `upsert(data: { productId, activeUserCount: number })` → `ProductScale`
 - Service validates activeUserCount > 0.
 
 **ListPrice** (`lib/db/repositories/list-price.ts`):
+
 - `upsert(data: { productId, usdPerSeatPerMonth: Decimal })` → `ListPrice`
 - Service validates price > 0.
 
 **VolumeDiscountTier** (`lib/db/repositories/volume-discount-tier.ts`):
+
 - `create(data: { productId, minSeats: number, discountPct: Decimal })` → `VolumeDiscountTier`
 - `findByProduct(productId)` → `VolumeDiscountTier[]` (ordered by `minSeats`)
 - `delete(id)` → `void`
 - Service validates tiers have non-decreasing `minSeats`, `discountPct` in [0, 100].
 
 **ContractLengthModifier** (`lib/db/repositories/contract-length-modifier.ts`):
+
 - `create(data: { productId, minMonths: number, discountPct: Decimal })` → `ContractLengthModifier`
 - `findByProduct(productId)` → `ContractLengthModifier[]` (ordered by `minMonths`)
 - `delete(id)` → `void`
@@ -1305,7 +1339,13 @@ import { createProductAction } from './actions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 export default function NewProductPage() {
   return (
@@ -1351,8 +1391,16 @@ const SUB_SECTIONS = [
   { href: 'personas', label: 'Personas', desc: 'Usage multipliers (Light / Average / Heavy)' },
   { href: 'fixed-costs', label: 'Fixed Costs', desc: 'Infrastructure line items' },
   { href: 'scale', label: 'Active User Count', desc: 'Drives fixed cost per seat' },
-  { href: 'list-price', label: 'List Price & Discounts', desc: 'Seat price, volume tiers, contract modifiers' },
-  { href: 'rails', label: 'Rails', desc: 'Soft/hard guardrails — min margin, max discount, min seat price, min contract months' },
+  {
+    href: 'list-price',
+    label: 'List Price & Discounts',
+    desc: 'Seat price, volume tiers, contract modifiers',
+  },
+  {
+    href: 'rails',
+    label: 'Rails',
+    desc: 'Soft/hard guardrails — min margin, max discount, min seat price, min contract months',
+  },
 ];
 
 export default async function ProductDetailPage({ params }: { params: { id: string } }) {
@@ -1387,6 +1435,7 @@ export default async function ProductDetailPage({ params }: { params: { id: stri
 - [ ] **Step 4: Build sub-section pages following the same pattern**
 
 Each sub-section page (`vendor-rates/page.tsx`, `personas/page.tsx`, etc.) follows:
+
 1. Fetch data via the relevant repository.
 2. Render a table or form showing current values.
 3. Provide an add/edit form backed by a `'use server'` action in a co-located `actions.ts`.
@@ -1406,6 +1455,7 @@ git commit -m "feat(admin): product rails page + actions"
 - [ ] **Step 5: Build the rails sub-section page**
 
 The rails page (`app/admin/products/[id]/rails/page.tsx`) fetches rails via `RailRepository.findByProduct(id)` and renders a table with one row per `RailKind`. Each row has:
+
 - `kind` label (human-readable: "Min Margin %", "Max Discount %", "Min Seat Price", "Min Contract Months")
 - `marginBasis` select (visible only when `kind === 'MIN_MARGIN_PCT'`): Contribution / Net
 - `softThreshold` input (labeled "Warning at")
@@ -1429,10 +1479,12 @@ git commit -m "feat(admin): complete Products admin domain (rates, personas, pri
 ### Task 2.2-D: Rail repository and service
 
 **Rail repository** (`lib/db/repositories/rail.ts`):
+
 - `findByProduct(productId)` → `Rail[]`
 - `upsert(data: { productId, kind, marginBasis?, softThreshold: Decimal, hardThreshold: Decimal, isEnabled })` → `Rail`
 
 **Rail service** (`lib/services/rail.ts`):
+
 - Validates `softThreshold <= hardThreshold` for `MIN_*` rails.
 - For `MAX_DISCOUNT_PCT`: validates `hardThreshold <= softThreshold` (lower max discount = stricter).
 - Validates `marginBasis` is set when `kind === 'MIN_MARGIN_PCT'`.
@@ -1531,6 +1583,7 @@ This formula is implemented in `lib/services/labor.ts` as a pure function (no DB
 Follow the Task 2.2-A pattern exactly. Repository specs:
 
 **LaborSKU** (`lib/db/repositories/labor-sku.ts`):
+
 - `create(data: { productId, name, unit, costPerUnit: Decimal, defaultRevenuePerUnit: Decimal })` → `LaborSKU`
 - `findByProduct(productId)` → `LaborSKU[]`
 - `update(id, data)` → `LaborSKU`
@@ -1538,6 +1591,7 @@ Follow the Task 2.2-A pattern exactly. Repository specs:
 - Service validates `costPerUnit >= 0`, `defaultRevenuePerUnit >= 0`.
 
 **Department** (`lib/db/repositories/department.ts`):
+
 - `create(data: { name, isActive })` → `Department`
 - `findById(id)` → `Department | null` (includes active employees + all burdens)
 - `listAll()` → `Department[]`
@@ -1545,12 +1599,14 @@ Follow the Task 2.2-A pattern exactly. Repository specs:
 - Service method `computeLoadedRate(dept: DepartmentWithEmployeesAndBurdens)` → `Decimal` (the formula above — pure, testable in isolation).
 
 **Employee** (`lib/db/repositories/employee.ts`):
+
 - `create(data: { name, departmentId, compensationType, annualSalary?: Decimal, hourlyRate?: Decimal, standardHoursPerYear?: number, isActive })` → `Employee`
 - `findByDepartment(departmentId)` → `Employee[]`
 - `update(id, data)` → `Employee`
 - Service validates: if `compensationType === 'ANNUAL_SALARY'` then `annualSalary` required; if `HOURLY` then `hourlyRate` and `standardHoursPerYear` required.
 
 **Burden** (`lib/db/repositories/burden.ts`):
+
 - `create(data: { name, ratePct: Decimal, capUsd?: Decimal, scope, departmentId?: string })` → `Burden`
 - `listAll()` → `Burden[]`
 - `update(id, data)` → `Burden`
@@ -1606,14 +1662,18 @@ describe('computeLoadedHourlyRate', () => {
 ```typescript
 export function computeLoadedHourlyRate(
   input: {
-    employee: { annualSalary: Decimal | null; hourlyRate: Decimal | null; standardHoursPerYear: number | null };
+    employee: {
+      annualSalary: Decimal | null;
+      hourlyRate: Decimal | null;
+      standardHoursPerYear: number | null;
+    };
     burdens: Array<{ ratePct: Decimal; capUsd: Decimal | null }>;
-  } | null
+  } | null,
 ): Decimal {
   if (!input) return new Decimal(0);
   const { employee, burdens } = input;
   const hoursPerYear = new Decimal(employee.standardHoursPerYear ?? 2080);
-  const baseAnnual = employee.annualSalary ?? (employee.hourlyRate!.mul(hoursPerYear));
+  const baseAnnual = employee.annualSalary ?? employee.hourlyRate!.mul(hoursPerYear);
   const burdenTotal = burdens.reduce((acc, b) => {
     const base = b.capUsd ? Decimal.min(baseAnnual, b.capUsd) : baseAnnual;
     return acc.plus(base.mul(b.ratePct).div(100));
@@ -1699,6 +1759,7 @@ app/
 ### Task 2.4-A: CommissionRule repository and service
 
 **CommissionRule repository** (`lib/db/repositories/commission-rule.ts`):
+
 - `create(data: { name, scopeType, scopeProductId?, scopeDepartmentId?, baseMetric, recipientEmployeeId?, notes?, isActive })` → `CommissionRule`
 - `findById(id)` → `CommissionRule & { tiers: CommissionTier[] } | null`
 - `listAll()` → `(CommissionRule & { tiers: CommissionTier[] })[]`
@@ -1707,6 +1768,7 @@ app/
 - `deleteTier(tierId)` → `void`
 
 **Service validation** (`lib/services/commission.ts`):
+
 - On create/update: if `baseMetric` is `TAB_REVENUE` or `TAB_MARGIN`, `scopeProductId` must be set. If `scopeType === 'DEPARTMENT'`, `scopeDepartmentId` must be set. (This mirrors the engine-level guard added in 2.0-B — the service prevents the invalid state from being persisted in the first place.)
 - On `addTier`: `thresholdFromUsd >= 0`, `ratePct` in [0, 100]. Tiers must have non-decreasing thresholds (validate against existing tiers before adding).
 
@@ -1715,6 +1777,7 @@ app/
 ### Task 2.4-B: Bundle repository and service
 
 **Bundle repository** (`lib/db/repositories/bundle.ts`):
+
 - `create(data: { name, description?, isActive })` → `Bundle`
 - `findById(id)` → `Bundle & { items: BundleItem[] } | null`
 - `listActive()` → `(Bundle & { items: BundleItem[] })[]`
@@ -1723,6 +1786,7 @@ app/
 - `update(id, data: { name?, description?, isActive? })` → `Bundle`
 
 **Bundle service** (`lib/services/bundle.ts`):
+
 - `config` JSONB is untyped at the DB level. The service validates config shape against `productKind`:
   - `SAAS_USAGE`: `{ seatCount: number, personaMix: {personaId, pct}[], discountOverridePct?: number }`
   - `PACKAGED_LABOR`: `{ lines: [{skuId, qty}] }`
@@ -1779,12 +1843,14 @@ app/
 ### Task 2.5-A: User repository and service
 
 **User repository** (`lib/db/repositories/user.ts`):
+
 - `listAll()` → `User[]`
 - `findByEmail(email)` → `User | null`
 - `create(data: { email, name?, role })` → `User` (creates a placeholder user; SSO will link on first login)
 - `updateRole(id, role: 'ADMIN' | 'SALES')` → `User`
 
 **User service** (`lib/services/user.ts`):
+
 - `inviteUser(data: { email, role })`: validates email format, checks no existing user with that email, creates user row.
 - `updateRole(id, role)`: validates role is `ADMIN` or `SALES`. Does not allow the caller to demote themselves (service receives `callerId` and throws if `id === callerId` and `role === 'SALES'`).
 
@@ -1874,28 +1940,28 @@ tests/
 
 ## Risks
 
-| Risk | Likelihood | Impact | Mitigation |
-|------|-----------|--------|-----------|
-| Bundle config JSONB shape validation is complex | Medium | Medium | Validate with Zod discriminated union in the service; write unit tests per kind before building the UI. |
-| Computed loaded rate changes with every employee edit; admins may not realize | Low | Medium | Show a "as of now" label; add a reload/refresh button on the department page after edits. No caching — always fresh from DB. |
-| shadcn Select component and Next.js Server Actions don't play well (client component needed) | Medium | Low | Mark forms with `'use client'` only for the interactive select; keep the page itself a Server Component fetching data. |
-| Commission tier editor UX is complex (ordered, non-decreasing thresholds, delete-then-re-add) | Medium | Low | Ship a simple append-only + delete table first. Reordering is not needed in v1. |
-| Microsoft SSO not available in local dev; seed admin can't sign in normally | High | Low | Documented already in seed.ts; dev can use NextAuth credentials provider or a test-bypass env var. Not a prod risk. |
-| Rails threshold ordering for MAX_DISCOUNT_PCT is counterintuitive (lower = stricter) | Low | Medium | UI labels: rename "soft" to "Warning at" and "hard" to "Block at"; explain in tooltip that for max-discount rails, the block threshold must be ≤ warning threshold. |
+| Risk                                                                                          | Likelihood | Impact | Mitigation                                                                                                                                                          |
+| --------------------------------------------------------------------------------------------- | ---------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Bundle config JSONB shape validation is complex                                               | Medium     | Medium | Validate with Zod discriminated union in the service; write unit tests per kind before building the UI.                                                             |
+| Computed loaded rate changes with every employee edit; admins may not realize                 | Low        | Medium | Show a "as of now" label; add a reload/refresh button on the department page after edits. No caching — always fresh from DB.                                        |
+| shadcn Select component and Next.js Server Actions don't play well (client component needed)  | Medium     | Low    | Mark forms with `'use client'` only for the interactive select; keep the page itself a Server Component fetching data.                                              |
+| Commission tier editor UX is complex (ordered, non-decreasing thresholds, delete-then-re-add) | Medium     | Low    | Ship a simple append-only + delete table first. Reordering is not needed in v1.                                                                                     |
+| Microsoft SSO not available in local dev; seed admin can't sign in normally                   | High       | Low    | Documented already in seed.ts; dev can use NextAuth credentials provider or a test-bypass env var. Not a prod risk.                                                 |
+| Rails threshold ordering for MAX_DISCOUNT_PCT is counterintuitive (lower = stricter)          | Low        | Medium | UI labels: rename "soft" to "Warning at" and "hard" to "Block at"; explain in tooltip that for max-discount rails, the block threshold must be ≤ warning threshold. |
 
 ---
 
 ## Milestones
 
-| Milestone | Definition of done |
-|-----------|-------------------|
-| **M1: Intake complete** | All 13 Phase 1 follow-ups resolved; `npx vitest run`, `npx tsc --noEmit`, `npx eslint . --max-warnings 0` all green. |
-| **M2: Admin foundation** | `/admin/*` is role-guarded at middleware; admin sidebar renders; repo + service barrel pattern is established. |
-| **M3: Products done** | Admin can add a product, add vendor rates, set personas, fixed costs, list price, and all discount tiers. Engine can be fed a valid rate snapshot assembled from the DB. |
-| **M4: Labor done** | Admin can add departments with employees and burdens; computed loaded rate is displayed; bill rate is editable. |
-| **M5: Commissions + Bundles done** | Admin can define commission rules with tiers; bundles can reference products and labor. |
-| **M6: Users done** | Admin can invite users and change roles. Phase 2 feature-complete. (Rails ship as part of M3, co-located with products.) |
-| **M7: Phase 2 verification** | End-to-end admin flow verified: add product → configure all rate cards → add employees + burdens → define commission rule → create bundle → set rails → invite user. No TypeScript errors, no lint warnings, all unit + integration tests green. Phase 3 can begin. |
+| Milestone                          | Definition of done                                                                                                                                                                                                                                                  |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **M1: Intake complete**            | All 13 Phase 1 follow-ups resolved; `npx vitest run`, `npx tsc --noEmit`, `npx eslint . --max-warnings 0` all green.                                                                                                                                                |
+| **M2: Admin foundation**           | `/admin/*` is role-guarded at middleware; admin sidebar renders; repo + service barrel pattern is established.                                                                                                                                                      |
+| **M3: Products done**              | Admin can add a product, add vendor rates, set personas, fixed costs, list price, and all discount tiers. Engine can be fed a valid rate snapshot assembled from the DB.                                                                                            |
+| **M4: Labor done**                 | Admin can add departments with employees and burdens; computed loaded rate is displayed; bill rate is editable.                                                                                                                                                     |
+| **M5: Commissions + Bundles done** | Admin can define commission rules with tiers; bundles can reference products and labor.                                                                                                                                                                             |
+| **M6: Users done**                 | Admin can invite users and change roles. Phase 2 feature-complete. (Rails ship as part of M3, co-located with products.)                                                                                                                                            |
+| **M7: Phase 2 verification**       | End-to-end admin flow verified: add product → configure all rate cards → add employees + burdens → define commission rule → create bundle → set rails → invite user. No TypeScript errors, no lint warnings, all unit + integration tests green. Phase 3 can begin. |
 
 ---
 

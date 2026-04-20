@@ -43,13 +43,13 @@ export default function PersonaMixSliders({ personas, initialMix, onChange }: Pr
     if (adjusted.length > 0 && snapTotal !== 100) {
       const first = adjusted[0];
       if (first) {
-        adjusted[0] = { personaId: first.personaId, pct: Math.max(0, first.pct + (100 - snapTotal)) };
+        adjusted[0] = {
+          personaId: first.personaId,
+          pct: Math.max(0, first.pct + (100 - snapTotal)),
+        };
       }
     }
-    const newMix = [
-      ...adjusted,
-      { personaId: changedId, pct: newPct },
-    ].sort(
+    const newMix = [...adjusted, { personaId: changedId, pct: newPct }].sort(
       (a, b) =>
         personas.findIndex((p) => p.id === a.personaId) -
         personas.findIndex((p) => p.id === b.personaId),

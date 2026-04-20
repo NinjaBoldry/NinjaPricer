@@ -58,7 +58,9 @@ describe('ScenarioService.update', () => {
 
   it('throws ValidationError when id is empty', async () => {
     const service = new ScenarioService(mockScenarioRepo());
-    await expect(service.update('', { name: 'Renamed Deal' })).rejects.toMatchObject({ field: 'id' });
+    await expect(service.update('', { name: 'Renamed Deal' })).rejects.toMatchObject({
+      field: 'id',
+    });
   });
 
   it('throws ValidationError when name is empty string if name is present in data', async () => {
@@ -68,7 +70,9 @@ describe('ScenarioService.update', () => {
 
   it('throws ValidationError when contractMonths < 1 if contractMonths present', async () => {
     const service = new ScenarioService(mockScenarioRepo());
-    await expect(service.update('s1', { contractMonths: 0 })).rejects.toMatchObject({ field: 'contractMonths' });
+    await expect(service.update('s1', { contractMonths: 0 })).rejects.toMatchObject({
+      field: 'contractMonths',
+    });
   });
 });
 

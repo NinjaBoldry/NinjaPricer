@@ -32,11 +32,7 @@ async function createProduct(formData: FormData) {
   redirect(`/admin/products/${createdId}`);
 }
 
-export default function NewProductPage({
-  searchParams,
-}: {
-  searchParams?: { error?: string };
-}) {
+export default function NewProductPage({ searchParams }: { searchParams?: { error?: string } }) {
   const error = searchParams?.error ? decodeURIComponent(searchParams.error) : null;
 
   return (

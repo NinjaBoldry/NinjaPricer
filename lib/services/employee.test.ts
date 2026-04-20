@@ -15,7 +15,7 @@ describe('EmployeeService.create', () => {
         compensationType: 'ANNUAL_SALARY',
         annualSalaryUsd: new Decimal('120000'),
         standardHoursPerYear: 2080,
-      })
+      }),
     ).resolves.toBeDefined();
     expect(repo.create).toHaveBeenCalledOnce();
   });
@@ -31,7 +31,7 @@ describe('EmployeeService.create', () => {
         compensationType: 'HOURLY',
         hourlyRateUsd: new Decimal('55'),
         standardHoursPerYear: 1920,
-      })
+      }),
     ).resolves.toBeDefined();
     expect(repo.create).toHaveBeenCalledOnce();
   });
@@ -46,7 +46,7 @@ describe('EmployeeService.create', () => {
         compensationType: 'ANNUAL_SALARY',
         annualSalaryUsd: new Decimal('100000'),
         standardHoursPerYear: 2080,
-      })
+      }),
     ).rejects.toMatchObject({ field: 'name' });
   });
 
@@ -58,7 +58,7 @@ describe('EmployeeService.create', () => {
         departmentId: 'd1',
         compensationType: 'ANNUAL_SALARY',
         standardHoursPerYear: 2080,
-      })
+      }),
     ).rejects.toThrow(ValidationError);
   });
 
@@ -72,7 +72,7 @@ describe('EmployeeService.create', () => {
         compensationType: 'ANNUAL_SALARY',
         annualSalaryUsd: new Decimal('0'),
         standardHoursPerYear: 2080,
-      })
+      }),
     ).rejects.toMatchObject({ field: 'annualSalaryUsd' });
   });
 
@@ -84,7 +84,7 @@ describe('EmployeeService.create', () => {
         departmentId: 'd1',
         compensationType: 'HOURLY',
         standardHoursPerYear: 1920,
-      })
+      }),
     ).rejects.toThrow(ValidationError);
   });
 
@@ -97,7 +97,7 @@ describe('EmployeeService.create', () => {
         departmentId: 'd1',
         compensationType: 'HOURLY',
         hourlyRateUsd: new Decimal('55'),
-      })
+      }),
     ).rejects.toThrow(ValidationError);
   });
 
@@ -111,7 +111,7 @@ describe('EmployeeService.create', () => {
         compensationType: 'HOURLY',
         hourlyRateUsd: new Decimal('55'),
         standardHoursPerYear: 0,
-      })
+      }),
     ).rejects.toMatchObject({ field: 'standardHoursPerYear' });
   });
 });

@@ -3,7 +3,11 @@ import Decimal from 'decimal.js';
 import { ValidationError } from '../utils/errors';
 
 export interface IBaseUsageRepository {
-  upsert(data: { productId: string; vendorRateId: string; usagePerMonth: Decimal }): Promise<unknown>;
+  upsert(data: {
+    productId: string;
+    vendorRateId: string;
+    usagePerMonth: Decimal;
+  }): Promise<unknown>;
   findByProduct(productId: string): Promise<unknown[]>;
 }
 

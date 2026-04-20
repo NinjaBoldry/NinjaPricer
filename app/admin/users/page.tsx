@@ -3,18 +3,19 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table';
 import { prisma } from '@/lib/db/client';
 import { UserRepository } from '@/lib/db/repositories/user';
 import { requireAdmin } from '@/lib/auth/session';
 import { inviteUser, setUserRole } from './actions';
 
-export default async function UsersPage({
-  searchParams,
-}: {
-  searchParams?: { error?: string };
-}) {
+export default async function UsersPage({ searchParams }: { searchParams?: { error?: string } }) {
   const [actingUser, users] = await Promise.all([
     requireAdmin(),
     new UserRepository(prisma).findAll(),
@@ -25,7 +26,9 @@ export default async function UsersPage({
   return (
     <div className="p-6">
       <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
-        <Link href="/admin" className="hover:underline">Admin</Link>
+        <Link href="/admin" className="hover:underline">
+          Admin
+        </Link>
         <span>/</span>
         <span className="text-foreground font-medium">Users</span>
       </div>
@@ -51,11 +54,13 @@ export default async function UsersPage({
                 <TableCell className="font-medium">{u.name}</TableCell>
                 <TableCell>{u.email}</TableCell>
                 <TableCell>
-                  <span className={`text-xs font-medium px-2 py-0.5 rounded border ${
-                    u.role === 'ADMIN'
-                      ? 'border-blue-300 text-blue-700 bg-blue-50'
-                      : 'border-gray-300 text-gray-600 bg-gray-50'
-                  }`}>
+                  <span
+                    className={`text-xs font-medium px-2 py-0.5 rounded border ${
+                      u.role === 'ADMIN'
+                        ? 'border-blue-300 text-blue-700 bg-blue-50'
+                        : 'border-gray-300 text-gray-600 bg-gray-50'
+                    }`}
+                  >
                     {u.role}
                   </span>
                 </TableCell>

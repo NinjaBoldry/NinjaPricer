@@ -25,7 +25,9 @@ export class CommissionRuleRepository {
         baseMetric: data.baseMetric,
         ...(data.scopeProductId !== undefined && { scopeProductId: data.scopeProductId }),
         ...(data.scopeDepartmentId !== undefined && { scopeDepartmentId: data.scopeDepartmentId }),
-        ...(data.recipientEmployeeId !== undefined && { recipientEmployeeId: data.recipientEmployeeId }),
+        ...(data.recipientEmployeeId !== undefined && {
+          recipientEmployeeId: data.recipientEmployeeId,
+        }),
         ...(data.notes !== undefined && { notes: data.notes }),
       },
     });
@@ -57,7 +59,7 @@ export class CommissionRuleRepository {
       recipientEmployeeId?: string | undefined;
       notes?: string | undefined;
       isActive?: boolean | undefined;
-    }
+    },
   ): Promise<CommissionRule> {
     return this.db.commissionRule.update({
       where: { id },
@@ -67,7 +69,9 @@ export class CommissionRuleRepository {
         ...(data.baseMetric !== undefined && { baseMetric: data.baseMetric }),
         ...(data.scopeProductId !== undefined && { scopeProductId: data.scopeProductId }),
         ...(data.scopeDepartmentId !== undefined && { scopeDepartmentId: data.scopeDepartmentId }),
-        ...(data.recipientEmployeeId !== undefined && { recipientEmployeeId: data.recipientEmployeeId }),
+        ...(data.recipientEmployeeId !== undefined && {
+          recipientEmployeeId: data.recipientEmployeeId,
+        }),
         ...(data.notes !== undefined && { notes: data.notes }),
         ...(data.isActive !== undefined && { isActive: data.isActive }),
       },

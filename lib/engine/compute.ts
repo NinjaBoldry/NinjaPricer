@@ -49,7 +49,13 @@ export function compute(req: ComputeRequest): ComputeResult {
     contractRevenueCents === 0 ? 0 : contributionMarginCents / contractRevenueCents;
   const marginPctNet = contractRevenueCents === 0 ? 0 : netMarginCents / contractRevenueCents;
 
-  const warnings = evaluateRails(req.rails, perTab, netMarginCents, contractRevenueCents, req.contractMonths);
+  const warnings = evaluateRails(
+    req.rails,
+    perTab,
+    netMarginCents,
+    contractRevenueCents,
+    req.contractMonths,
+  );
 
   return {
     perTab,

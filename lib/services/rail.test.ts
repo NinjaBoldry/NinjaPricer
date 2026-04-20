@@ -24,10 +24,18 @@ describe('RailService.upsert', () => {
   it('throws when MIN_MARGIN_PCT soft > hard (wrong direction)', async () => {
     const service = new RailService(mockRailRepo());
     await expect(
-      service.upsert({ ...validMinMarginInput, softThreshold: new Decimal('0.20'), hardThreshold: new Decimal('0.10') })
+      service.upsert({
+        ...validMinMarginInput,
+        softThreshold: new Decimal('0.20'),
+        hardThreshold: new Decimal('0.10'),
+      }),
     ).rejects.toThrow(ValidationError);
     await expect(
-      service.upsert({ ...validMinMarginInput, softThreshold: new Decimal('0.20'), hardThreshold: new Decimal('0.10') })
+      service.upsert({
+        ...validMinMarginInput,
+        softThreshold: new Decimal('0.20'),
+        hardThreshold: new Decimal('0.10'),
+      }),
     ).rejects.toMatchObject({ field: 'softThreshold' });
   });
 
@@ -47,15 +55,25 @@ describe('RailService.upsert', () => {
 
   it('throws when MIN_MARGIN_PCT marginBasis is missing', async () => {
     const service = new RailService(mockRailRepo());
-    const call = service.upsert({ ...validMinMarginInput, marginBasis: undefined as unknown as 'CONTRIBUTION' });
+    const call = service.upsert({
+      ...validMinMarginInput,
+      marginBasis: undefined as unknown as 'CONTRIBUTION',
+    });
     await expect(call).rejects.toThrow(ValidationError);
-    const call2 = service.upsert({ ...validMinMarginInput, marginBasis: undefined as unknown as 'CONTRIBUTION' });
+    const call2 = service.upsert({
+      ...validMinMarginInput,
+      marginBasis: undefined as unknown as 'CONTRIBUTION',
+    });
     await expect(call2).rejects.toMatchObject({ field: 'marginBasis' });
   });
 
   it('throws when threshold out of range for percentage rail', async () => {
     const service = new RailService(mockRailRepo());
-    const input = { ...validMinMarginInput, softThreshold: new Decimal('1.5'), hardThreshold: new Decimal('2.0') };
+    const input = {
+      ...validMinMarginInput,
+      softThreshold: new Decimal('1.5'),
+      hardThreshold: new Decimal('2.0'),
+    };
     await expect(service.upsert(input)).rejects.toThrow(ValidationError);
     await expect(service.upsert(input)).rejects.toMatchObject({ field: 'softThreshold' });
   });
@@ -64,7 +82,11 @@ describe('RailService.upsert', () => {
     const repo = mockRailRepo();
     const service = new RailService(repo);
     await expect(
-      service.upsert({ ...validMinMarginInput, softThreshold: new Decimal('0.15'), hardThreshold: new Decimal('0.15') })
+      service.upsert({
+        ...validMinMarginInput,
+        softThreshold: new Decimal('0.15'),
+        hardThreshold: new Decimal('0.15'),
+      }),
     ).resolves.toBeDefined();
   });
 
@@ -79,7 +101,7 @@ describe('RailService.upsert', () => {
         softThreshold: new Decimal('5'),
         hardThreshold: new Decimal('10'),
         isEnabled: true,
-      })
+      }),
     ).resolves.toBeDefined();
     expect(repo.upsert).toHaveBeenCalledOnce();
   });
@@ -123,7 +145,7 @@ describe('RailService.upsert', () => {
         softThreshold: new Decimal('6'),
         hardThreshold: new Decimal('12'),
         isEnabled: true,
-      })
+      }),
     ).resolves.toBeDefined();
     expect(repo.upsert).toHaveBeenCalledOnce();
   });

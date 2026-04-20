@@ -61,9 +61,7 @@ export default async function VolumeTiersPage({
           {tiers.map((t) => (
             <TableRow key={t.id}>
               <TableCell>{t.minSeats.toLocaleString()}</TableCell>
-              <TableCell>
-                {(parseFloat(t.discountPct.toString()) * 100).toFixed(2)}%
-              </TableCell>
+              <TableCell>{(parseFloat(t.discountPct.toString()) * 100).toFixed(2)}%</TableCell>
               <TableCell>
                 <form action={deleteVolumeTier.bind(null, t.id, params.id)}>
                   <Button type="submit" variant="destructive" size="sm">
@@ -75,10 +73,7 @@ export default async function VolumeTiersPage({
           ))}
           {tiers.length === 0 && (
             <TableRow>
-              <TableCell
-                colSpan={3}
-                className="text-center text-muted-foreground py-8"
-              >
+              <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
                 No volume discount tiers yet.
               </TableCell>
             </TableRow>

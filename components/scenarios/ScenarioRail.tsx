@@ -39,9 +39,7 @@ export default function ScenarioRail({ computeResult, userRole }: Props) {
         </div>
         <div className="flex justify-between">
           <dt className="text-slate-500">Contribution margin</dt>
-          <dd className="font-medium">
-            {t ? formatCents(t.contributionMarginCents) : '—'}
-          </dd>
+          <dd className="font-medium">{t ? formatCents(t.contributionMarginCents) : '—'}</dd>
         </div>
         <div className="flex justify-between">
           <dt className="text-slate-500">Commissions</dt>
@@ -52,9 +50,7 @@ export default function ScenarioRail({ computeResult, userRole }: Props) {
         <div className="flex justify-between border-t pt-3">
           <dt className="font-medium">Net margin</dt>
           <dd className="font-semibold" data-testid="rail-net-margin">
-            {t
-              ? `${formatCents(t.netMarginCents)} (${(t.marginPctNet * 100).toFixed(1)}%)`
-              : '—'}
+            {t ? `${formatCents(t.netMarginCents)} (${(t.marginPctNet * 100).toFixed(1)}%)` : '—'}
           </dd>
         </div>
       </dl>
@@ -63,9 +59,7 @@ export default function ScenarioRail({ computeResult, userRole }: Props) {
         <div
           key={w.railId}
           className={`mt-3 rounded p-2 text-xs leading-snug ${
-            w.severity === 'hard'
-              ? 'bg-red-100 text-red-800'
-              : 'bg-yellow-100 text-yellow-800'
+            w.severity === 'hard' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'
           }`}
         >
           {userRole === 'SALES'

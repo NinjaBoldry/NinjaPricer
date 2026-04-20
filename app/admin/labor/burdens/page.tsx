@@ -16,11 +16,7 @@ import { BurdenRepository } from '@/lib/db/repositories/burden';
 import { DepartmentRepository } from '@/lib/db/repositories/department';
 import { upsertBurden, deleteBurden } from './actions';
 
-export default async function BurdensPage({
-  searchParams,
-}: {
-  searchParams?: { error?: string };
-}) {
+export default async function BurdensPage({ searchParams }: { searchParams?: { error?: string } }) {
   const [burdens, departments] = await Promise.all([
     new BurdenRepository(prisma).findAll(),
     new DepartmentRepository(prisma).listAll(),
@@ -31,7 +27,9 @@ export default async function BurdensPage({
   return (
     <div className="p-6">
       <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
-        <Link href="/admin" className="hover:underline">Admin</Link>
+        <Link href="/admin" className="hover:underline">
+          Admin
+        </Link>
         <span>/</span>
         <span className="text-foreground font-medium">Burdens</span>
       </div>
@@ -56,10 +54,14 @@ export default async function BurdensPage({
               <TableCell className="font-medium">{b.name}</TableCell>
               <TableCell>{new Decimal(b.ratePct.toString()).mul(100).toFixed(2)}%</TableCell>
               <TableCell>{b.capUsd ? `$${b.capUsd.toString()}` : '—'}</TableCell>
-              <TableCell>{b.scope === 'ALL_DEPARTMENTS' ? 'All Departments' : 'Department'}</TableCell>
+              <TableCell>
+                {b.scope === 'ALL_DEPARTMENTS' ? 'All Departments' : 'Department'}
+              </TableCell>
               <TableCell>
                 <form action={deleteBurden.bind(null, b.id)}>
-                  <Button type="submit" variant="destructive" size="sm">Delete</Button>
+                  <Button type="submit" variant="destructive" size="sm">
+                    Delete
+                  </Button>
                 </form>
               </TableCell>
             </TableRow>
@@ -118,7 +120,9 @@ export default async function BurdensPage({
             </select>
           </div>
           <div className="space-y-1">
-            <Label htmlFor="departmentId">Department (required if scope is Specific Department)</Label>
+            <Label htmlFor="departmentId">
+              Department (required if scope is Specific Department)
+            </Label>
             <select
               id="departmentId"
               name="departmentId"
@@ -126,7 +130,9 @@ export default async function BurdensPage({
             >
               <option value="">— select —</option>
               {departments.map((d) => (
-                <option key={d.id} value={d.id}>{d.name}</option>
+                <option key={d.id} value={d.id}>
+                  {d.name}
+                </option>
               ))}
             </select>
           </div>

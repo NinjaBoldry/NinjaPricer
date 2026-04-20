@@ -12,7 +12,13 @@ export function evaluateRails(
   for (const rail of rails) {
     const tab = perTab.find((t) => t.productId === rail.productId);
     if (!tab) continue;
-    const measured = measureRail(rail, tab, netMarginCentsAll, contractRevenueCentsAll, contractMonths);
+    const measured = measureRail(
+      rail,
+      tab,
+      netMarginCentsAll,
+      contractRevenueCentsAll,
+      contractMonths,
+    );
     if (measured == null) continue;
 
     const mDec = d(measured);

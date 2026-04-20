@@ -25,9 +25,7 @@ export async function addTrainingLineFromSKU(formData: FormData) {
     qty,
     unit: sku.unit,
     costPerUnitUsd: sku.costPerUnitUsd.toString(),
-    revenuePerUnitUsd: revenueOverride
-      ? String(revenueOverride)
-      : sku.defaultRevenueUsd.toString(),
+    revenuePerUnitUsd: revenueOverride ? String(revenueOverride) : sku.defaultRevenueUsd.toString(),
   });
   revalidatePath(`/scenarios/${scenarioId}/training`);
 }
