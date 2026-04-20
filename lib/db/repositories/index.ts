@@ -28,3 +28,4 @@ export { UserRepository } from './user';
 export { ScenarioRepository } from './scenario';
 export { ScenarioSaaSConfigRepository } from './scenarioSaaSConfig';
 export { ScenarioLaborLineRepository } from './scenarioLaborLine';
+export { QuoteRepository } from './quote';
