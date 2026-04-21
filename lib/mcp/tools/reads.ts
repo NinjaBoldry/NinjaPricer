@@ -204,7 +204,7 @@ import { NotFoundError } from '@/lib/utils/errors';
 
 const scenarioListInputSchema = z
   .object({
-    status: z.enum(['DRAFT', 'IN_REVIEW', 'SENT', 'WON', 'LOST', 'ARCHIVED']).optional(),
+    status: z.enum(['DRAFT', 'QUOTED', 'ARCHIVED']).optional(),
     customer: z.string().optional(),
   })
   .strict();
