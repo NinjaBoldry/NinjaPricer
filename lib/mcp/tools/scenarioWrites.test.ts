@@ -216,3 +216,26 @@ describe('set_scenario_labor_lines', () => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// Task 5.1-F: apply_bundle_to_scenario
+// ---------------------------------------------------------------------------
+
+describe('apply_bundle_to_scenario', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('sales caller: own scenario → delegates', async () => {
+    vi.mocked(getScenarioById).mockResolvedValue({ id: 's1', ownerId: 'u2' } as any);
+    vi.mocked(applyBundleToScenario).mockResolvedValue({ scenarioId: 's1', bundleId: 'b1' } as any);
+    const out = await applyBundleToScenarioTool.handler(salesCtx, { scenarioId: 's1', bundleId: 'b1' });
+    expect(applyBundleToScenario).toHaveBeenCalledWith({ scenarioId: 's1', bundleId: 'b1' });
+    expect(out).toEqual({ scenarioId: 's1', bundleId: 'b1' });
+  });
+
+  it('sales caller: non-owner scenario → NotFoundError', async () => {
+    vi.mocked(getScenarioById).mockResolvedValue({ id: 's1', ownerId: 'other' } as any);
+    await expect(
+      applyBundleToScenarioTool.handler(salesCtx, { scenarioId: 's1', bundleId: 'b1' }),
+    ).rejects.toBeInstanceOf(NotFoundError);
+  });
+});
+
