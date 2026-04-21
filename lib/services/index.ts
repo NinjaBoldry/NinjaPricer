@@ -31,3 +31,4 @@ export {
   listAllApiTokens,
   TOKEN_PREFIX,
 } from './apiToken';
+export { appendAudit, listAuditForToken, hashArgs } from './apiAuditLog';
