@@ -13,6 +13,8 @@ export interface IDepartmentRepository {
   findById(id: string): Promise<unknown>;
   listAll(): Promise<unknown[]>;
   upsertBillRate(departmentId: string, billRatePerHour: Decimal): Promise<unknown>;
+  update(id: string, data: { name?: string | undefined; isActive?: boolean | undefined }): Promise<unknown>;
+  delete(id: string): Promise<void>;
 }
 
 const CreateDepartmentSchema = z.object({
@@ -29,6 +31,17 @@ export class DepartmentService {
       throw new ValidationError(issue.path.join('.') || 'name', issue.message);
     }
     return this.repo.create(parsed.data);
+  }
+
+  async update(id: string, data: { name?: string | undefined }) {
+    if (data.name !== undefined && data.name.trim().length === 0) {
+      throw new ValidationError('name', 'is required');
+    }
+    return this.repo.update(id, data);
+  }
+
+  async delete(id: string) {
+    return this.repo.delete(id);
   }
 
   async setBillRate(departmentId: string, billRatePerHour: Decimal) {

@@ -14,5 +14,6 @@ export function mockBundleRepo(): IBundleRepository {
     findAll: vi.fn().mockResolvedValue([]),
     findById: vi.fn().mockResolvedValue(null),
     update: vi.fn().mockResolvedValue({}),
+    delete: vi.fn().mockResolvedValue({}),
   };
 }

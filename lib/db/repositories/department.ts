@@ -25,6 +25,20 @@ export class DepartmentRepository {
     });
   }
 
+  async update(
+    id: string,
+    data: { name?: string | undefined; isActive?: boolean | undefined },
+  ): Promise<Department> {
+    const patch: { name?: string; isActive?: boolean } = {};
+    if (data.name !== undefined) patch.name = data.name;
+    if (data.isActive !== undefined) patch.isActive = data.isActive;
+    return this.db.department.update({ where: { id }, data: patch });
+  }
+
+  async delete(id: string): Promise<void> {
+    await this.db.department.delete({ where: { id } });
+  }
+
   async upsertBillRate(
     departmentId: string,
     billRatePerHour: Decimal,

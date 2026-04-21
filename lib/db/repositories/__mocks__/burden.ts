@@ -15,6 +15,7 @@ export function mockBurdenRepo(): IBurdenRepository {
     }),
     findAll: vi.fn().mockResolvedValue([]),
     findByDepartment: vi.fn().mockResolvedValue([]),
+    update: vi.fn().mockResolvedValue({}),
     delete: vi.fn().mockResolvedValue(undefined),
   };
 }

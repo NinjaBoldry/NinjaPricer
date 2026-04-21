@@ -29,6 +29,7 @@ export interface ICommissionRuleRepository {
       isActive?: boolean | undefined;
     },
   ): Promise<unknown>;
+  delete(id: string): Promise<unknown>;
 }
 
 const CreateRuleSchema = z.object({
@@ -124,6 +125,10 @@ export class CommissionRuleService {
     };
     validateScope(merged);
     return this.repo.update(id, parsed.data);
+  }
+
+  async delete(id: string) {
+    return this.repo.delete(id);
   }
 }
 

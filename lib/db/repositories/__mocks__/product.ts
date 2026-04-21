@@ -19,5 +19,6 @@ export function mockProductRepo(): IProductRepository {
     listActive: vi.fn().mockResolvedValue([]),
     listAll: vi.fn().mockResolvedValue([]),
     update: vi.fn().mockResolvedValue(fakeProduct),
+    delete: vi.fn().mockResolvedValue(fakeProduct),
   };
 }

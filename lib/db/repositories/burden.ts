@@ -36,6 +36,20 @@ export class BurdenRepository {
     });
   }
 
+  async update(
+    id: string,
+    data: {
+      name?: string;
+      ratePct?: Decimal;
+      capUsd?: Decimal | null;
+      scope?: BurdenScope;
+      departmentId?: string | null;
+      isActive?: boolean;
+    },
+  ): Promise<Burden> {
+    return this.db.burden.update({ where: { id }, data });
+  }
+
   async delete(id: string): Promise<void> {
     await this.db.burden.delete({ where: { id } });
   }

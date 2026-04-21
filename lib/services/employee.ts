@@ -26,6 +26,7 @@ export interface IEmployeeRepository {
       isActive?: boolean | undefined;
     },
   ): Promise<unknown>;
+  delete(id: string): Promise<void>;
 }
 
 const BaseSchema = z.object({
@@ -73,6 +74,23 @@ export class EmployeeService {
     }
 
     return this.repo.create(parsed.data as Parameters<IEmployeeRepository['create']>[0]);
+  }
+
+  async update(
+    id: string,
+    data: {
+      name?: string;
+      annualSalaryUsd?: Decimal;
+      hourlyRateUsd?: Decimal;
+      standardHoursPerYear?: number;
+      isActive?: boolean;
+    },
+  ) {
+    return this.repo.update(id, data);
+  }
+
+  async delete(id: string) {
+    return this.repo.delete(id);
   }
 
   async findByDepartment(departmentId: string) {

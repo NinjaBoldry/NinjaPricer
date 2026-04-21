@@ -49,4 +49,8 @@ export class BundleRepository {
       },
     });
   }
+
+  async delete(id: string): Promise<Bundle> {
+    return this.db.bundle.delete({ where: { id } });
+  }
 }
