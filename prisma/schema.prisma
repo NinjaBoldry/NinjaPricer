@@ -108,6 +108,8 @@ model Product {
   scenarioLaborLines    ScenarioLaborLine[]
   bundleItems           BundleItem[]
   commissionRulesScoped CommissionRule[]         @relation("CommissionProductScope")
+  hubspotProductId      String?
+  hubspotMap            HubSpotProductMap?
 }
 
 model VendorRate {
@@ -294,8 +296,10 @@ model Bundle {
   isActive    Boolean      @default(true)
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
-  items       BundleItem[]
-  scenarios   Scenario[]   @relation("ScenarioAppliedBundle")
+  items            BundleItem[]
+  scenarios        Scenario[]        @relation("ScenarioAppliedBundle")
+  hubspotProductId String?
+  hubspotMap       HubSpotProductMap?
 }
 
 model BundleItem {
@@ -460,4 +464,56 @@ model ApiAuditLog {
 enum AuditResult {
   OK
   ERROR
+}
+
+enum HubSpotProductKind {
+  PRODUCT
+  BUNDLE
+}
+
+enum HubSpotReviewResolution {
+  ACCEPT_HUBSPOT
+  REJECT
+  IGNORE
+}
+
+model HubSpotConfig {
+  id                   String    @id @default(cuid())
+  portalId             String    @unique
+  enabled              Boolean   @default(false)
+  accessTokenSecretRef String
+  lastPushAt           DateTime?
+  lastPullAt           DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+}
+
+model HubSpotProductMap {
+  id               String             @id @default(cuid())
+  pricerProductId  String?            @unique
+  pricerBundleId   String?            @unique
+  hubspotProductId String             @unique
+  kind             HubSpotProductKind
+  lastSyncedHash   String
+  lastSyncedAt     DateTime
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  product Product? @relation(fields: [pricerProductId], references: [id], onDelete: Cascade)
+  bundle  Bundle?  @relation(fields: [pricerBundleId], references: [id], onDelete: Cascade)
+}
+
+model HubSpotReviewQueueItem {
+  id                String                   @id @default(cuid())
+  entityType        HubSpotProductKind
+  hubspotId         String
+  pricerEntityId    String
+  changedFields     Json
+  changedFieldsHash String
+  detectedAt        DateTime                 @default(now())
+  resolvedAt        DateTime?
+  resolution        HubSpotReviewResolution?
+  resolvedByUserId  String?
+
+  @@unique([entityType, hubspotId, changedFieldsHash])
 }
