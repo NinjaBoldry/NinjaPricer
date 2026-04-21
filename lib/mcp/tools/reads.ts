@@ -199,6 +199,49 @@ export const getBundleTool: ToolDefinition<{ id: string }, unknown> = {
   handler: async (_ctx, { id }) => getBundleById(id),
 };
 
+import { listScenariosForUser, getScenarioById } from '@/lib/services/scenario';
+import { NotFoundError } from '@/lib/utils/errors';
+
+const scenarioListInputSchema = z
+  .object({
+    status: z.enum(['DRAFT', 'IN_REVIEW', 'SENT', 'WON', 'LOST', 'ARCHIVED']).optional(),
+    customer: z.string().optional(),
+  })
+  .strict();
+
+export const listScenariosTool: ToolDefinition<
+  z.infer<typeof scenarioListInputSchema>,
+  unknown
+> = {
+  name: 'list_scenarios',
+  description:
+    'Lists scenarios. Sales role sees only their own; admin sees everyone. Supports optional filters: status, customer (substring match).',
+  inputSchema: scenarioListInputSchema,
+  requiresAdmin: false,
+  handler: async (ctx, input) =>
+    listScenariosForUser({
+      role: ctx.user.role as 'ADMIN' | 'SALES',
+      userId: ctx.user.id,
+      ...(input.status != null && { status: input.status }),
+      ...(input.customer != null && { customer: input.customer }),
+    }),
+};
+
+export const getScenarioTool: ToolDefinition<{ id: string }, unknown> = {
+  name: 'get_scenario',
+  description:
+    'Full scenario with all SaaS configs, labor lines, and quote versions. Sales callers receive 404 for scenarios they do not own, to avoid leaking existence.',
+  inputSchema: z.object({ id: z.string() }).strict(),
+  requiresAdmin: false,
+  handler: async (ctx, { id }) => {
+    const scenario = await getScenarioById(id);
+    if (ctx.user.role === 'SALES' && (scenario as any).ownerId !== ctx.user.id) {
+      throw new NotFoundError('Scenario', id);
+    }
+    return scenario;
+  },
+};
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const readTools: ToolDefinition<any, any>[] = [
   computeQuoteTool,
@@ -206,4 +249,6 @@ export const readTools: ToolDefinition<any, any>[] = [
   getProductTool,
   listBundlesTool,
   getBundleTool,
+  listScenariosTool,
+  getScenarioTool,
 ];

@@ -1,6 +1,8 @@
 import { z } from 'zod';
 import { ScenarioStatus } from '@prisma/client';
-import { ValidationError } from '../utils/errors';
+import { ValidationError, NotFoundError } from '../utils/errors';
+import { prisma } from '@/lib/db/client';
+import { ScenarioRepository } from '@/lib/db/repositories/scenario';
 
 export interface IScenarioRepository {
   create(data: {
@@ -100,4 +102,31 @@ export class ScenarioService {
   async archive(id: string) {
     return this.repo.archive(id);
   }
+}
+
+// --- Free-function wrappers for MCP tools ---
+
+export async function listScenariosForUser(
+  params: {
+    role: 'ADMIN' | 'SALES';
+    userId: string;
+    status?: ScenarioStatus;
+    customer?: string;
+  },
+  repo: ScenarioRepository = new ScenarioRepository(prisma),
+) {
+  return repo.listWithFilters({
+    actingUser: { id: params.userId, role: params.role },
+    ...(params.status !== undefined && { status: params.status }),
+    ...(params.customer !== undefined && { customerName: params.customer }),
+  });
+}
+
+export async function getScenarioById(
+  id: string,
+  repo: ScenarioRepository = new ScenarioRepository(prisma),
+) {
+  const scenario = await repo.findById(id);
+  if (!scenario) throw new NotFoundError('Scenario', id);
+  return scenario;
 }

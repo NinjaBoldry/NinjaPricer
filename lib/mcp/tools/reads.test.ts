@@ -106,3 +106,62 @@ describe('list_bundles / get_bundle', () => {
     expect(getBundleById).toHaveBeenCalledWith('b1');
   });
 });
+
+vi.mock('@/lib/services/scenario', () => ({
+  listScenariosForUser: vi.fn(),
+  getScenarioById: vi.fn(),
+}));
+
+import { listScenariosTool, getScenarioTool } from './reads';
+import { listScenariosForUser, getScenarioById } from '@/lib/services/scenario';
+
+const salesCtx: McpContext = {
+  user: { id: 'u2', email: 's@b', name: null, role: 'SALES' },
+  token: { id: 't2', label: 'x', ownerUserId: 'u2' },
+};
+
+describe('list_scenarios tool', () => {
+  it('sales sees only own', async () => {
+    vi.mocked(listScenariosForUser).mockResolvedValue([]);
+    await listScenariosTool.handler(salesCtx, {});
+    expect(listScenariosForUser).toHaveBeenCalledWith({ role: 'SALES', userId: 'u2' });
+  });
+
+  it('admin sees all', async () => {
+    vi.mocked(listScenariosForUser).mockResolvedValue([]);
+    await listScenariosTool.handler(ctx, {});
+    expect(listScenariosForUser).toHaveBeenCalledWith({ role: 'ADMIN', userId: 'u1' });
+  });
+
+  it('filters are optional and forwarded', async () => {
+    vi.mocked(listScenariosForUser).mockResolvedValue([]);
+    await listScenariosTool.handler(ctx, { status: 'DRAFT', customer: 'Acme' });
+    expect(listScenariosForUser).toHaveBeenCalledWith({
+      role: 'ADMIN',
+      userId: 'u1',
+      status: 'DRAFT',
+      customer: 'Acme',
+    });
+  });
+});
+
+describe('get_scenario tool', () => {
+  it('sales gets own scenario', async () => {
+    vi.mocked(getScenarioById).mockResolvedValue({ id: 's1', ownerId: 'u2' } as any);
+    const out = await getScenarioTool.handler(salesCtx, { id: 's1' });
+    expect((out as any).id).toBe('s1');
+  });
+
+  it('sales cannot get another user\'s scenario → NotFoundError', async () => {
+    vi.mocked(getScenarioById).mockResolvedValue({ id: 's1', ownerId: 'other' } as any);
+    await expect(getScenarioTool.handler(salesCtx, { id: 's1' })).rejects.toBeInstanceOf(
+      NotFoundError,
+    );
+  });
+
+  it('admin can get any scenario', async () => {
+    vi.mocked(getScenarioById).mockResolvedValue({ id: 's1', ownerId: 'somebody' } as any);
+    const out = await getScenarioTool.handler(ctx, { id: 's1' });
+    expect((out as any).id).toBe('s1');
+  });
+});
