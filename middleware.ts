@@ -10,6 +10,8 @@ export default NextAuth(authConfig).auth((req) => {
   const isPublic =
     pathname === '/' ||
     pathname.startsWith('/api/auth') ||
+    pathname.startsWith('/api/mcp') ||
+    pathname.startsWith('/api/quotes/') ||
     pathname.startsWith('/_next') ||
     pathname.startsWith('/favicon');
 
