@@ -37,10 +37,10 @@ export async function appendAudit(
     userId: input.userId,
     toolName: input.toolName,
     argsHash: hashArgs(input.args),
-    targetEntityType: input.targetEntityType,
-    targetEntityId: input.targetEntityId,
     result: input.result,
-    errorCode: input.errorCode,
+    ...(input.targetEntityType !== undefined && { targetEntityType: input.targetEntityType }),
+    ...(input.targetEntityId !== undefined && { targetEntityId: input.targetEntityId }),
+    ...(input.errorCode !== undefined && { errorCode: input.errorCode }),
   });
 }
 

@@ -77,7 +77,7 @@ describe('ApiTokenRepository', () => {
     const before = Date.now();
     await repo.revoke('t1');
     const after = Date.now();
-    const call = mockDb.apiToken.update.mock.calls[0][0];
+    const call = mockDb.apiToken.update.mock.calls[0]![0];
     expect(call.where).toEqual({ id: 't1' });
     const stamped = (call.data.revokedAt as Date).getTime();
     expect(stamped).toBeGreaterThanOrEqual(before);

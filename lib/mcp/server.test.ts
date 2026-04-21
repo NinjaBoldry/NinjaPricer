@@ -60,7 +60,10 @@ describe('createMcpServer', () => {
       description: 'd',
       inputSchema: z.object({ n: z.number() }),
       requiresAdmin: false,
-      handler: vi.fn(async (_ctx, input: { n: number }) => ({ doubled: input.n * 2 })),
+      handler: vi.fn(async (_ctx: McpContext, input: unknown) => {
+        const { n } = input as { n: number };
+        return { doubled: n * 2 };
+      }),
     };
     const server = createMcpServer([typed]);
     await expect(server.callTool('typed', { n: 'x' }, adminCtx)).rejects.toThrow();
