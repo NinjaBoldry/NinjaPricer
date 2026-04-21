@@ -13,6 +13,9 @@ const fakeProductFixedCost: ProductFixedCost = {
 export function mockProductFixedCostRepo(): IProductFixedCostRepository {
   return {
     upsert: vi.fn().mockResolvedValue(fakeProductFixedCost),
+    create: vi.fn().mockResolvedValue(fakeProductFixedCost),
+    update: vi.fn().mockResolvedValue(fakeProductFixedCost),
+    findById: vi.fn().mockResolvedValue(fakeProductFixedCost),
     findByProduct: vi.fn().mockResolvedValue([]),
     delete: vi.fn().mockResolvedValue(undefined),
   };

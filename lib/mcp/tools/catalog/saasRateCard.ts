@@ -307,7 +307,7 @@ export const createFixedCostTool: ToolDefinition<
 > = {
   name: 'create_fixed_cost',
   description:
-    'Admin only. Creates a new fixed-cost row for a product (name, monthlyUsd). monthlyUsd must be >= 0.',
+    'Admin only. Creates a new fixed-cost row for a product (name, monthlyUsd). monthlyUsd must be >= 0. FAILS with unique-constraint error if a fixed cost with the same name already exists for this product.',
   inputSchema: createFixedCostSchema,
   requiresAdmin: true,
   isWrite: true,
@@ -315,7 +315,7 @@ export const createFixedCostTool: ToolDefinition<
   extractTargetId: (_input, output) => output?.id,
   handler: async (_ctx, input) => {
     const svc = new ProductFixedCostService(new ProductFixedCostRepository(prisma));
-    const row = await svc.upsert({
+    const row = await svc.create({
       productId: input.productId,
       name: input.name,
       monthlyUsd: new Decimal(input.monthlyUsd),
@@ -331,7 +331,6 @@ export const createFixedCostTool: ToolDefinition<
 const updateFixedCostSchema = z
   .object({
     id: z.string().min(1),
-    productId: z.string().min(1),
     name: z.string().min(1).optional(),
     monthlyUsd: z.union([z.string(), z.number()]).optional(),
   })
@@ -343,7 +342,7 @@ export const updateFixedCostTool: ToolDefinition<
 > = {
   name: 'update_fixed_cost',
   description:
-    'Admin only. Updates an existing fixed-cost row (name, monthlyUsd). Requires id and productId for upsert key resolution.',
+    'Admin only. Updates an existing fixed-cost row by id (name, monthlyUsd). Patch semantics — only provided fields are changed.',
   inputSchema: updateFixedCostSchema,
   requiresAdmin: true,
   isWrite: true,
@@ -351,13 +350,10 @@ export const updateFixedCostTool: ToolDefinition<
   extractTargetId: (input) => input.id,
   handler: async (_ctx, input) => {
     const svc = new ProductFixedCostService(new ProductFixedCostRepository(prisma));
-    const payload: Record<string, unknown> = {
-      id: input.id,
-      productId: input.productId,
-    };
-    if (input.name !== undefined) payload.name = input.name;
-    if (input.monthlyUsd !== undefined) payload.monthlyUsd = new Decimal(input.monthlyUsd);
-    const row = await svc.upsert(payload);
+    const patch: Record<string, unknown> = {};
+    if (input.name !== undefined) patch.name = input.name;
+    if (input.monthlyUsd !== undefined) patch.monthlyUsd = new Decimal(input.monthlyUsd);
+    const row = await svc.update(input.id, patch);
     return { id: (row as { id: string }).id };
   },
 };

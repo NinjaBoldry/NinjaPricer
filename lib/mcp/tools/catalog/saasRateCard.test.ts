@@ -40,6 +40,8 @@ vi.mock('@/lib/services/persona', () => ({
 vi.mock('@/lib/services/productFixedCost', () => ({
   ProductFixedCostService: vi.fn(function (this: any) {
     this.upsert = vi.fn();
+    this.create = vi.fn();
+    this.update = vi.fn();
     this.delete = vi.fn();
     return this;
   }),
@@ -432,16 +434,17 @@ describe('SaaS rate card catalog tools', () => {
       expect(createFixedCostTool.targetEntityType).toBe('ProductFixedCost');
     });
 
-    it('calls upsert without id and returns {id}', async () => {
-      fixedCostSvc.upsert.mockResolvedValue({ id: 'fc1' });
+    it('calls svc.create (not upsert) and returns {id}', async () => {
+      fixedCostSvc.create.mockResolvedValue({ id: 'fc1' });
       const out = await createFixedCostTool.handler(adminCtx, {
         productId: 'p1',
         name: 'Hosting',
         monthlyUsd: '500',
       });
-      expect(fixedCostSvc.upsert).toHaveBeenCalledWith(
+      expect(fixedCostSvc.create).toHaveBeenCalledWith(
         expect.objectContaining({ productId: 'p1', name: 'Hosting' }),
       );
+      expect(fixedCostSvc.upsert).not.toHaveBeenCalled();
       expect(out).toEqual({ id: 'fc1' });
     });
 
@@ -462,22 +465,26 @@ describe('SaaS rate card catalog tools', () => {
       expect(updateFixedCostTool.targetEntityType).toBe('ProductFixedCost');
     });
 
-    it('calls upsert with id and returns {id}', async () => {
-      fixedCostSvc.upsert.mockResolvedValue({ id: 'fc1' });
+    it('calls svc.update(id, patch) — no productId required — and returns {id}', async () => {
+      fixedCostSvc.update.mockResolvedValue({ id: 'fc1' });
       const out = await updateFixedCostTool.handler(adminCtx, {
         id: 'fc1',
-        productId: 'p1',
         monthlyUsd: '600',
       });
-      expect(fixedCostSvc.upsert).toHaveBeenCalledWith(
-        expect.objectContaining({ id: 'fc1', productId: 'p1' }),
-      );
+      expect(fixedCostSvc.update).toHaveBeenCalledWith('fc1', expect.objectContaining({}));
+      expect(fixedCostSvc.upsert).not.toHaveBeenCalled();
       expect(out).toEqual({ id: 'fc1' });
+    });
+
+    it('does not require productId', () => {
+      expect(() =>
+        updateFixedCostTool.inputSchema.parse({ id: 'fc1', monthlyUsd: '100' }),
+      ).not.toThrow();
     });
 
     it('rejects missing id', () => {
       expect(() =>
-        updateFixedCostTool.inputSchema.parse({ productId: 'p1', monthlyUsd: '100' }),
+        updateFixedCostTool.inputSchema.parse({ monthlyUsd: '100' }),
       ).toThrow();
     });
   });
