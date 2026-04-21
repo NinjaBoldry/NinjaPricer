@@ -12,6 +12,7 @@ const NAV = [
   { href: '/admin/commissions', label: 'Commissions' },
   { href: '/admin/bundles', label: 'Bundles' },
   { href: '/admin/users', label: 'Users' },
+  { href: '/admin/api-tokens', label: 'API tokens' },
 ] as const;
 
 // Rails are per-product, accessed via /admin/products/[id]/rails — not a top-level nav item.
