@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { ValidationError } from '../utils/errors';
+import type { PrismaClient } from '@prisma/client';
 
 export interface IBundleItemRepository {
   add(data: {
@@ -64,5 +65,36 @@ export class BundleItemService {
 
   async findByBundle(bundleId: string) {
     return this.repo.findByBundle(bundleId);
+  }
+
+  /**
+   * Atomically replace all items for a bundle.
+   */
+  async setForBundle(
+    bundleId: string,
+    items: {
+      productId: string;
+      skuId?: string | undefined;
+      departmentId?: string | undefined;
+      config: unknown;
+      sortOrder: number;
+    }[],
+    db: PrismaClient,
+  ) {
+    await db.$transaction(async (tx) => {
+      await tx.bundleItem.deleteMany({ where: { bundleId } });
+      for (const item of items) {
+        await tx.bundleItem.create({
+          data: {
+            bundleId,
+            productId: item.productId,
+            config: item.config as import('@prisma/client').Prisma.InputJsonValue,
+            sortOrder: item.sortOrder,
+            ...(item.skuId !== undefined && { skuId: item.skuId }),
+            ...(item.departmentId !== undefined && { departmentId: item.departmentId }),
+          },
+        });
+      }
+    });
   }
 }

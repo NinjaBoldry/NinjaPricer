@@ -15,6 +15,7 @@ export interface IBundleRepository {
       isActive?: boolean | undefined;
     },
   ): Promise<unknown>;
+  delete(id: string): Promise<unknown>;
 }
 
 const CreateBundleSchema = z.object({
@@ -55,6 +56,10 @@ export class BundleService {
 
   async findById(id: string) {
     return this.repo.findById(id);
+  }
+
+  async delete(id: string) {
+    return this.repo.delete(id);
   }
 }
 
