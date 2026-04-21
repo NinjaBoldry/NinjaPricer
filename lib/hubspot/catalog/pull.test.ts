@@ -10,6 +10,18 @@ describe('pullHubSpotChanges', () => {
   });
 
   it('enqueues review items when HubSpot hash differs from mapping hash', async () => {
+    // Compute the pricer-side hash so lastSyncedHash matches the pricer snapshot
+    // (meaning pricer hasn't changed since last sync, but HubSpot has)
+    const { hashSyncedFields } = await import('./hash');
+    const pricerHash = hashSyncedFields({
+      kind: 'PRODUCT',
+      name: 'Ninja Notes',
+      sku: 'NN-01',
+      description: '',
+      unitPrice: '500.00',
+      recurringBillingFrequency: 'monthly',
+    });
+
     fetchSpy.mockResolvedValue({
       results: [
         {
@@ -23,7 +35,7 @@ describe('pullHubSpotChanges', () => {
             pricer_managed: 'true',
             pricer_product_id: 'p-1',
             pricer_kind: 'product',
-            pricer_last_synced_hash: 'old',
+            pricer_last_synced_hash: 'anything',
           },
         },
       ],
@@ -31,7 +43,7 @@ describe('pullHubSpotChanges', () => {
 
     const review = await pullHubSpotChanges({
       existingMappings: [
-        { pricerProductId: 'p-1', pricerBundleId: null, hubspotProductId: 'hs-1', kind: 'PRODUCT', lastSyncedHash: 'old' },
+        { pricerProductId: 'p-1', pricerBundleId: null, hubspotProductId: 'hs-1', kind: 'PRODUCT', lastSyncedHash: pricerHash },
       ],
       pricerSnapshot: {
         products: [

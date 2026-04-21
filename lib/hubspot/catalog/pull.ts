@@ -78,11 +78,14 @@ export async function pullHubSpotChanges(input: {
     const hubspotSyncFields = buildHubSpotSyncFieldsFromRow(row);
     const hubspotHash = hashSyncedFields(hubspotSyncFields);
 
-    if (hubspotHash === pricerHash) {
-      continue; // HubSpot matches pricer — no drift
+    // Plan's three-way logic:
+    if (hubspotHash === mapping.lastSyncedHash) {
+      continue; // HubSpot didn't change since last sync
     }
-
-    // HubSpot's current fields diverge from pricer's — flag for review
+    if (pricerHash !== mapping.lastSyncedHash) {
+      continue; // Both sides changed — pricer push will overwrite HubSpot, not a review concern
+    }
+    // Only reach here when pricer is unchanged but HubSpot changed → genuine review item.
     const changedFields = diffFields(pricerSyncFieldsObj, hubspotSyncFields as unknown as Record<string, unknown>);
     reviewItems.push({
       entityType: kind,
