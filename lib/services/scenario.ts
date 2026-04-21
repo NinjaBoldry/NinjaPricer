@@ -51,7 +51,11 @@ const CreateSchema = z.object({
 const UpdateSchema = z.object({
   id: z.string().min(1, 'is required'),
   name: z.string().min(1, 'is required').optional(),
+  customerName: z.string().min(1, 'is required').optional(),
   contractMonths: z.number().int('must be an integer').min(1, 'must be at least 1').optional(),
+  notes: z.string().nullable().optional(),
+  appliedBundleId: z.string().nullable().optional(),
+  status: z.nativeEnum(ScenarioStatus).optional(),
 });
 
 export class ScenarioService {
