@@ -10,7 +10,9 @@ export default async function ReviewQueuePage() {
     <main className="p-6 space-y-4 max-w-4xl">
       <h1 className="text-2xl font-semibold">HubSpot Review Queue</h1>
 
-      {items.length === 0 && <p className="text-muted-foreground">No pending HubSpot-side edits.</p>}
+      {items.length === 0 && (
+        <p className="text-muted-foreground">No pending HubSpot-side edits.</p>
+      )}
 
       <table className="w-full text-sm border-collapse">
         <thead>
@@ -23,7 +25,10 @@ export default async function ReviewQueuePage() {
         </thead>
         <tbody>
           {items.map((it) => {
-            const fields = it.changedFields as Record<string, { pricer: unknown; hubspot: unknown }>;
+            const fields = it.changedFields as Record<
+              string,
+              { pricer: unknown; hubspot: unknown }
+            >;
             return (
               <tr key={it.id} className="border-b align-top">
                 <td className="py-2 pr-4">
@@ -34,7 +39,8 @@ export default async function ReviewQueuePage() {
                   <ul className="space-y-1">
                     {Object.entries(fields).map(([k, v]) => (
                       <li key={k}>
-                        <strong>{k}</strong>: <span className="text-muted-foreground">{String(v.pricer)}</span> →{' '}
+                        <strong>{k}</strong>:{' '}
+                        <span className="text-muted-foreground">{String(v.pricer)}</span> →{' '}
                         <span>{String(v.hubspot)}</span>
                       </li>
                     ))}
@@ -42,9 +48,21 @@ export default async function ReviewQueuePage() {
                 </td>
                 <td className="py-2 pr-4">{it.detectedAt.toLocaleString()}</td>
                 <td className="py-2 flex gap-2">
-                  <ResolveButton itemId={it.id} resolution={HubSpotReviewResolution.ACCEPT_HUBSPOT} label="Accept" />
-                  <ResolveButton itemId={it.id} resolution={HubSpotReviewResolution.REJECT} label="Reject" />
-                  <ResolveButton itemId={it.id} resolution={HubSpotReviewResolution.IGNORE} label="Ignore" />
+                  <ResolveButton
+                    itemId={it.id}
+                    resolution={HubSpotReviewResolution.ACCEPT_HUBSPOT}
+                    label="Accept"
+                  />
+                  <ResolveButton
+                    itemId={it.id}
+                    resolution={HubSpotReviewResolution.REJECT}
+                    label="Reject"
+                  />
+                  <ResolveButton
+                    itemId={it.id}
+                    resolution={HubSpotReviewResolution.IGNORE}
+                    label="Ignore"
+                  />
                 </td>
               </tr>
             );

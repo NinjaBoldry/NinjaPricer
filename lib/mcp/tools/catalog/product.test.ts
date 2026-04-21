@@ -53,9 +53,7 @@ describe('product catalog tools', () => {
     });
 
     it('rejects invalid kind', () => {
-      expect(() =>
-        createProductTool.inputSchema.parse({ name: 'X', kind: 'INVALID' }),
-      ).toThrow();
+      expect(() => createProductTool.inputSchema.parse({ name: 'X', kind: 'INVALID' })).toThrow();
     });
   });
 
@@ -83,9 +81,7 @@ describe('product catalog tools', () => {
     });
 
     it('does not accept isArchived (removed from schema)', () => {
-      expect(() =>
-        updateProductTool.inputSchema.parse({ id: 'p1', isArchived: true }),
-      ).toThrow();
+      expect(() => updateProductTool.inputSchema.parse({ id: 'p1', isArchived: true })).toThrow();
     });
 
     it('rejects empty patch', () => {

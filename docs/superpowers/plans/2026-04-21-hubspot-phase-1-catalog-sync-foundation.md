@@ -15,6 +15,7 @@
 ## File Structure
 
 **Created:**
+
 ```
 lib/hubspot/
   client.ts                          — hubspotFetch wrapper
@@ -58,6 +59,7 @@ tests/integration/hubspot/
 ```
 
 **Modified:**
+
 ```
 prisma/schema.prisma                 — new models + additive fields
 lib/mcp/server.ts                    — registers new tools in default set
@@ -70,6 +72,7 @@ README.md                            — optional: link to setup runbook (deferr
 ## Task 1: Add HubSpot Prisma schema
 
 **Files:**
+
 - Modify: `prisma/schema.prisma`
 
 - [ ] **Step 1.1: Add new enums at the top of the enum block**
@@ -164,6 +167,7 @@ Run: `npx prisma migrate dev --name hubspot_phase_1_catalog_foundation --create-
 Expected: migration file written under `prisma/migrations/<timestamp>_hubspot_phase_1_catalog_foundation/migration.sql`.
 
 Inspect the SQL to confirm:
+
 - Four new enums and three new tables
 - Two `ALTER TABLE` statements adding `hubspotProductId` to `Product` and `Bundle`
 
@@ -184,6 +188,7 @@ git commit -m "feat(hubspot): add catalog sync schema (config, product map, revi
 ## Task 2: HubSpotConfig repository
 
 **Files:**
+
 - Create: `lib/db/repositories/hubspotConfig.ts`
 - Create: `lib/db/repositories/hubspotConfig.test.ts`
 
@@ -312,6 +317,7 @@ git commit -m "feat(hubspot): HubSpotConfig repository"
 ## Task 3: HubSpotProductMap repository
 
 **Files:**
+
 - Create: `lib/db/repositories/hubspotProductMap.ts`
 - Create: `lib/db/repositories/hubspotProductMap.test.ts`
 
@@ -465,6 +471,7 @@ git commit -m "feat(hubspot): HubSpotProductMap repository"
 ## Task 4: HubSpotReviewQueueItem repository
 
 **Files:**
+
 - Create: `lib/db/repositories/hubspotReviewQueueItem.ts`
 - Create: `lib/db/repositories/hubspotReviewQueueItem.test.ts`
 
@@ -616,6 +623,7 @@ git commit -m "feat(hubspot): HubSpotReviewQueueItem repository with idempotent 
 ## Task 5: HubSpot fetch client (`hubspotFetch`)
 
 **Files:**
+
 - Create: `lib/hubspot/client.ts`
 - Create: `lib/hubspot/client.test.ts`
 
@@ -714,9 +722,7 @@ describe('hubspotFetch', () => {
   });
 
   it('retries on 5xx up to maxAttempts then throws', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(
-      new Response('boom', { status: 503 }),
-    );
+    const fetchMock = vi.fn().mockResolvedValue(new Response('boom', { status: 503 }));
     global.fetch = fetchMock;
 
     const promise = hubspotFetch({
@@ -784,7 +790,12 @@ function sleep(ms: number): Promise<void> {
 export async function hubspotFetch<T = unknown>(options: HubSpotFetchOptions): Promise<T> {
   const token = process.env.HUBSPOT_ACCESS_TOKEN;
   if (!token) {
-    throw new HubSpotApiError(0, 'HUBSPOT_ACCESS_TOKEN not configured', undefined, options.correlationId);
+    throw new HubSpotApiError(
+      0,
+      'HUBSPOT_ACCESS_TOKEN not configured',
+      undefined,
+      options.correlationId,
+    );
   }
 
   const url = buildUrl(options.path, options.query);
@@ -807,7 +818,9 @@ export async function hubspotFetch<T = unknown>(options: HubSpotFetchOptions): P
     if (res.status >= 200 && res.status < 300) {
       if (res.status === 204) return undefined as T;
       const contentType = res.headers.get('content-type') ?? '';
-      return contentType.includes('application/json') ? ((await res.json()) as T) : ((await res.text()) as unknown as T);
+      return contentType.includes('application/json')
+        ? ((await res.json()) as T)
+        : ((await res.text()) as unknown as T);
     }
 
     if (res.status === 429) {
@@ -823,7 +836,12 @@ export async function hubspotFetch<T = unknown>(options: HubSpotFetchOptions): P
 
     if (res.status >= 500) {
       const body = await res.text();
-      lastError = new HubSpotApiError(res.status, `HubSpot ${res.status}: ${body}`, body, options.correlationId);
+      lastError = new HubSpotApiError(
+        res.status,
+        `HubSpot ${res.status}: ${body}`,
+        body,
+        options.correlationId,
+      );
       if (attempt < MAX_ATTEMPTS) {
         await sleep(BASE_BACKOFF_MS * 2 ** (attempt - 1));
         continue;
@@ -858,6 +876,7 @@ git commit -m "feat(hubspot): hubspotFetch wrapper with rate-limit + 5xx retries
 ## Task 6: Deterministic hash of synced fields
 
 **Files:**
+
 - Create: `lib/hubspot/catalog/hash.ts`
 - Create: `lib/hubspot/catalog/hash.test.ts`
 
@@ -1017,6 +1036,7 @@ git commit -m "feat(hubspot): deterministic sync-field hash"
 ## Task 7: Pricer → HubSpot catalog translator
 
 **Files:**
+
 - Create: `lib/hubspot/catalog/translator.ts`
 - Create: `lib/hubspot/catalog/translator.test.ts`
 
@@ -1197,6 +1217,7 @@ git commit -m "feat(hubspot): translator from pricer Product/Bundle to HubSpot p
 ## Task 8: Custom property provisioning
 
 **Files:**
+
 - Create: `lib/hubspot/setup/provisionProperties.ts`
 - Create: `lib/hubspot/setup/provisionProperties.test.ts`
 
@@ -1265,33 +1286,137 @@ export interface PropertyDefinition {
 
 export const REQUIRED_PROPERTIES: PropertyDefinition[] = [
   // Products
-  { objectType: 'products', name: 'pricer_managed', label: 'Pricer Managed', type: 'bool', fieldType: 'booleancheckbox', groupName: 'productinformation' },
-  { objectType: 'products', name: 'pricer_product_id', label: 'Pricer Product ID', type: 'string', fieldType: 'text', groupName: 'productinformation' },
-  { objectType: 'products', name: 'pricer_kind', label: 'Pricer Kind', type: 'enumeration', fieldType: 'select', groupName: 'productinformation', options: [{ label: 'Product', value: 'product' }, { label: 'Bundle', value: 'bundle' }] },
-  { objectType: 'products', name: 'pricer_last_synced_hash', label: 'Pricer Last Synced Hash', type: 'string', fieldType: 'text', groupName: 'productinformation' },
+  {
+    objectType: 'products',
+    name: 'pricer_managed',
+    label: 'Pricer Managed',
+    type: 'bool',
+    fieldType: 'booleancheckbox',
+    groupName: 'productinformation',
+  },
+  {
+    objectType: 'products',
+    name: 'pricer_product_id',
+    label: 'Pricer Product ID',
+    type: 'string',
+    fieldType: 'text',
+    groupName: 'productinformation',
+  },
+  {
+    objectType: 'products',
+    name: 'pricer_kind',
+    label: 'Pricer Kind',
+    type: 'enumeration',
+    fieldType: 'select',
+    groupName: 'productinformation',
+    options: [
+      { label: 'Product', value: 'product' },
+      { label: 'Bundle', value: 'bundle' },
+    ],
+  },
+  {
+    objectType: 'products',
+    name: 'pricer_last_synced_hash',
+    label: 'Pricer Last Synced Hash',
+    type: 'string',
+    fieldType: 'text',
+    groupName: 'productinformation',
+  },
   // Line items (used by later phases, created now so a single setup run covers everything)
-  { objectType: 'line_items', name: 'pricer_reason', label: 'Pricer Reason', type: 'enumeration', fieldType: 'select', groupName: 'lineiteminformation', options: [
-    { label: 'Bundle Rollup', value: 'bundle_rollup' },
-    { label: 'Negotiated', value: 'negotiated' },
-    { label: 'Ramp', value: 'ramp' },
-    { label: 'Other', value: 'other' },
-  ] },
-  { objectType: 'line_items', name: 'pricer_original_list_price', label: 'Pricer Original List Price', type: 'number', fieldType: 'number', groupName: 'lineiteminformation' },
-  { objectType: 'line_items', name: 'pricer_scenario_id', label: 'Pricer Scenario ID', type: 'string', fieldType: 'text', groupName: 'lineiteminformation' },
-  { objectType: 'line_items', name: 'pricer_ramp_schedule', label: 'Pricer Ramp Schedule (JSON)', type: 'string', fieldType: 'text', groupName: 'lineiteminformation' },
+  {
+    objectType: 'line_items',
+    name: 'pricer_reason',
+    label: 'Pricer Reason',
+    type: 'enumeration',
+    fieldType: 'select',
+    groupName: 'lineiteminformation',
+    options: [
+      { label: 'Bundle Rollup', value: 'bundle_rollup' },
+      { label: 'Negotiated', value: 'negotiated' },
+      { label: 'Ramp', value: 'ramp' },
+      { label: 'Other', value: 'other' },
+    ],
+  },
+  {
+    objectType: 'line_items',
+    name: 'pricer_original_list_price',
+    label: 'Pricer Original List Price',
+    type: 'number',
+    fieldType: 'number',
+    groupName: 'lineiteminformation',
+  },
+  {
+    objectType: 'line_items',
+    name: 'pricer_scenario_id',
+    label: 'Pricer Scenario ID',
+    type: 'string',
+    fieldType: 'text',
+    groupName: 'lineiteminformation',
+  },
+  {
+    objectType: 'line_items',
+    name: 'pricer_ramp_schedule',
+    label: 'Pricer Ramp Schedule (JSON)',
+    type: 'string',
+    fieldType: 'text',
+    groupName: 'lineiteminformation',
+  },
   // Deals
-  { objectType: 'deals', name: 'pricer_scenario_id', label: 'Pricer Scenario ID', type: 'string', fieldType: 'text', groupName: 'dealinformation' },
-  { objectType: 'deals', name: 'pricer_approval_status', label: 'Pricer Approval Status', type: 'enumeration', fieldType: 'select', groupName: 'dealinformation', options: [
-    { label: 'Not Required', value: 'not_required' },
-    { label: 'Pending', value: 'pending' },
-    { label: 'Approved', value: 'approved' },
-    { label: 'Rejected', value: 'rejected' },
-  ] },
-  { objectType: 'deals', name: 'pricer_margin_pct', label: 'Pricer Margin %', type: 'number', fieldType: 'number', groupName: 'dealinformation' },
+  {
+    objectType: 'deals',
+    name: 'pricer_scenario_id',
+    label: 'Pricer Scenario ID',
+    type: 'string',
+    fieldType: 'text',
+    groupName: 'dealinformation',
+  },
+  {
+    objectType: 'deals',
+    name: 'pricer_approval_status',
+    label: 'Pricer Approval Status',
+    type: 'enumeration',
+    fieldType: 'select',
+    groupName: 'dealinformation',
+    options: [
+      { label: 'Not Required', value: 'not_required' },
+      { label: 'Pending', value: 'pending' },
+      { label: 'Approved', value: 'approved' },
+      { label: 'Rejected', value: 'rejected' },
+    ],
+  },
+  {
+    objectType: 'deals',
+    name: 'pricer_margin_pct',
+    label: 'Pricer Margin %',
+    type: 'number',
+    fieldType: 'number',
+    groupName: 'dealinformation',
+  },
   // Quotes
-  { objectType: 'quotes', name: 'pricer_scenario_id', label: 'Pricer Scenario ID', type: 'string', fieldType: 'text', groupName: 'quoteinformation' },
-  { objectType: 'quotes', name: 'pricer_revision', label: 'Pricer Revision', type: 'number', fieldType: 'number', groupName: 'quoteinformation' },
-  { objectType: 'quotes', name: 'pricer_supersedes', label: 'Pricer Supersedes Quote ID', type: 'string', fieldType: 'text', groupName: 'quoteinformation' },
+  {
+    objectType: 'quotes',
+    name: 'pricer_scenario_id',
+    label: 'Pricer Scenario ID',
+    type: 'string',
+    fieldType: 'text',
+    groupName: 'quoteinformation',
+  },
+  {
+    objectType: 'quotes',
+    name: 'pricer_revision',
+    label: 'Pricer Revision',
+    type: 'number',
+    fieldType: 'number',
+    groupName: 'quoteinformation',
+  },
+  {
+    objectType: 'quotes',
+    name: 'pricer_supersedes',
+    label: 'Pricer Supersedes Quote ID',
+    type: 'string',
+    fieldType: 'text',
+    groupName: 'quoteinformation',
+  },
 ];
 
 export interface ProvisionSummary {
@@ -1299,7 +1424,9 @@ export interface ProvisionSummary {
   alreadyPresent: Array<{ objectType: string; name: string }>;
 }
 
-export async function provisionCustomProperties(opts: { correlationId: string }): Promise<ProvisionSummary> {
+export async function provisionCustomProperties(opts: {
+  correlationId: string;
+}): Promise<ProvisionSummary> {
   const summary: ProvisionSummary = { created: [], alreadyPresent: [] };
 
   for (const def of REQUIRED_PROPERTIES) {
@@ -1353,6 +1480,7 @@ git commit -m "feat(hubspot): idempotent custom-property provisioning"
 ## Task 9: Setup script
 
 **Files:**
+
 - Create: `scripts/hubspot-setup.ts`
 
 - [ ] **Step 9.1: Implement script**
@@ -1419,6 +1547,7 @@ git commit -m "feat(hubspot): setup script + npm run hubspot:setup"
 A thin service that loads active pricer Products and Bundles with the information the translator needs.
 
 **Files:**
+
 - Create: `lib/hubspot/catalog/snapshot.ts`
 - Create: `lib/hubspot/catalog/snapshot.test.ts`
 
@@ -1444,10 +1573,18 @@ describe('loadCatalogSnapshot', () => {
     const active = await prisma.product.create({
       data: { name: 'Active', kind: ProductKind.SAAS, isActive: true, sku: 'A', description: '' },
     });
-    await prisma.listPrice.create({ data: { productId: active.id, monthlyUsd: new Decimal('500') } });
+    await prisma.listPrice.create({
+      data: { productId: active.id, monthlyUsd: new Decimal('500') },
+    });
 
     await prisma.product.create({
-      data: { name: 'Inactive', kind: ProductKind.SAAS, isActive: false, sku: 'I', description: '' },
+      data: {
+        name: 'Inactive',
+        kind: ProductKind.SAAS,
+        isActive: false,
+        sku: 'I',
+        description: '',
+      },
     });
 
     const snap = await loadCatalogSnapshot(prisma);
@@ -1463,6 +1600,7 @@ describe('loadCatalogSnapshot', () => {
 - [ ] **Step 10.2: Read schema and adjust field names**
 
 Open `prisma/schema.prisma` and identify:
+
 - `Product` fields: `id`, `name`, `kind`, `isActive`, `sku?`, `description?`
 - `ListPrice` or similar: where is headline price stored per product?
 - `Bundle` fields and item relations
@@ -1514,7 +1652,9 @@ export async function loadCatalogSnapshot(prisma: PrismaClient): Promise<Catalog
     name: b.name,
     sku: b.sku ?? '',
     description: b.description ?? '',
-    rolledUpMonthlyPrice: new Decimal((b as unknown as { rolledUpMonthlyPrice?: string }).rolledUpMonthlyPrice ?? 0),
+    rolledUpMonthlyPrice: new Decimal(
+      (b as unknown as { rolledUpMonthlyPrice?: string }).rolledUpMonthlyPrice ?? 0,
+    ),
     itemIdentifiers: b.items.map((i) => i.productId),
   }));
 
@@ -1541,6 +1681,7 @@ git commit -m "feat(hubspot): catalog snapshot loader for sync"
 ## Task 11: Push flow — `publishCatalogToHubSpot`
 
 **Files:**
+
 - Create: `lib/hubspot/catalog/push.ts`
 - Create: `lib/hubspot/catalog/push.test.ts`
 
@@ -1633,8 +1774,20 @@ describe('publishCatalogToHubSpot', () => {
     const result = await publishCatalogToHubSpot({
       snapshot,
       existingMappings: [
-        { pricerProductId: 'p-1', pricerBundleId: null, hubspotProductId: 'hs-1', kind: 'PRODUCT', lastSyncedHash: 'stale' },
-        { pricerProductId: 'p-2', pricerBundleId: null, hubspotProductId: 'hs-2', kind: 'PRODUCT', lastSyncedHash: p2Hash },
+        {
+          pricerProductId: 'p-1',
+          pricerBundleId: null,
+          hubspotProductId: 'hs-1',
+          kind: 'PRODUCT',
+          lastSyncedHash: 'stale',
+        },
+        {
+          pricerProductId: 'p-2',
+          pricerBundleId: null,
+          hubspotProductId: 'hs-2',
+          kind: 'PRODUCT',
+          lastSyncedHash: p2Hash,
+        },
       ],
       correlationId: 'c2',
       now: () => new Date(),
@@ -1673,8 +1826,18 @@ export interface ExistingMapping {
 }
 
 export interface PushOutcome {
-  created: Array<{ pricerId: string; kind: 'PRODUCT' | 'BUNDLE'; hubspotProductId: string; hash: string }>;
-  updated: Array<{ pricerId: string; kind: 'PRODUCT' | 'BUNDLE'; hubspotProductId: string; hash: string }>;
+  created: Array<{
+    pricerId: string;
+    kind: 'PRODUCT' | 'BUNDLE';
+    hubspotProductId: string;
+    hash: string;
+  }>;
+  updated: Array<{
+    pricerId: string;
+    kind: 'PRODUCT' | 'BUNDLE';
+    hubspotProductId: string;
+    hash: string;
+  }>;
   unchanged: Array<{ pricerId: string; kind: 'PRODUCT' | 'BUNDLE'; hubspotProductId: string }>;
   failed: Array<{ pricerId: string; kind: 'PRODUCT' | 'BUNDLE'; error: string }>;
 }
@@ -1689,8 +1852,12 @@ export interface PushInput {
 export async function publishCatalogToHubSpot(input: PushInput): Promise<PushOutcome> {
   const outcome: PushOutcome = { created: [], updated: [], unchanged: [], failed: [] };
 
-  const mapByProduct = new Map(input.existingMappings.filter((m) => m.pricerProductId).map((m) => [m.pricerProductId!, m]));
-  const mapByBundle = new Map(input.existingMappings.filter((m) => m.pricerBundleId).map((m) => [m.pricerBundleId!, m]));
+  const mapByProduct = new Map(
+    input.existingMappings.filter((m) => m.pricerProductId).map((m) => [m.pricerProductId!, m]),
+  );
+  const mapByBundle = new Map(
+    input.existingMappings.filter((m) => m.pricerBundleId).map((m) => [m.pricerBundleId!, m]),
+  );
 
   for (const p of input.snapshot.products) {
     const { syncFields, payload } = productToHubSpot(p);
@@ -1707,7 +1874,11 @@ export async function publishCatalogToHubSpot(input: PushInput): Promise<PushOut
         });
         outcome.created.push({ pricerId: p.id, kind: 'PRODUCT', hubspotProductId: res.id, hash });
       } else if (mapping.lastSyncedHash === hash) {
-        outcome.unchanged.push({ pricerId: p.id, kind: 'PRODUCT', hubspotProductId: mapping.hubspotProductId });
+        outcome.unchanged.push({
+          pricerId: p.id,
+          kind: 'PRODUCT',
+          hubspotProductId: mapping.hubspotProductId,
+        });
       } else {
         await hubspotFetch({
           method: 'PATCH',
@@ -1715,10 +1886,19 @@ export async function publishCatalogToHubSpot(input: PushInput): Promise<PushOut
           body: { properties: { ...payload.properties, pricer_last_synced_hash: hash } },
           correlationId: input.correlationId,
         });
-        outcome.updated.push({ pricerId: p.id, kind: 'PRODUCT', hubspotProductId: mapping.hubspotProductId, hash });
+        outcome.updated.push({
+          pricerId: p.id,
+          kind: 'PRODUCT',
+          hubspotProductId: mapping.hubspotProductId,
+          hash,
+        });
       }
     } catch (err) {
-      outcome.failed.push({ pricerId: p.id, kind: 'PRODUCT', error: err instanceof Error ? err.message : String(err) });
+      outcome.failed.push({
+        pricerId: p.id,
+        kind: 'PRODUCT',
+        error: err instanceof Error ? err.message : String(err),
+      });
     }
   }
 
@@ -1737,7 +1917,11 @@ export async function publishCatalogToHubSpot(input: PushInput): Promise<PushOut
         });
         outcome.created.push({ pricerId: b.id, kind: 'BUNDLE', hubspotProductId: res.id, hash });
       } else if (mapping.lastSyncedHash === hash) {
-        outcome.unchanged.push({ pricerId: b.id, kind: 'BUNDLE', hubspotProductId: mapping.hubspotProductId });
+        outcome.unchanged.push({
+          pricerId: b.id,
+          kind: 'BUNDLE',
+          hubspotProductId: mapping.hubspotProductId,
+        });
       } else {
         await hubspotFetch({
           method: 'PATCH',
@@ -1745,10 +1929,19 @@ export async function publishCatalogToHubSpot(input: PushInput): Promise<PushOut
           body: { properties: { ...payload.properties, pricer_last_synced_hash: hash } },
           correlationId: input.correlationId,
         });
-        outcome.updated.push({ pricerId: b.id, kind: 'BUNDLE', hubspotProductId: mapping.hubspotProductId, hash });
+        outcome.updated.push({
+          pricerId: b.id,
+          kind: 'BUNDLE',
+          hubspotProductId: mapping.hubspotProductId,
+          hash,
+        });
       }
     } catch (err) {
-      outcome.failed.push({ pricerId: b.id, kind: 'BUNDLE', error: err instanceof Error ? err.message : String(err) });
+      outcome.failed.push({
+        pricerId: b.id,
+        kind: 'BUNDLE',
+        error: err instanceof Error ? err.message : String(err),
+      });
     }
   }
 
@@ -1773,6 +1966,7 @@ git commit -m "feat(hubspot): pure push flow (create/update/unchanged)"
 ## Task 12: Pull flow — detect HubSpot-side changes
 
 **Files:**
+
 - Create: `lib/hubspot/catalog/pull.ts`
 - Create: `lib/hubspot/catalog/pull.test.ts`
 
@@ -1812,7 +2006,13 @@ describe('pullHubSpotChanges', () => {
 
     const review = await pullHubSpotChanges({
       existingMappings: [
-        { pricerProductId: 'p-1', pricerBundleId: null, hubspotProductId: 'hs-1', kind: 'PRODUCT', lastSyncedHash: 'old' },
+        {
+          pricerProductId: 'p-1',
+          pricerBundleId: null,
+          hubspotProductId: 'hs-1',
+          kind: 'PRODUCT',
+          lastSyncedHash: 'old',
+        },
       ],
       pricerSnapshot: {
         products: [
@@ -1832,7 +2032,9 @@ describe('pullHubSpotChanges', () => {
 
     expect(review.reviewItems.length).toBe(1);
     expect(review.reviewItems[0].pricerEntityId).toBe('p-1');
-    expect(review.reviewItems[0].changedFields).toMatchObject({ name: { pricer: 'Ninja Notes', hubspot: 'Renamed' } });
+    expect(review.reviewItems[0].changedFields).toMatchObject({
+      name: { pricer: 'Ninja Notes', hubspot: 'Renamed' },
+    });
   });
 
   it('skips items where HubSpot matches pricer (no drift)', async () => {
@@ -1870,7 +2072,13 @@ describe('pullHubSpotChanges', () => {
 
     const review = await pullHubSpotChanges({
       existingMappings: [
-        { pricerProductId: 'p-1', pricerBundleId: null, hubspotProductId: 'hs-1', kind: 'PRODUCT', lastSyncedHash: sharedHash },
+        {
+          pricerProductId: 'p-1',
+          pricerBundleId: null,
+          hubspotProductId: 'hs-1',
+          kind: 'PRODUCT',
+          lastSyncedHash: sharedHash,
+        },
       ],
       pricerSnapshot: {
         products: [
@@ -1880,7 +2088,10 @@ describe('pullHubSpotChanges', () => {
             kind: 'SAAS',
             sku: 'NN-01',
             description: '',
-            headlineMonthlyPrice: { toFixed: (d: number) => (500).toFixed(d), toString: () => '500' } as any,
+            headlineMonthlyPrice: {
+              toFixed: (d: number) => (500).toFixed(d),
+              toString: () => '500',
+            } as any,
           },
         ],
         bundles: [],
@@ -1926,12 +2137,17 @@ export async function pullHubSpotChanges(input: {
   correlationId: string;
 }): Promise<PullOutcome> {
   // Query HubSpot for pricer-managed products
-  const properties = 'name,hs_sku,description,price,recurringbillingfrequency,pricer_managed,pricer_product_id,pricer_kind,pricer_last_synced_hash';
-  const res = await hubspotFetch<{ results: Array<{ id: string; properties: Record<string, string> }> }>({
+  const properties =
+    'name,hs_sku,description,price,recurringbillingfrequency,pricer_managed,pricer_product_id,pricer_kind,pricer_last_synced_hash';
+  const res = await hubspotFetch<{
+    results: Array<{ id: string; properties: Record<string, string> }>;
+  }>({
     method: 'POST',
     path: '/crm/v3/objects/products/search',
     body: {
-      filterGroups: [{ filters: [{ propertyName: 'pricer_managed', operator: 'EQ', value: 'true' }] }],
+      filterGroups: [
+        { filters: [{ propertyName: 'pricer_managed', operator: 'EQ', value: 'true' }] },
+      ],
       properties: properties.split(','),
       limit: 100,
     },
@@ -1993,7 +2209,10 @@ export async function pullHubSpotChanges(input: {
 
     if (pricerHash === mapping.lastSyncedHash) {
       // pricer didn't change; HubSpot did → this is a HubSpot-side edit we need to review
-      const changedFields = diffFields(pricerSyncFieldsObj, hubspotSyncFields as unknown as Record<string, unknown>);
+      const changedFields = diffFields(
+        pricerSyncFieldsObj,
+        hubspotSyncFields as unknown as Record<string, unknown>,
+      );
       reviewItems.push({
         entityType: kind,
         hubspotId: row.id,
@@ -2008,7 +2227,9 @@ export async function pullHubSpotChanges(input: {
   return { reviewItems, orphansInHubSpot: orphans };
 }
 
-function buildHubSpotSyncFieldsFromRow(row: { properties: Record<string, string> }): Parameters<typeof hashSyncedFields>[0] {
+function buildHubSpotSyncFieldsFromRow(row: {
+  properties: Record<string, string>;
+}): Parameters<typeof hashSyncedFields>[0] {
   const common = {
     name: row.properties.name ?? '',
     sku: row.properties.hs_sku ?? '',
@@ -2022,7 +2243,10 @@ function buildHubSpotSyncFieldsFromRow(row: { properties: Record<string, string>
   return { kind: 'PRODUCT', ...common };
 }
 
-function diffFields(a: Record<string, unknown>, b: Record<string, unknown>): Record<string, { pricer: unknown; hubspot: unknown }> {
+function diffFields(
+  a: Record<string, unknown>,
+  b: Record<string, unknown>,
+): Record<string, { pricer: unknown; hubspot: unknown }> {
   const diff: Record<string, { pricer: unknown; hubspot: unknown }> = {};
   const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
   for (const k of keys) {
@@ -2052,6 +2276,7 @@ git commit -m "feat(hubspot): pure pull flow producing review queue items"
 ## Task 13: Review queue resolver
 
 **Files:**
+
 - Create: `lib/hubspot/catalog/reviewQueue.ts`
 - Create: `lib/hubspot/catalog/reviewQueue.test.ts`
 
@@ -2059,7 +2284,12 @@ git commit -m "feat(hubspot): pure pull flow producing review queue items"
 
 ```ts
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { PrismaClient, HubSpotProductKind, HubSpotReviewResolution, ProductKind } from '@prisma/client';
+import {
+  PrismaClient,
+  HubSpotProductKind,
+  HubSpotReviewResolution,
+  ProductKind,
+} from '@prisma/client';
 import { HubSpotReviewQueueItemRepository } from '@/lib/db/repositories/hubspotReviewQueueItem';
 import { ReviewQueueService } from './reviewQueue';
 
@@ -2086,7 +2316,11 @@ describe('ReviewQueueService', () => {
       changedFieldsHash: 'h',
     });
 
-    await service.resolve({ itemId: item.id, resolution: HubSpotReviewResolution.IGNORE, userId: 'u' });
+    await service.resolve({
+      itemId: item.id,
+      resolution: HubSpotReviewResolution.IGNORE,
+      userId: 'u',
+    });
 
     const updated = await prisma.product.findUnique({ where: { id: product.id } });
     expect(updated?.name).toBe('Notes');
@@ -2106,7 +2340,11 @@ describe('ReviewQueueService', () => {
       changedFieldsHash: 'h',
     });
 
-    await service.resolve({ itemId: item.id, resolution: HubSpotReviewResolution.ACCEPT_HUBSPOT, userId: 'u' });
+    await service.resolve({
+      itemId: item.id,
+      resolution: HubSpotReviewResolution.ACCEPT_HUBSPOT,
+      userId: 'u',
+    });
 
     const updated = await prisma.product.findUnique({ where: { id: product.id } });
     expect(updated?.name).toBe('Renamed');
@@ -2162,7 +2400,8 @@ export class ReviewQueueService {
     for (const [field, values] of Object.entries(changed)) {
       // Only apply fields we know how to write — guard against schema drift
       if (field === 'name' && typeof values.hubspot === 'string') update.name = values.hubspot;
-      if (field === 'description' && typeof values.hubspot === 'string') update.description = values.hubspot;
+      if (field === 'description' && typeof values.hubspot === 'string')
+        update.description = values.hubspot;
       if (field === 'sku' && typeof values.hubspot === 'string') update.sku = values.hubspot;
     }
 
@@ -2198,6 +2437,7 @@ git commit -m "feat(hubspot): review queue resolver with ACCEPT_HUBSPOT apply-ba
 Single entry point the admin UI and MCP tools call. Loads the snapshot, existing mappings, runs push + pull, persists outcomes (mapping writes, review-queue inserts), updates `HubSpotConfig.lastPushAt` / `lastPullAt`.
 
 **Files:**
+
 - Create: `lib/hubspot/catalog/orchestrator.ts`
 - Create: `lib/hubspot/catalog/orchestrator.test.ts`
 
@@ -2230,14 +2470,24 @@ describe('runCatalogPush (integration)', () => {
       data: { portalId: 'p1', enabled: true, accessTokenSecretRef: 'env:HUBSPOT_ACCESS_TOKEN' },
     });
     const product = await prisma.product.create({
-      data: { name: 'Ninja Notes', kind: ProductKind.SAAS, isActive: true, sku: 'NN-01', description: '' },
+      data: {
+        name: 'Ninja Notes',
+        kind: ProductKind.SAAS,
+        isActive: true,
+        sku: 'NN-01',
+        description: '',
+      },
     });
-    await prisma.listPrice.create({ data: { productId: product.id, monthlyUsd: new Decimal('500') } });
+    await prisma.listPrice.create({
+      data: { productId: product.id, monthlyUsd: new Decimal('500') },
+    });
 
     const summary = await runCatalogPush({ prisma, correlationId: 'test' });
 
     expect(summary.created.length).toBe(1);
-    const mapping = await prisma.hubSpotProductMap.findFirst({ where: { pricerProductId: product.id } });
+    const mapping = await prisma.hubSpotProductMap.findFirst({
+      where: { pricerProductId: product.id },
+    });
     expect(mapping?.hubspotProductId).toBe('hs-new-1');
     const config = await prisma.hubSpotConfig.findFirst();
     expect(config?.lastPushAt).not.toBeNull();
@@ -2308,7 +2558,9 @@ export async function runCatalogPush(input: {
   }
   for (const u of outcome.updated) {
     const mappingId = existing.find(
-      (m) => (m.pricerProductId === u.pricerId || m.pricerBundleId === u.pricerId) && m.hubspotProductId === u.hubspotProductId,
+      (m) =>
+        (m.pricerProductId === u.pricerId || m.pricerBundleId === u.pricerId) &&
+        m.hubspotProductId === u.hubspotProductId,
     )?.id;
     if (mappingId) await mapRepo.updateHash(mappingId, u.hash, now);
   }
@@ -2378,6 +2630,7 @@ git commit -m "feat(hubspot): orchestrator (runCatalogPush, runCatalogPull)"
 ## Task 15: MCP tools
 
 **Files:**
+
 - Create: `lib/mcp/tools/hubspot.ts`
 - Create: `lib/mcp/tools/hubspot.test.ts`
 - Modify: `app/api/mcp/route.ts` (the default tool array lives there at lines 15–25)
@@ -2411,7 +2664,9 @@ describe('hubspot MCP tools', () => {
 
   it('resolveReviewQueueItemTool requires admin and validates resolution enum', async () => {
     expect(resolveReviewQueueItemTool.requiresAdmin).toBe(true);
-    expect(() => resolveReviewQueueItemTool.inputSchema.parse({ itemId: 'x', resolution: 'BOGUS' })).toThrow();
+    expect(() =>
+      resolveReviewQueueItemTool.inputSchema.parse({ itemId: 'x', resolution: 'BOGUS' }),
+    ).toThrow();
   });
 
   it('hubspotIntegrationStatusTool returns config snapshot', async () => {
@@ -2506,14 +2761,24 @@ const resolveReviewQueueItemTool: ToolDefinition<z.infer<typeof resolveInput>, {
   extractTargetId: (input) => input.itemId,
   handler: async (ctx, input) => {
     const service = new ReviewQueueService(new HubSpotReviewQueueItemRepository(prisma), prisma);
-    await service.resolve({ itemId: input.itemId, resolution: input.resolution, userId: ctx.user.id });
+    await service.resolve({
+      itemId: input.itemId,
+      resolution: input.resolution,
+      userId: ctx.user.id,
+    });
     return { ok: true };
   },
 };
 
 const hubspotIntegrationStatusTool: ToolDefinition<
   z.infer<typeof emptyInput>,
-  { enabled: boolean; lastPushAt: string | null; lastPullAt: string | null; mappingCount: number; openReviewItems: number }
+  {
+    enabled: boolean;
+    lastPushAt: string | null;
+    lastPullAt: string | null;
+    mappingCount: number;
+    openReviewItems: number;
+  }
 > = {
   name: 'hubspot_integration_status',
   description:
@@ -2542,7 +2807,12 @@ export const hubspotCatalogTools = [
 ];
 
 // Re-export individual tools for direct testing
-export { publishCatalogTool, pullHubSpotChangesTool, resolveReviewQueueItemTool, hubspotIntegrationStatusTool };
+export {
+  publishCatalogTool,
+  pullHubSpotChangesTool,
+  resolveReviewQueueItemTool,
+  hubspotIntegrationStatusTool,
+};
 ```
 
 - [ ] **Step 15.5: Register tools in `app/api/mcp/route.ts`**
@@ -2576,6 +2846,7 @@ git commit -m "feat(hubspot): MCP tools (publish, pull, resolve, status)"
 ## Task 16: Admin UI — integration status page
 
 **Files:**
+
 - Create: `app/admin/hubspot/page.tsx`
 - Create: `app/admin/hubspot/actions.ts`
 
@@ -2621,7 +2892,10 @@ export async function pullCatalogAction() {
   return { correlationId, ...outcome };
 }
 
-export async function resolveReviewItemAction(input: { itemId: string; resolution: HubSpotReviewResolution }) {
+export async function resolveReviewItemAction(input: {
+  itemId: string;
+  resolution: HubSpotReviewResolution;
+}) {
   const user = await requireAdmin();
   const service = new ReviewQueueService(new HubSpotReviewQueueItemRepository(prisma), prisma);
   await service.resolve({ itemId: input.itemId, resolution: input.resolution, userId: user.id });
@@ -2659,8 +2933,12 @@ export default async function HubSpotStatusPage() {
       </section>
 
       <nav className="flex gap-3">
-        <Link href="/admin/hubspot/sync" className="underline">Sync catalog →</Link>
-        <Link href="/admin/hubspot/review-queue" className="underline">Review queue →</Link>
+        <Link href="/admin/hubspot/sync" className="underline">
+          Sync catalog →
+        </Link>
+        <Link href="/admin/hubspot/review-queue" className="underline">
+          Review queue →
+        </Link>
       </nav>
     </main>
   );
@@ -2694,6 +2972,7 @@ git commit -m "feat(hubspot): admin status page + server actions"
 ## Task 17: Admin UI — sync page (push + pull buttons)
 
 **Files:**
+
 - Create: `app/admin/hubspot/sync/page.tsx`
 - Create: `app/admin/hubspot/sync/SyncButtons.tsx`
 
@@ -2708,7 +2987,14 @@ import { useState, useTransition } from 'react';
 import { pushCatalogAction, pullCatalogAction } from '../actions';
 
 type Outcome =
-  | { kind: 'push'; created: number; updated: number; unchanged: number; failed: number; correlationId: string }
+  | {
+      kind: 'push';
+      created: number;
+      updated: number;
+      unchanged: number;
+      failed: number;
+      correlationId: string;
+    }
   | { kind: 'pull'; newReviewItems: number; orphans: number; correlationId: string }
   | { kind: 'error'; message: string };
 
@@ -2727,9 +3013,19 @@ export function SyncButtons() {
             startTransition(async () => {
               try {
                 const r = await pushCatalogAction();
-                setResult({ kind: 'push', ...r, created: r.created.length, updated: r.updated.length, unchanged: r.unchanged.length, failed: r.failed.length });
+                setResult({
+                  kind: 'push',
+                  ...r,
+                  created: r.created.length,
+                  updated: r.updated.length,
+                  unchanged: r.unchanged.length,
+                  failed: r.failed.length,
+                });
               } catch (err) {
-                setResult({ kind: 'error', message: err instanceof Error ? err.message : String(err) });
+                setResult({
+                  kind: 'error',
+                  message: err instanceof Error ? err.message : String(err),
+                });
               }
             })
           }
@@ -2747,7 +3043,10 @@ export function SyncButtons() {
                 const r = await pullCatalogAction();
                 setResult({ kind: 'pull', ...r });
               } catch (err) {
-                setResult({ kind: 'error', message: err instanceof Error ? err.message : String(err) });
+                setResult({
+                  kind: 'error',
+                  message: err instanceof Error ? err.message : String(err),
+                });
               }
             })
           }
@@ -2761,13 +3060,18 @@ export function SyncButtons() {
       {result?.kind === 'push' && (
         <div className="rounded-md border p-4 bg-green-50">
           <div className="font-medium">Push complete ({result.correlationId})</div>
-          <div>Created: {result.created}. Updated: {result.updated}. Unchanged: {result.unchanged}. Failed: {result.failed}.</div>
+          <div>
+            Created: {result.created}. Updated: {result.updated}. Unchanged: {result.unchanged}.
+            Failed: {result.failed}.
+          </div>
         </div>
       )}
       {result?.kind === 'pull' && (
         <div className="rounded-md border p-4 bg-blue-50">
           <div className="font-medium">Pull complete ({result.correlationId})</div>
-          <div>New review items: {result.newReviewItems}. Orphans: {result.orphans}.</div>
+          <div>
+            New review items: {result.newReviewItems}. Orphans: {result.orphans}.
+          </div>
         </div>
       )}
       {result?.kind === 'error' && (
@@ -2793,8 +3097,8 @@ export default function SyncPage() {
     <main className="p-6 space-y-6 max-w-2xl">
       <h1 className="text-2xl font-semibold">HubSpot Catalog Sync</h1>
       <p className="text-muted-foreground">
-        Manual sync only. Push writes active pricer products and bundles to HubSpot. Pull detects HubSpot-side edits
-        to pricer-managed products and enqueues them in the review queue.
+        Manual sync only. Push writes active pricer products and bundles to HubSpot. Pull detects
+        HubSpot-side edits to pricer-managed products and enqueues them in the review queue.
       </p>
       <SyncButtons />
     </main>
@@ -2820,6 +3124,7 @@ git commit -m "feat(hubspot): admin sync page with push/pull buttons"
 ## Task 18: Admin UI — review queue page
 
 **Files:**
+
 - Create: `app/admin/hubspot/review-queue/page.tsx`
 - Create: `app/admin/hubspot/review-queue/ResolveButton.tsx`
 
@@ -2832,7 +3137,15 @@ import { useTransition } from 'react';
 import { HubSpotReviewResolution } from '@prisma/client';
 import { resolveReviewItemAction } from '../actions';
 
-export function ResolveButton({ itemId, resolution, label }: { itemId: string; resolution: HubSpotReviewResolution; label: string }) {
+export function ResolveButton({
+  itemId,
+  resolution,
+  label,
+}: {
+  itemId: string;
+  resolution: HubSpotReviewResolution;
+  label: string;
+}) {
   const [pending, startTransition] = useTransition();
   return (
     <button
@@ -2866,7 +3179,9 @@ export default async function ReviewQueuePage() {
     <main className="p-6 space-y-4 max-w-4xl">
       <h1 className="text-2xl font-semibold">HubSpot Review Queue</h1>
 
-      {items.length === 0 && <p className="text-muted-foreground">No pending HubSpot-side edits.</p>}
+      {items.length === 0 && (
+        <p className="text-muted-foreground">No pending HubSpot-side edits.</p>
+      )}
 
       <table className="w-full text-sm border-collapse">
         <thead>
@@ -2879,7 +3194,10 @@ export default async function ReviewQueuePage() {
         </thead>
         <tbody>
           {items.map((it) => {
-            const fields = it.changedFields as Record<string, { pricer: unknown; hubspot: unknown }>;
+            const fields = it.changedFields as Record<
+              string,
+              { pricer: unknown; hubspot: unknown }
+            >;
             return (
               <tr key={it.id} className="border-b align-top">
                 <td className="py-2 pr-4">
@@ -2890,7 +3208,8 @@ export default async function ReviewQueuePage() {
                   <ul className="space-y-1">
                     {Object.entries(fields).map(([k, v]) => (
                       <li key={k}>
-                        <strong>{k}</strong>: <span className="text-muted-foreground">{String(v.pricer)}</span> →{' '}
+                        <strong>{k}</strong>:{' '}
+                        <span className="text-muted-foreground">{String(v.pricer)}</span> →{' '}
                         <span>{String(v.hubspot)}</span>
                       </li>
                     ))}
@@ -2898,9 +3217,21 @@ export default async function ReviewQueuePage() {
                 </td>
                 <td className="py-2 pr-4">{it.detectedAt.toLocaleString()}</td>
                 <td className="py-2 flex gap-2">
-                  <ResolveButton itemId={it.id} resolution={HubSpotReviewResolution.ACCEPT_HUBSPOT} label="Accept" />
-                  <ResolveButton itemId={it.id} resolution={HubSpotReviewResolution.REJECT} label="Reject" />
-                  <ResolveButton itemId={it.id} resolution={HubSpotReviewResolution.IGNORE} label="Ignore" />
+                  <ResolveButton
+                    itemId={it.id}
+                    resolution={HubSpotReviewResolution.ACCEPT_HUBSPOT}
+                    label="Accept"
+                  />
+                  <ResolveButton
+                    itemId={it.id}
+                    resolution={HubSpotReviewResolution.REJECT}
+                    label="Reject"
+                  />
+                  <ResolveButton
+                    itemId={it.id}
+                    resolution={HubSpotReviewResolution.IGNORE}
+                    label="Ignore"
+                  />
                 </td>
               </tr>
             );
@@ -2930,6 +3261,7 @@ git commit -m "feat(hubspot): admin review queue page with resolve actions"
 ## Task 19: Full-stack integration test against HubSpot test account
 
 **Files:**
+
 - Create: `tests/integration/hubspot/catalog-roundtrip.test.ts`
 
 This requires a HubSpot Developer Test Account. Skip on CI via env-guard; run manually against the test portal.
@@ -2945,7 +3277,8 @@ import { hubspotFetch } from '@/lib/hubspot/client';
 import { provisionCustomProperties } from '@/lib/hubspot/setup/provisionProperties';
 import { runCatalogPush, runCatalogPull } from '@/lib/hubspot/catalog/orchestrator';
 
-const shouldRun = process.env.HUBSPOT_ACCESS_TOKEN && process.env.RUN_HUBSPOT_INTEGRATION === 'true';
+const shouldRun =
+  process.env.HUBSPOT_ACCESS_TOKEN && process.env.RUN_HUBSPOT_INTEGRATION === 'true';
 
 const prisma = new PrismaClient();
 
@@ -2959,7 +3292,11 @@ const prisma = new PrismaClient();
     await prisma.product.deleteMany({ where: { name: { startsWith: 'IntegrationTest-' } } });
     await prisma.hubSpotConfig.upsert({
       where: { portalId: process.env.HUBSPOT_PORTAL_ID ?? 'test' },
-      create: { portalId: process.env.HUBSPOT_PORTAL_ID ?? 'test', enabled: true, accessTokenSecretRef: 'env' },
+      create: {
+        portalId: process.env.HUBSPOT_PORTAL_ID ?? 'test',
+        enabled: true,
+        accessTokenSecretRef: 'env',
+      },
       update: {},
     });
   });
@@ -2967,7 +3304,11 @@ const prisma = new PrismaClient();
   afterAll(async () => {
     // Archive products we created in the test portal
     for (const id of createdHsIds) {
-      await hubspotFetch({ method: 'DELETE', path: `/crm/v3/objects/products/${id}`, correlationId }).catch(() => {});
+      await hubspotFetch({
+        method: 'DELETE',
+        path: `/crm/v3/objects/products/${id}`,
+        correlationId,
+      }).catch(() => {});
     }
     await prisma.product.deleteMany({ where: { name: { startsWith: 'IntegrationTest-' } } });
     await prisma.hubSpotProductMap.deleteMany();
@@ -2975,15 +3316,25 @@ const prisma = new PrismaClient();
 
   it('push creates a product in HubSpot and records the mapping', async () => {
     const product = await prisma.product.create({
-      data: { name: `IntegrationTest-${Date.now()}`, kind: ProductKind.SAAS, isActive: true, sku: `IT-${Date.now()}`, description: 'int test' },
+      data: {
+        name: `IntegrationTest-${Date.now()}`,
+        kind: ProductKind.SAAS,
+        isActive: true,
+        sku: `IT-${Date.now()}`,
+        description: 'int test',
+      },
     });
-    await prisma.listPrice.create({ data: { productId: product.id, monthlyUsd: new Decimal('123.45') } });
+    await prisma.listPrice.create({
+      data: { productId: product.id, monthlyUsd: new Decimal('123.45') },
+    });
 
     const out = await runCatalogPush({ prisma, correlationId });
     expect(out.created.length).toBeGreaterThanOrEqual(1);
     createdHsIds.push(...out.created.map((c) => c.hubspotProductId));
 
-    const mapping = await prisma.hubSpotProductMap.findFirst({ where: { pricerProductId: product.id } });
+    const mapping = await prisma.hubSpotProductMap.findFirst({
+      where: { pricerProductId: product.id },
+    });
     expect(mapping).not.toBeNull();
   });
 
@@ -3022,17 +3373,19 @@ Add to README or a runbook (create `docs/superpowers/runbooks/hubspot-phase-1.md
 1. HubSpot Developer Test Account created.
 2. Developer Project created under that account; note the private-app access token.
 3. `.env.local` populated:
-   ```
-   HUBSPOT_ACCESS_TOKEN=<token>
-   HUBSPOT_PORTAL_ID=<portal id>
-   RUN_HUBSPOT_INTEGRATION=true
-   ```
+```
+
+HUBSPOT_ACCESS_TOKEN=<token>
+HUBSPOT_PORTAL_ID=<portal id>
+RUN_HUBSPOT_INTEGRATION=true
+
+````
 
 ## Run setup
 
 ```bash
 npm run hubspot:setup
-```
+````
 
 Expected: 10+ custom properties created across Products, Line Items, Deals, Quotes.
 
@@ -3052,14 +3405,15 @@ npm run test:integration -- tests/integration/hubspot/
 6. Back in pricer, click "Pull changes from HubSpot".
 7. Visit `/admin/hubspot/review-queue`. The edit should appear.
 8. Click "Accept" — the pricer product name should update to match.
-```
+
+````
 
 - [ ] **Step 19.3: Commit**
 
 ```bash
 git add tests/integration/hubspot docs/superpowers/runbooks
 git commit -m "test(hubspot): integration test + phase 1 QA runbook"
-```
+````
 
 ---
 

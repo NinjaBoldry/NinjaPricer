@@ -6,7 +6,8 @@ vi.mock('@/lib/auth/session', () => ({
 vi.mock('@/lib/services/quote', () => ({ generateQuote: vi.fn() }));
 vi.mock('@/lib/services/rateSnapshot', () => ({
   buildComputeRequest: vi.fn(async (id: string) => {
-    if (id === 'missing') throw new (await import('@/lib/utils/errors')).NotFoundError('Scenario', id);
+    if (id === 'missing')
+      throw new (await import('@/lib/utils/errors')).NotFoundError('Scenario', id);
     return { scenario: { id, ownerId: 'u1' }, request: {} };
   }),
 }));

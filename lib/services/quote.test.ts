@@ -77,7 +77,10 @@ describe('generateQuote', () => {
   it('renders PDFs, writes them, and persists a quote row', async () => {
     nextVersion.mockResolvedValue(3);
     create.mockResolvedValue({ id: 'q_abc', version: 3, pdfUrl: 'scen_1/q_abc-customer.pdf' });
-    const pdf = { customer: vi.fn(async () => Buffer.from('C')), internal: vi.fn(async () => Buffer.from('I')) };
+    const pdf = {
+      customer: vi.fn(async () => Buffer.from('C')),
+      internal: vi.fn(async () => Buffer.from('I')),
+    };
 
     const out = await generateQuote(
       { scenarioId: 'scen_1', generatedById: 'u1' },
@@ -109,7 +112,10 @@ describe('generateQuote', () => {
       code: 'P2002',
     });
     create.mockRejectedValueOnce(uniqueErr).mockResolvedValueOnce({ id: 'q2', version: 2 });
-    const pdf = { customer: vi.fn(async () => Buffer.from('C')), internal: vi.fn(async () => Buffer.from('I')) };
+    const pdf = {
+      customer: vi.fn(async () => Buffer.from('C')),
+      internal: vi.fn(async () => Buffer.from('I')),
+    };
 
     const out = await generateQuote(
       { scenarioId: 'scen_1', generatedById: 'u1' },
@@ -131,10 +137,7 @@ describe('generateQuote', () => {
     };
 
     // writeQuotePdf returns deterministic paths based on kind
-    await generateQuote(
-      { scenarioId: 'scen_1', generatedById: 'u1' },
-      { renderPdf: pdf },
-    );
+    await generateQuote({ scenarioId: 'scen_1', generatedById: 'u1' }, { renderPdf: pdf });
 
     // On attempt 1 (P2002), both orphan paths should have been unlinked
     expect(vi.mocked(unlink)).toHaveBeenCalledWith('/tmp/fake-customer.pdf');

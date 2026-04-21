@@ -128,6 +128,7 @@ Only WRITE tool calls append. Reads are not logged (volume + low risk). `argsHas
 ## Tool Surface
 
 Every tool description (what the agent sees in `tools/list`) must include:
+
 - One-sentence purpose.
 - Role requirement if not sales-default (`"Admin only."` prefix).
 - Side-effect note for writes (`"Writes to … Irreversible."` / `"Writes to … Reversible via {tool}."`).
@@ -135,52 +136,52 @@ Every tool description (what the agent sees in `tools/list`) must include:
 
 ### Sales + admin — reads (9)
 
-| Tool | Purpose |
-|---|---|
-| `list_products` | All products with `id`, `name`, `kind`, `isArchived`. |
-| `get_product` | Full product snapshot. SaaS: vendor rates, base usage, personas, list price, volume tiers, contract modifiers, rails. Labor: SKUs or bill-rate. Admin sees additional fields (loaded rates). |
-| `list_bundles` | Bundles with item counts. |
-| `get_bundle` | Bundle + all items (SaaS configs, labor SKU refs, department/hour refs). |
-| `list_scenarios` | Sales sees own; admin sees all. Filters: owner, status, customer (substring). |
-| `get_scenario` | Scenario + all SaaS configs + labor lines + quote versions. |
-| `list_quotes_for_scenario` | Quote versions for a scenario. |
-| `get_quote` | Quote row with frozen totals JSON. Optional `include_pdf_bytes: bool` → returns `customerPdfBase64` and, for admin callers, `internalPdfBase64`. |
-| `compute_quote` | **Pure.** Takes full `ComputeRequest`-shaped input plus a `contractMonths`, returns the engine's `ComputeResult`. No DB write. The "quick pricing" tool. |
+| Tool                       | Purpose                                                                                                                                                                                      |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `list_products`            | All products with `id`, `name`, `kind`, `isArchived`.                                                                                                                                        |
+| `get_product`              | Full product snapshot. SaaS: vendor rates, base usage, personas, list price, volume tiers, contract modifiers, rails. Labor: SKUs or bill-rate. Admin sees additional fields (loaded rates). |
+| `list_bundles`             | Bundles with item counts.                                                                                                                                                                    |
+| `get_bundle`               | Bundle + all items (SaaS configs, labor SKU refs, department/hour refs).                                                                                                                     |
+| `list_scenarios`           | Sales sees own; admin sees all. Filters: owner, status, customer (substring).                                                                                                                |
+| `get_scenario`             | Scenario + all SaaS configs + labor lines + quote versions.                                                                                                                                  |
+| `list_quotes_for_scenario` | Quote versions for a scenario.                                                                                                                                                               |
+| `get_quote`                | Quote row with frozen totals JSON. Optional `include_pdf_bytes: bool` → returns `customerPdfBase64` and, for admin callers, `internalPdfBase64`.                                             |
+| `compute_quote`            | **Pure.** Takes full `ComputeRequest`-shaped input plus a `contractMonths`, returns the engine's `ComputeResult`. No DB write. The "quick pricing" tool.                                     |
 
 ### Admin — reads (5)
 
-| Tool | Purpose |
-|---|---|
-| `list_employees` / `get_employee` | Compensation, department, active flag. |
-| `list_departments` | With computed loaded rate. |
-| `list_burdens` | FICA/FUTA/SUTA/etc. with caps and scope. |
-| `list_commission_rules` / `get_commission_rule` | Rules + tier breakdown. |
-| `list_api_tokens` | All non-revoked tokens across the org, for the kill-switch surface. |
+| Tool                                            | Purpose                                                             |
+| ----------------------------------------------- | ------------------------------------------------------------------- |
+| `list_employees` / `get_employee`               | Compensation, department, active flag.                              |
+| `list_departments`                              | With computed loaded rate.                                          |
+| `list_burdens`                                  | FICA/FUTA/SUTA/etc. with caps and scope.                            |
+| `list_commission_rules` / `get_commission_rule` | Rules + tier breakdown.                                             |
+| `list_api_tokens`                               | All non-revoked tokens across the org, for the kill-switch surface. |
 
 ### Sales + admin — scenario writes (7)
 
-| Tool | Purpose |
-|---|---|
-| `create_scenario` | Creates an empty scenario. Returns `{ id }`. |
-| `update_scenario` | Patch name, customer, contract months, notes, status. |
-| `set_scenario_saas_config` | Upsert a SaaS tab: seat count, persona mix, discount override. |
-| `set_scenario_labor_lines` | **Replaces** all labor lines for a given product on the scenario. |
-| `apply_bundle_to_scenario` | Writes bundle items into scenario configs; sets `appliedBundleId`. |
-| `archive_scenario` | Soft-archive. |
-| `generate_quote` | Re-runs engine, writes PDFs + Quote row. Returns `{ quoteId, version, downloadUrl, customerPdfBase64?, internalPdfBase64? }`. Inline bytes opt-in via `include_pdf_bytes: bool`; internal bytes only for admin callers. |
+| Tool                       | Purpose                                                                                                                                                                                                                 |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `create_scenario`          | Creates an empty scenario. Returns `{ id }`.                                                                                                                                                                            |
+| `update_scenario`          | Patch name, customer, contract months, notes, status.                                                                                                                                                                   |
+| `set_scenario_saas_config` | Upsert a SaaS tab: seat count, persona mix, discount override.                                                                                                                                                          |
+| `set_scenario_labor_lines` | **Replaces** all labor lines for a given product on the scenario.                                                                                                                                                       |
+| `apply_bundle_to_scenario` | Writes bundle items into scenario configs; sets `appliedBundleId`.                                                                                                                                                      |
+| `archive_scenario`         | Soft-archive.                                                                                                                                                                                                           |
+| `generate_quote`           | Re-runs engine, writes PDFs + Quote row. Returns `{ quoteId, version, downloadUrl, customerPdfBase64?, internalPdfBase64? }`. Inline bytes opt-in via `include_pdf_bytes: bool`; internal bytes only for admin callers. |
 
 ### Admin — catalog writes (42)
 
 **Principle:** `set_*` tools that manage a collection (tiers, items, volume tiers, contract modifiers, bundle items, commission tiers) **replace the whole set in one call**. Matches admin-UI edit batches; avoids multi-call races where the engine would see partial state.
 
-| Domain | Tools |
-|---|---|
-| Product shell | `create_product`, `update_product`, `delete_product` |
+| Domain         | Tools                                                                                                                                                                                                                                                                                                              |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Product shell  | `create_product`, `update_product`, `delete_product`                                                                                                                                                                                                                                                               |
 | SaaS rate card | `create_vendor_rate`, `update_vendor_rate`, `delete_vendor_rate`, `set_base_usage`, `set_other_variable`, `create_persona`, `update_persona`, `delete_persona`, `create_fixed_cost`, `update_fixed_cost`, `delete_fixed_cost`, `set_product_scale`, `set_list_price`, `set_volume_tiers`, `set_contract_modifiers` |
-| Labor | `create_labor_sku`, `update_labor_sku`, `delete_labor_sku`, `create_department`, `update_department`, `delete_department`, `set_department_bill_rate`, `create_employee`, `update_employee`, `delete_employee`, `create_burden`, `update_burden`, `delete_burden` |
-| Commissions | `create_commission_rule`, `update_commission_rule`, `delete_commission_rule`, `set_commission_tiers` |
-| Bundles | `create_bundle`, `update_bundle`, `delete_bundle`, `set_bundle_items` |
-| Rails | `create_rail`, `update_rail`, `delete_rail` |
+| Labor          | `create_labor_sku`, `update_labor_sku`, `delete_labor_sku`, `create_department`, `update_department`, `delete_department`, `set_department_bill_rate`, `create_employee`, `update_employee`, `delete_employee`, `create_burden`, `update_burden`, `delete_burden`                                                  |
+| Commissions    | `create_commission_rule`, `update_commission_rule`, `delete_commission_rule`, `set_commission_tiers`                                                                                                                                                                                                               |
+| Bundles        | `create_bundle`, `update_bundle`, `delete_bundle`, `set_bundle_items`                                                                                                                                                                                                                                              |
+| Rails          | `create_rail`, `update_rail`, `delete_rail`                                                                                                                                                                                                                                                                        |
 
 **Explicitly not exposed:** `invite_user`, `set_user_role`, `delete_user`. User management remains web-UI-only.
 
@@ -201,15 +202,15 @@ Every tool description (what the agent sees in `tools/list`) must include:
 
 ### Error Mapping
 
-| Source | MCP JSON-RPC code | Message |
-|---|---|---|
-| Missing/invalid token | `-32001` | `Unauthorized` |
-| Valid token, wrong role | `-32002` | `Forbidden: admin role required` |
-| `RailHardBlockError` | `-32003` | `Rail hard-block: {rail}; measured {m} vs threshold {t}` |
-| `NotFoundError` | `-32004` | `{Entity} not found: {id}` |
-| Zod validation failure | `-32602` | `Invalid params: {field}: {reason}` |
-| `ValidationError` (service) | `-32602` | `Invalid: {field}: {reason}` |
-| Any other throw | `-32603` | `Internal error` (raw logged to Sentry; not returned) |
+| Source                      | MCP JSON-RPC code | Message                                                  |
+| --------------------------- | ----------------- | -------------------------------------------------------- |
+| Missing/invalid token       | `-32001`          | `Unauthorized`                                           |
+| Valid token, wrong role     | `-32002`          | `Forbidden: admin role required`                         |
+| `RailHardBlockError`        | `-32003`          | `Rail hard-block: {rail}; measured {m} vs threshold {t}` |
+| `NotFoundError`             | `-32004`          | `{Entity} not found: {id}`                               |
+| Zod validation failure      | `-32602`          | `Invalid params: {field}: {reason}`                      |
+| `ValidationError` (service) | `-32602`          | `Invalid: {field}: {reason}`                             |
+| Any other throw             | `-32603`          | `Internal error` (raw logged to Sentry; not returned)    |
 
 ### Tool-listing RBAC
 

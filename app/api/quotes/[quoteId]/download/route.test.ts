@@ -6,7 +6,9 @@ vi.mock('@/lib/auth/session', () => ({
 vi.mock('@/lib/db/client', () => ({ prisma: {} }));
 vi.mock('@/lib/db/repositories/quote', () => ({
   // eslint-disable-next-line prefer-arrow-callback
-  QuoteRepository: vi.fn().mockImplementation(function () { return { findById: vi.fn() }; }),
+  QuoteRepository: vi.fn().mockImplementation(function () {
+    return { findById: vi.fn() };
+  }),
 }));
 vi.mock('@/lib/mcp/auth', () => ({
   authenticateMcpRequest: vi.fn(),
@@ -35,7 +37,9 @@ describe('GET /api/quotes/[quoteId]/download', () => {
     mockGetSessionUser.mockResolvedValue({ id: 'u1', role: 'SALES', email: 'u@x.com', name: 'U' });
     const findById = vi.fn(async () => null);
     // eslint-disable-next-line prefer-arrow-callback
-    MockQuoteRepository.mockImplementation(function () { return { findById } as never; });
+    MockQuoteRepository.mockImplementation(function () {
+      return { findById } as never;
+    });
     const res = await GET(req('http://x'), { params: { quoteId: 'q1' } });
     expect(res.status).toBe(404);
   });
@@ -49,7 +53,9 @@ describe('GET /api/quotes/[quoteId]/download', () => {
       internalPdfUrl: '/tmp/internal.pdf',
     }));
     // eslint-disable-next-line prefer-arrow-callback
-    MockQuoteRepository.mockImplementation(function () { return { findById } as never; });
+    MockQuoteRepository.mockImplementation(function () {
+      return { findById } as never;
+    });
     const res = await GET(req('http://x'), { params: { quoteId: 'q1' } });
     expect(res.status).toBe(404);
   });
@@ -63,7 +69,9 @@ describe('GET /api/quotes/[quoteId]/download', () => {
       internalPdfUrl: '/tmp/internal.pdf',
     }));
     // eslint-disable-next-line prefer-arrow-callback
-    MockQuoteRepository.mockImplementation(function () { return { findById } as never; });
+    MockQuoteRepository.mockImplementation(function () {
+      return { findById } as never;
+    });
     const res = await GET(req('http://x?variant=internal'), { params: { quoteId: 'q1' } });
     expect(res.status).toBe(404);
   });
@@ -84,7 +92,9 @@ describe('bearer-token auth on download', () => {
       pdfUrl: '/tmp/customer.pdf',
       internalPdfUrl: null,
     }));
-    MockQuoteRepository.mockImplementation(function () { return { findById } as never; });
+    MockQuoteRepository.mockImplementation(function () {
+      return { findById } as never;
+    });
 
     const request = new Request('http://x/api/quotes/q1/download', {
       headers: { Authorization: 'Bearer np_live_good' },
@@ -95,7 +105,12 @@ describe('bearer-token auth on download', () => {
   });
 
   it('falls through to session when no bearer header provided', async () => {
-    vi.mocked(getSessionUser as any).mockResolvedValue({ id: 'u1', role: 'SALES', email: 'u@x.com', name: 'U' });
+    vi.mocked(getSessionUser as any).mockResolvedValue({
+      id: 'u1',
+      role: 'SALES',
+      email: 'u@x.com',
+      name: 'U',
+    });
     const request = new Request('http://x/api/quotes/q1/download');
     const res = await GET(request, { params: { quoteId: 'q1' } });
     expect(authenticateMcpRequest).not.toHaveBeenCalled();

@@ -16,8 +16,10 @@ export async function wrapWithAudit<I, O>(
     errored = err;
     throw err;
   } finally {
-    const targetEntityId: string | undefined =
-      tool.extractTargetId?.(input, output as O | undefined);
+    const targetEntityId: string | undefined = tool.extractTargetId?.(
+      input,
+      output as O | undefined,
+    );
 
     const audit: Parameters<typeof appendAudit>[0] = {
       tokenId: ctx.token.id,
@@ -47,7 +49,9 @@ export async function wrapWithAudit<I, O>(
     try {
       const p = appendAudit(audit);
       if (p && typeof (p as Promise<unknown>).catch === 'function') {
-        void (p as Promise<unknown>).catch((err) => console.error('[mcp] audit append failed:', err));
+        void (p as Promise<unknown>).catch((err) =>
+          console.error('[mcp] audit append failed:', err),
+        );
       }
     } catch (err) {
       console.error('[mcp] audit append failed:', err);

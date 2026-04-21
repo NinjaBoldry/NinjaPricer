@@ -90,7 +90,11 @@ export const resolveReviewQueueItemTool: ToolDefinition<
   extractTargetId: (input) => input.itemId,
   handler: async (ctx, input) => {
     const service = new ReviewQueueService(new HubSpotReviewQueueItemRepository(prisma), prisma);
-    await service.resolve({ itemId: input.itemId, resolution: input.resolution, userId: ctx.user.id });
+    await service.resolve({
+      itemId: input.itemId,
+      resolution: input.resolution,
+      userId: ctx.user.id,
+    });
     return { ok: true };
   },
 };

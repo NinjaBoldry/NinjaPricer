@@ -90,9 +90,7 @@ describe('hubspotFetch', () => {
   });
 
   it('retries on 5xx up to maxAttempts then throws', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(
-      new Response('boom', { status: 503 }),
-    );
+    const fetchMock = vi.fn().mockResolvedValue(new Response('boom', { status: 503 }));
     global.fetch = fetchMock;
 
     const expectation = expect(

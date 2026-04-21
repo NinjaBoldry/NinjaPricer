@@ -36,8 +36,7 @@ export async function renderInternalPdf(args: RenderArgs): Promise<Buffer> {
         <View style={styles.row}>
           <Text>Net margin</Text>
           <Text>
-            {formatCents(result.totals.netMarginCents)} (
-            {formatPct(result.totals.marginPctNet)})
+            {formatCents(result.totals.netMarginCents)} ({formatPct(result.totals.marginPctNet)})
           </Text>
         </View>
 

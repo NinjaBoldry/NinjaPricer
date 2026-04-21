@@ -6,7 +6,8 @@ import { hubspotFetch } from '@/lib/hubspot/client';
 import { provisionCustomProperties } from '@/lib/hubspot/setup/provisionProperties';
 import { runCatalogPush, runCatalogPull } from '@/lib/hubspot/catalog/orchestrator';
 
-const shouldRun = process.env.HUBSPOT_ACCESS_TOKEN && process.env.RUN_HUBSPOT_INTEGRATION === 'true';
+const shouldRun =
+  process.env.HUBSPOT_ACCESS_TOKEN && process.env.RUN_HUBSPOT_INTEGRATION === 'true';
 
 const prisma = new PrismaClient();
 
@@ -20,7 +21,11 @@ const prisma = new PrismaClient();
     await prisma.product.deleteMany({ where: { name: { startsWith: 'IntegrationTest-' } } });
     await prisma.hubSpotConfig.upsert({
       where: { portalId: process.env.HUBSPOT_PORTAL_ID ?? 'test' },
-      create: { portalId: process.env.HUBSPOT_PORTAL_ID ?? 'test', enabled: true, accessTokenSecretRef: 'env' },
+      create: {
+        portalId: process.env.HUBSPOT_PORTAL_ID ?? 'test',
+        enabled: true,
+        accessTokenSecretRef: 'env',
+      },
       update: {},
     });
   });
@@ -28,7 +33,11 @@ const prisma = new PrismaClient();
   afterAll(async () => {
     // Archive products we created in the test portal
     for (const id of createdHsIds) {
-      await hubspotFetch({ method: 'DELETE', path: `/crm/v3/objects/products/${id}`, correlationId }).catch(() => {});
+      await hubspotFetch({
+        method: 'DELETE',
+        path: `/crm/v3/objects/products/${id}`,
+        correlationId,
+      }).catch(() => {});
     }
     await prisma.product.deleteMany({ where: { name: { startsWith: 'IntegrationTest-' } } });
     await prisma.hubSpotProductMap.deleteMany();
@@ -46,7 +55,9 @@ const prisma = new PrismaClient();
     expect(out.created.length).toBeGreaterThanOrEqual(1);
     createdHsIds.push(...out.created.map((c) => c.hubspotProductId));
 
-    const mapping = await prisma.hubSpotProductMap.findFirst({ where: { pricerProductId: product.id } });
+    const mapping = await prisma.hubSpotProductMap.findFirst({
+      where: { pricerProductId: product.id },
+    });
     expect(mapping).not.toBeNull();
   });
 

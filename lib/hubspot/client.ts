@@ -39,7 +39,12 @@ function sleep(ms: number): Promise<void> {
 export async function hubspotFetch<T = unknown>(options: HubSpotFetchOptions): Promise<T> {
   const token = process.env.HUBSPOT_ACCESS_TOKEN;
   if (!token) {
-    throw new HubSpotApiError(0, 'HUBSPOT_ACCESS_TOKEN not configured', undefined, options.correlationId);
+    throw new HubSpotApiError(
+      0,
+      'HUBSPOT_ACCESS_TOKEN not configured',
+      undefined,
+      options.correlationId,
+    );
   }
 
   const url = buildUrl(options.path, options.query);
@@ -62,7 +67,9 @@ export async function hubspotFetch<T = unknown>(options: HubSpotFetchOptions): P
     if (res.status >= 200 && res.status < 300) {
       if (res.status === 204) return undefined as T;
       const contentType = res.headers.get('content-type') ?? '';
-      return contentType.includes('application/json') ? ((await res.json()) as T) : ((await res.text()) as unknown as T);
+      return contentType.includes('application/json')
+        ? ((await res.json()) as T)
+        : ((await res.text()) as unknown as T);
     }
 
     if (res.status === 429) {
@@ -78,7 +85,12 @@ export async function hubspotFetch<T = unknown>(options: HubSpotFetchOptions): P
 
     if (res.status >= 500) {
       const body = await res.clone().text();
-      lastError = new HubSpotApiError(res.status, `HubSpot ${res.status}: ${body}`, body, options.correlationId);
+      lastError = new HubSpotApiError(
+        res.status,
+        `HubSpot ${res.status}: ${body}`,
+        body,
+        options.correlationId,
+      );
       if (attempt < MAX_ATTEMPTS) {
         await sleep(BASE_BACKOFF_MS * 2 ** (attempt - 1));
         continue;

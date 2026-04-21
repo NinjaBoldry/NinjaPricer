@@ -23,12 +23,17 @@ export async function pullHubSpotChanges(input: {
   correlationId: string;
 }): Promise<PullOutcome> {
   // Query HubSpot for pricer-managed products
-  const properties = 'name,hs_sku,description,price,recurringbillingfrequency,pricer_managed,pricer_product_id,pricer_kind,pricer_last_synced_hash';
-  const res = await hubspotFetch<{ results: Array<{ id: string; properties: Record<string, string> }> }>({
+  const properties =
+    'name,hs_sku,description,price,recurringbillingfrequency,pricer_managed,pricer_product_id,pricer_kind,pricer_last_synced_hash';
+  const res = await hubspotFetch<{
+    results: Array<{ id: string; properties: Record<string, string> }>;
+  }>({
     method: 'POST',
     path: '/crm/v3/objects/products/search',
     body: {
-      filterGroups: [{ filters: [{ propertyName: 'pricer_managed', operator: 'EQ', value: 'true' }] }],
+      filterGroups: [
+        { filters: [{ propertyName: 'pricer_managed', operator: 'EQ', value: 'true' }] },
+      ],
       properties: properties.split(','),
       limit: 100,
     },
@@ -86,7 +91,10 @@ export async function pullHubSpotChanges(input: {
       continue; // Both sides changed — pricer push will overwrite HubSpot, not a review concern
     }
     // Only reach here when pricer is unchanged but HubSpot changed → genuine review item.
-    const changedFields = diffFields(pricerSyncFieldsObj, hubspotSyncFields as unknown as Record<string, unknown>);
+    const changedFields = diffFields(
+      pricerSyncFieldsObj,
+      hubspotSyncFields as unknown as Record<string, unknown>,
+    );
     reviewItems.push({
       entityType: kind,
       hubspotId: row.id,
@@ -99,7 +107,9 @@ export async function pullHubSpotChanges(input: {
   return { reviewItems, orphansInHubSpot: orphans };
 }
 
-function buildHubSpotSyncFieldsFromRow(row: { properties: Record<string, string> }): Parameters<typeof hashSyncedFields>[0] {
+function buildHubSpotSyncFieldsFromRow(row: {
+  properties: Record<string, string>;
+}): Parameters<typeof hashSyncedFields>[0] {
   const common = {
     name: row.properties.name ?? '',
     sku: row.properties.hs_sku ?? '',
@@ -113,7 +123,10 @@ function buildHubSpotSyncFieldsFromRow(row: { properties: Record<string, string>
   return { kind: 'PRODUCT', ...common };
 }
 
-function diffFields(a: Record<string, unknown>, b: Record<string, unknown>): Record<string, { pricer: unknown; hubspot: unknown }> {
+function diffFields(
+  a: Record<string, unknown>,
+  b: Record<string, unknown>,
+): Record<string, { pricer: unknown; hubspot: unknown }> {
   const diff: Record<string, { pricer: unknown; hubspot: unknown }> = {};
   const keys = Array.from(new Set([...Object.keys(a), ...Object.keys(b)]));
   for (const k of keys) {

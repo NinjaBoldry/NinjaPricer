@@ -13,7 +13,12 @@ export const styles = StyleSheet.create({
   muted: { color: '#6b7280' },
   row: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 2 },
   table: { marginTop: 6, borderTopWidth: 1, borderTopColor: '#e5e7eb' },
-  tr: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#e5e7eb', paddingVertical: 4 },
+  tr: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+    paddingVertical: 4,
+  },
   th: { fontWeight: 700 },
   col1: { flex: 3 },
   col2: { flex: 2, textAlign: 'right' },

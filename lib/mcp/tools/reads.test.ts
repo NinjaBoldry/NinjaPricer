@@ -63,12 +63,7 @@ vi.mock('@/lib/services/bundle', () => ({
   getBundleById: vi.fn(),
 }));
 
-import {
-  listProductsTool,
-  getProductTool,
-  listBundlesTool,
-  getBundleTool,
-} from './reads';
+import { listProductsTool, getProductTool, listBundlesTool, getBundleTool } from './reads';
 import { listProducts, getProductById } from '@/lib/services/product';
 import { listBundles, getBundleById } from '@/lib/services/bundle';
 import { NotFoundError } from '@/lib/utils/errors';
@@ -152,7 +147,7 @@ describe('get_scenario tool', () => {
     expect((out as any).id).toBe('s1');
   });
 
-  it('sales cannot get another user\'s scenario → NotFoundError', async () => {
+  it("sales cannot get another user's scenario → NotFoundError", async () => {
     vi.mocked(getScenarioById).mockResolvedValue({ id: 's1', ownerId: 'other' } as any);
     await expect(getScenarioTool.handler(salesCtx, { id: 's1' })).rejects.toBeInstanceOf(
       NotFoundError,
@@ -183,7 +178,9 @@ import { QuoteRepository } from '@/lib/db/repositories/quote';
 describe('list_quotes_for_scenario', () => {
   it('forwards scenarioId to repo', async () => {
     const repoInstance = { listByScenario: vi.fn(async () => []), findById: vi.fn() };
-    (QuoteRepository as any).mockImplementation(function () { return repoInstance; });
+    (QuoteRepository as any).mockImplementation(function () {
+      return repoInstance;
+    });
     await listQuotesForScenarioTool.handler(ctx, { scenarioId: 's1' });
     expect(repoInstance.listByScenario).toHaveBeenCalledWith('s1');
   });
@@ -202,7 +199,9 @@ describe('get_quote', () => {
 
   it('returns metadata by default (no bytes)', async () => {
     const repoInstance = { listByScenario: vi.fn(), findById: vi.fn().mockResolvedValue(quote) };
-    (QuoteRepository as any).mockImplementation(function () { return repoInstance; });
+    (QuoteRepository as any).mockImplementation(function () {
+      return repoInstance;
+    });
     const out = await getQuoteTool.handler(ctx, { id: 'q1' });
     expect((out as any).customerPdfBase64).toBeUndefined();
     expect((out as any).internalPdfBase64).toBeUndefined();
@@ -211,7 +210,9 @@ describe('get_quote', () => {
 
   it('returns customerPdfBase64 when include_pdf_bytes:true', async () => {
     const repoInstance = { listByScenario: vi.fn(), findById: vi.fn().mockResolvedValue(quote) };
-    (QuoteRepository as any).mockImplementation(function () { return repoInstance; });
+    (QuoteRepository as any).mockImplementation(function () {
+      return repoInstance;
+    });
     const out = await getQuoteTool.handler(ctx, { id: 'q1', include_pdf_bytes: true });
     expect((out as any).customerPdfBase64).toBe(Buffer.from('PDF-BYTES').toString('base64'));
     expect((out as any).internalPdfBase64).toBe(Buffer.from('PDF-BYTES').toString('base64'));
@@ -219,8 +220,13 @@ describe('get_quote', () => {
 
   it('internalPdfBase64 withheld for sales caller even if include_pdf_bytes:true', async () => {
     const salesQuote = { ...quote, scenario: { ownerId: salesCtx.user.id } };
-    const repoInstance = { listByScenario: vi.fn(), findById: vi.fn().mockResolvedValue(salesQuote) };
-    (QuoteRepository as any).mockImplementation(function () { return repoInstance; });
+    const repoInstance = {
+      listByScenario: vi.fn(),
+      findById: vi.fn().mockResolvedValue(salesQuote),
+    };
+    (QuoteRepository as any).mockImplementation(function () {
+      return repoInstance;
+    });
     const out = await getQuoteTool.handler(salesCtx, { id: 'q1', include_pdf_bytes: true });
     expect((out as any).customerPdfBase64).toBeDefined();
     expect((out as any).internalPdfBase64).toBeUndefined();

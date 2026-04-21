@@ -11,9 +11,7 @@ import type {
   TabInput,
 } from '@/lib/engine/types';
 
-export type ScenarioWithConfigs = NonNullable<
-  Awaited<ReturnType<typeof fetchScenarioWithConfigs>>
->;
+export type ScenarioWithConfigs = NonNullable<Awaited<ReturnType<typeof fetchScenarioWithConfigs>>>;
 
 async function fetchScenarioWithConfigs(scenarioId: string) {
   return prisma.scenario.findUnique({

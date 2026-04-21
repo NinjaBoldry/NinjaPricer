@@ -29,6 +29,7 @@ Fractions (`marginPctContribution`, `discountPct`, `ratePct`) are 0..1. `0.25` m
 Group mental model: **reads** answer questions without writing anything; **scenario writes** let a rep build and finalize a workup; **admin catalog writes** change the rules of the game.
 
 ### Reads (all users)
+
 - `list_products` / `get_product` — catalog + full rate card per product
 - `list_bundles` / `get_bundle` — saved bundles with their items
 - `list_scenarios` / `get_scenario` — own scenarios (sales) or all (admin)
@@ -36,12 +37,14 @@ Group mental model: **reads** answer questions without writing anything; **scena
 - `compute_quote` — **pure, no DB write.** Takes a full ComputeRequest shape and returns the engine's result. Use this for "what if" questions when the user doesn't want a scenario persisted yet.
 
 ### Scenario writes (all users, own scenarios only for sales)
+
 - `create_scenario` → `update_scenario` (header patches) → `archive_scenario`
 - `set_scenario_saas_config` (upsert one product's SaaS tab) / `set_scenario_labor_lines` (**replaces** all labor lines for a product)
 - `apply_bundle_to_scenario` (seed configs + labor lines from a bundle; sets `appliedBundleId`)
 - `generate_quote` → returns `{quoteId, version, downloadUrl, customerPdfBase64?, internalPdfBase64?}`. Add `include_pdf_bytes: true` to get the PDF inline.
 
 ### Admin reads
+
 - `list_employees` / `get_employee` — comp + department + active flag
 - `list_departments` — includes computed loaded hourly rate
 - `list_burdens` — FICA/FUTA/SUTA rates + scope + caps
@@ -49,6 +52,7 @@ Group mental model: **reads** answer questions without writing anything; **scena
 - `list_api_tokens` — all tokens across the org (kill-switch view)
 
 ### Admin catalog writes
+
 - **Product shell:** `create_product`, `update_product`, `delete_product`
 - **SaaS rate card:** vendor rates (create/update/delete), personas (create/update/delete), fixed costs (create/update/delete), `set_base_usage`, `set_other_variable`, `set_product_scale`, `set_list_price`, `set_volume_tiers`, `set_contract_modifiers`
 - **Labor:** labor SKUs (create/update/delete), departments (create/update/delete + `set_department_bill_rate`), employees (create/update/delete), burdens (create/update/delete)
@@ -62,14 +66,14 @@ User management (invite, role change, delete) is not exposed via MCP — it live
 
 Several tools **replace an entire collection in one call** — they don't merge or append. This matches how the admin UI edits these as a batch and avoids multi-call races.
 
-| Tool | Replaces |
-|---|---|
+| Tool                       | Replaces                                             |
+| -------------------------- | ---------------------------------------------------- |
 | `set_scenario_labor_lines` | All labor lines for a `(scenarioId, productId)` pair |
-| `set_base_usage` | All base-usage entries for a product |
-| `set_volume_tiers` | All volume tiers for a product |
-| `set_contract_modifiers` | All contract-length modifiers for a product |
-| `set_commission_tiers` | All tiers for a commission rule |
-| `set_bundle_items` | All items for a bundle |
+| `set_base_usage`           | All base-usage entries for a product                 |
+| `set_volume_tiers`         | All volume tiers for a product                       |
+| `set_contract_modifiers`   | All contract-length modifiers for a product          |
+| `set_commission_tiers`     | All tiers for a commission rule                      |
+| `set_bundle_items`         | All items for a bundle                               |
 
 **Practical implication:** to change one item, `get_*` the current list, mutate client-side, then `set_*` the full new list. The caller is responsible for round-tripping additions and deletions — if they "forget" an existing item, it's gone.
 
@@ -143,14 +147,14 @@ A multi-step workflow. Do it in this order to avoid references to things that do
 
 When you see an error in a tool result, translate it for the user instead of parroting the raw JSON-RPC code.
 
-| Code | Meaning | What to tell the user |
-|---|---|---|
-| `-32001 Unauthorized` | Token missing, revoked, or expired | "Your API token isn't valid. Check `/settings/tokens` — it may have been revoked, or you need a new one." |
-| `-32002 Forbidden` | Sales token hit an admin-only tool | "That action needs an admin token. Your current token is sales-role." |
-| `-32003 Rail hard-block` | A write violated a hard rail | Quote the rail kind, measured value, and threshold. Explain the rail is an admin-set floor. Offer options: adjust inputs to clear the rail, or ask admin to revisit the threshold. |
-| `-32004 Not found` | Entity doesn't exist, OR (if sales) doesn't belong to the caller | If sales user asking about a scenario: "I don't see that scenario — it may belong to another user, or the id is wrong." Don't assume auth failure; 404-on-leak is intentional. |
-| `-32602 Invalid params` | Zod rejected the input | The message names the field. Often: `personaMix` didn't sum to 100, `thresholdFromUsd` wasn't non-decreasing, a Decimal field got a bad string. Fix the input and retry. |
-| `-32603 Internal error` | Unexpected server error | "Something went wrong server-side. Ask your Ninja Concepts admin to check the logs." Don't retry blindly. |
+| Code                     | Meaning                                                          | What to tell the user                                                                                                                                                              |
+| ------------------------ | ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `-32001 Unauthorized`    | Token missing, revoked, or expired                               | "Your API token isn't valid. Check `/settings/tokens` — it may have been revoked, or you need a new one."                                                                          |
+| `-32002 Forbidden`       | Sales token hit an admin-only tool                               | "That action needs an admin token. Your current token is sales-role."                                                                                                              |
+| `-32003 Rail hard-block` | A write violated a hard rail                                     | Quote the rail kind, measured value, and threshold. Explain the rail is an admin-set floor. Offer options: adjust inputs to clear the rail, or ask admin to revisit the threshold. |
+| `-32004 Not found`       | Entity doesn't exist, OR (if sales) doesn't belong to the caller | If sales user asking about a scenario: "I don't see that scenario — it may belong to another user, or the id is wrong." Don't assume auth failure; 404-on-leak is intentional.     |
+| `-32602 Invalid params`  | Zod rejected the input                                           | The message names the field. Often: `personaMix` didn't sum to 100, `thresholdFromUsd` wasn't non-decreasing, a Decimal field got a bad string. Fix the input and retry.           |
+| `-32603 Internal error`  | Unexpected server error                                          | "Something went wrong server-side. Ask your Ninja Concepts admin to check the logs." Don't retry blindly.                                                                          |
 
 ## Sales vs admin — a quick matrix
 

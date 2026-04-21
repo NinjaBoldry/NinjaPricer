@@ -45,6 +45,7 @@
 ## File Structure
 
 ### New
+
 ```
 lib/mcp/tools/
   scenarioWrites.ts        # 7 scenario-write tools
@@ -56,6 +57,7 @@ lib/mcp/
 ```
 
 ### Modified
+
 ```
 lib/mcp/server.ts          # extend ToolDefinition, wire audit in callTool
 lib/mcp/server.test.ts     # audit-wiring tests
@@ -84,22 +86,23 @@ app/api/quotes/[quoteId]/download/route.test.ts
 
 ## Sub-phase Overview
 
-| Task | Theme | Output |
-|---|---|---|
-| 5.1-A | Audit wrapper | `wrapWithAudit` helper + tests |
-| 5.1-B | ToolDefinition + server wiring | `isWrite` + `extractTargetId` fields; `callTool` calls `wrapWithAudit` for writes |
-| 5.1-C | Scenario service extractions | `upsertSaasConfig`, `setLaborLines`, `applyBundleToScenario` move from actions → service |
-| 5.1-D | `create_scenario` + `update_scenario` + `archive_scenario` | 3 simple writes |
-| 5.1-E | `set_scenario_saas_config` + `set_scenario_labor_lines` | 2 collection-replace writes |
-| 5.1-F | `apply_bundle_to_scenario` | 1 tool; thin wrapper over extracted service |
-| 5.1-G | `generate_quote` | 1 tool; returns URL + optional bytes |
-| 5.1-H | `/api/quotes/[id]/download` bearer branch | Accept bearer token on GET |
+| Task  | Theme                                                      | Output                                                                                   |
+| ----- | ---------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| 5.1-A | Audit wrapper                                              | `wrapWithAudit` helper + tests                                                           |
+| 5.1-B | ToolDefinition + server wiring                             | `isWrite` + `extractTargetId` fields; `callTool` calls `wrapWithAudit` for writes        |
+| 5.1-C | Scenario service extractions                               | `upsertSaasConfig`, `setLaborLines`, `applyBundleToScenario` move from actions → service |
+| 5.1-D | `create_scenario` + `update_scenario` + `archive_scenario` | 3 simple writes                                                                          |
+| 5.1-E | `set_scenario_saas_config` + `set_scenario_labor_lines`    | 2 collection-replace writes                                                              |
+| 5.1-F | `apply_bundle_to_scenario`                                 | 1 tool; thin wrapper over extracted service                                              |
+| 5.1-G | `generate_quote`                                           | 1 tool; returns URL + optional bytes                                                     |
+| 5.1-H | `/api/quotes/[id]/download` bearer branch                  | Accept bearer token on GET                                                               |
 
 ---
 
 ## Task 5.1-A: Audit-log wrapper
 
 **Files:**
+
 - Create: `lib/mcp/auditWrapper.ts`
 - Create: `lib/mcp/auditWrapper.test.ts`
 
@@ -234,8 +237,7 @@ export async function wrapWithAudit<I, O>(
     errored = err;
     throw err;
   } finally {
-    const targetEntityId =
-      tool.extractTargetId?.(input, output as O | undefined) ?? undefined;
+    const targetEntityId = tool.extractTargetId?.(input, output as O | undefined) ?? undefined;
     const audit: Parameters<typeof appendAudit>[0] = {
       tokenId: ctx.token.id,
       userId: ctx.user.id,
@@ -271,6 +273,7 @@ git commit -m "feat(mcp): wrapWithAudit helper for write tool auditing"
 ## Task 5.1-B: ToolDefinition `isWrite` + server wiring
 
 **Files:**
+
 - Modify: `lib/mcp/server.ts`
 - Modify: `lib/mcp/server.test.ts`
 
@@ -386,6 +389,7 @@ git commit -m "feat(mcp): route isWrite tools through audit wrapper"
 ## Task 5.1-C: Extract scenario-write logic into services
 
 **Files:**
+
 - Modify: `lib/services/scenario.ts`
 - Modify: `lib/services/scenario.test.ts`
 - Modify: `app/scenarios/[id]/actions.ts`
@@ -398,6 +402,7 @@ git commit -m "feat(mcp): route isWrite tools through audit wrapper"
 - [ ] **Step 1: Read the current server actions**
 
 Read these files and note the exact Prisma operations:
+
 - `app/scenarios/[id]/actions.ts` — contains `applyBundleAction` and `unapplyBundleAction` (writes scenarioSaaSConfig + scenarioLaborLine rows, sets `appliedBundleId`).
 - `app/scenarios/[id]/notes/actions.ts` — SaaS-config upsert.
 - `app/scenarios/[id]/training/actions.ts` — labor-line replace for training tab.
@@ -658,6 +663,7 @@ git commit -m "refactor(scenario): extract write operations into service free fu
 ## Task 5.1-D: `create_scenario`, `update_scenario`, `archive_scenario`
 
 **Files:**
+
 - Create: `lib/mcp/tools/scenarioWrites.ts`
 - Create: `lib/mcp/tools/scenarioWrites.test.ts`
 - Modify: `app/api/mcp/route.ts`
@@ -686,11 +692,7 @@ vi.mock('@/lib/services/scenario', () => ({
 }));
 
 import { ScenarioService, getScenarioById } from '@/lib/services/scenario';
-import {
-  createScenarioTool,
-  updateScenarioTool,
-  archiveScenarioTool,
-} from './scenarioWrites';
+import { createScenarioTool, updateScenarioTool, archiveScenarioTool } from './scenarioWrites';
 import { NotFoundError } from '@/lib/utils/errors';
 
 const adminCtx: McpContext = {
@@ -767,11 +769,11 @@ describe('update_scenario', () => {
     });
   });
 
-  it('sales caller cannot update someone else\'s scenario → NotFoundError', async () => {
+  it("sales caller cannot update someone else's scenario → NotFoundError", async () => {
     vi.mocked(getScenarioById).mockResolvedValue({ id: 's1', ownerId: 'other' } as any);
-    await expect(updateScenarioTool.handler(salesCtx, { id: 's1', name: 'X' })).rejects.toBeInstanceOf(
-      NotFoundError,
-    );
+    await expect(
+      updateScenarioTool.handler(salesCtx, { id: 's1', name: 'X' }),
+    ).rejects.toBeInstanceOf(NotFoundError);
     expect(svc.update).not.toHaveBeenCalled();
   });
 
@@ -853,10 +855,13 @@ const createScenarioSchema = z.object({
   notes: z.string().optional(),
 });
 
-export const createScenarioTool: ToolDefinition<z.infer<typeof createScenarioSchema>, { id: string }> = {
+export const createScenarioTool: ToolDefinition<
+  z.infer<typeof createScenarioSchema>,
+  { id: string }
+> = {
   name: 'create_scenario',
   description:
-    'Creates a new scenario owned by the caller. Returns { id }. Any user (sales or admin) may call; scenarios are always owned by the token\'s user.',
+    "Creates a new scenario owned by the caller. Returns { id }. Any user (sales or admin) may call; scenarios are always owned by the token's user.",
   inputSchema: createScenarioSchema,
   requiresAdmin: false,
   isWrite: true,
@@ -884,7 +889,10 @@ const updateScenarioSchema = z.object({
   status: z.enum(['DRAFT', 'QUOTED', 'ARCHIVED']).optional(),
 });
 
-export const updateScenarioTool: ToolDefinition<z.infer<typeof updateScenarioSchema>, { id: string }> = {
+export const updateScenarioTool: ToolDefinition<
+  z.infer<typeof updateScenarioSchema>,
+  { id: string }
+> = {
   name: 'update_scenario',
   description:
     'Patch scenario header fields: name, customerName, contractMonths, notes, status. Sales callers can only update scenarios they own; non-owners receive 404.',
@@ -903,7 +911,10 @@ export const updateScenarioTool: ToolDefinition<z.infer<typeof updateScenarioSch
 
 const archiveScenarioSchema = z.object({ id: z.string() });
 
-export const archiveScenarioTool: ToolDefinition<z.infer<typeof archiveScenarioSchema>, { id: string }> = {
+export const archiveScenarioTool: ToolDefinition<
+  z.infer<typeof archiveScenarioSchema>,
+  { id: string }
+> = {
   name: 'archive_scenario',
   description:
     'Soft-archive a scenario. Reversible via update_scenario { status: "DRAFT" }. Sales callers can only archive their own.',
@@ -961,6 +972,7 @@ git commit -m "feat(mcp): create_scenario / update_scenario / archive_scenario"
 ## Task 5.1-E: `set_scenario_saas_config` + `set_scenario_labor_lines`
 
 **Files:**
+
 - Modify: `lib/mcp/tools/scenarioWrites.ts`
 - Modify: `lib/mcp/tools/scenarioWrites.test.ts`
 
@@ -1007,7 +1019,10 @@ describe('set_scenario_saas_config', () => {
         scenarioId: 's',
         productId: 'p',
         seatCount: 10,
-        personaMix: [{ personaId: 'a', pct: 40 }, { personaId: 'b', pct: 50 }],
+        personaMix: [
+          { personaId: 'a', pct: 40 },
+          { personaId: 'b', pct: 50 },
+        ],
       }),
     ).toThrow();
   });
@@ -1023,7 +1038,13 @@ describe('set_scenario_labor_lines', () => {
       scenarioId: 's1',
       productId: 'p1',
       lines: [
-        { skuId: 'sku1', qty: '2', unit: 'PER_USER', costPerUnitUsd: '10', revenuePerUnitUsd: '20' },
+        {
+          skuId: 'sku1',
+          qty: '2',
+          unit: 'PER_USER',
+          costPerUnitUsd: '10',
+          revenuePerUnitUsd: '20',
+        },
       ],
     });
     expect(setLaborLines).toHaveBeenCalledWith(
@@ -1060,10 +1081,9 @@ const setScenarioSaasConfigSchema = z
     seatCount: z.number().int().nonnegative(),
     personaMix: z
       .array(z.object({ personaId: z.string(), pct: z.number().min(0).max(100) }))
-      .refine(
-        (arr) => Math.abs(arr.reduce((s, p) => s + p.pct, 0) - 100) < 0.001,
-        { message: 'personaMix percentages must sum to 100' },
-      ),
+      .refine((arr) => Math.abs(arr.reduce((s, p) => s + p.pct, 0) - 100) < 0.001, {
+        message: 'personaMix percentages must sum to 100',
+      }),
     discountOverridePct: decimalFromString.optional(),
   })
   .strict();
@@ -1074,7 +1094,7 @@ export const setScenarioSaasConfigTool: ToolDefinition<
 > = {
   name: 'set_scenario_saas_config',
   description:
-    'Upsert a scenario\'s SaaS tab for one product: seatCount, personaMix (sums to 100), optional discountOverridePct. Replaces any existing config for the same (scenarioId, productId).',
+    "Upsert a scenario's SaaS tab for one product: seatCount, personaMix (sums to 100), optional discountOverridePct. Replaces any existing config for the same (scenarioId, productId).",
   inputSchema: setScenarioSaasConfigSchema,
   requiresAdmin: false,
   isWrite: true,
@@ -1169,7 +1189,10 @@ describe('apply_bundle_to_scenario', () => {
   it('sales caller: own scenario → delegates', async () => {
     vi.mocked(getScenarioById).mockResolvedValue({ id: 's1', ownerId: 'u2' } as any);
     vi.mocked(applyBundleToScenario).mockResolvedValue({ scenarioId: 's1', bundleId: 'b1' });
-    const out = await applyBundleToScenarioTool.handler(salesCtx, { scenarioId: 's1', bundleId: 'b1' });
+    const out = await applyBundleToScenarioTool.handler(salesCtx, {
+      scenarioId: 's1',
+      bundleId: 'b1',
+    });
     expect(applyBundleToScenario).toHaveBeenCalledWith({ scenarioId: 's1', bundleId: 'b1' });
     expect(out).toEqual({ scenarioId: 's1', bundleId: 'b1' });
   });
@@ -1233,6 +1256,7 @@ git commit -m "feat(mcp): apply_bundle_to_scenario"
 ## Task 5.1-G: `generate_quote`
 
 **Files:**
+
 - Modify: `lib/mcp/tools/scenarioWrites.ts`
 - Modify: `lib/mcp/tools/scenarioWrites.test.ts`
 
@@ -1307,9 +1331,9 @@ describe('generate_quote', () => {
 
   it('sales caller: non-owner → NotFoundError', async () => {
     vi.mocked(getScenarioById).mockResolvedValue({ id: 's1', ownerId: 'other' } as any);
-    await expect(
-      generateQuoteTool.handler(salesCtx, { scenarioId: 's1' }),
-    ).rejects.toBeInstanceOf(NotFoundError);
+    await expect(generateQuoteTool.handler(salesCtx, { scenarioId: 's1' })).rejects.toBeInstanceOf(
+      NotFoundError,
+    );
   });
 });
 ```
@@ -1399,6 +1423,7 @@ git commit -m "feat(mcp): generate_quote (opt-in PDF bytes, admin-only internal 
 ## Task 5.1-H: Bearer-auth branch on `/api/quotes/[quoteId]/download`
 
 **Files:**
+
 - Modify: `app/api/quotes/[quoteId]/download/route.ts`
 - Modify: `app/api/quotes/[quoteId]/download/route.test.ts`
 
@@ -1485,9 +1510,9 @@ async function resolveUser(request: Request) {
 }
 
 // ... in GET():
-  const user = await resolveUser(request);
-  if (!user) return notFound();
-  // rest of handler unchanged (quote lookup, ownership check, variant, etc.)
+const user = await resolveUser(request);
+if (!user) return notFound();
+// rest of handler unchanged (quote lookup, ownership check, variant, etc.)
 ```
 
 - [ ] **Step 4: Run — pass**
@@ -1507,10 +1532,12 @@ git commit -m "feat(mcp): bearer-token auth branch on quote download route"
 ## File Map Summary
 
 **Created:**
+
 - `lib/mcp/auditWrapper.ts` + `.test.ts`
 - `lib/mcp/tools/scenarioWrites.ts` + `.test.ts`
 
 **Modified:**
+
 - `lib/mcp/server.ts` + `.test.ts` (ToolDefinition + audit wiring)
 - `lib/services/scenario.ts` + `.test.ts` (extract 4 free functions)
 - `app/scenarios/[id]/actions.ts` (refactor to call services)

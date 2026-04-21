@@ -101,8 +101,6 @@ export class BurdenService {
 
 // --- Free-function wrappers for MCP tools ---
 
-export async function listBurdens(
-  repo: BurdenRepository = new BurdenRepository(prisma),
-) {
+export async function listBurdens(repo: BurdenRepository = new BurdenRepository(prisma)) {
   return repo.findAll();
 }

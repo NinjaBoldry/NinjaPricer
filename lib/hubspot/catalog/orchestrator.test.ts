@@ -40,7 +40,9 @@ describe('runCatalogPush (integration)', () => {
     const summary = await runCatalogPush({ prisma, correlationId: 'test' });
 
     expect(summary.created.length).toBe(1);
-    const mapping = await prisma.hubSpotProductMap.findFirst({ where: { pricerProductId: product.id } });
+    const mapping = await prisma.hubSpotProductMap.findFirst({
+      where: { pricerProductId: product.id },
+    });
     expect(mapping?.hubspotProductId).toBe('hs-new-1');
     const config = await prisma.hubSpotConfig.findFirst();
     expect(config?.lastPushAt).not.toBeNull();

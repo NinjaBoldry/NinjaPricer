@@ -119,19 +119,17 @@ const commissionTierItemSchema = z.object({
 const setCommissionTiersSchema = z
   .object({
     ruleId: z.string().min(1),
-    tiers: z
-      .array(commissionTierItemSchema)
-      .refine(
-        (tiers) => {
-          for (let i = 1; i < tiers.length; i++) {
-            if (Number(tiers[i]!.thresholdFromUsd) < Number(tiers[i - 1]!.thresholdFromUsd)) {
-              return false;
-            }
+    tiers: z.array(commissionTierItemSchema).refine(
+      (tiers) => {
+        for (let i = 1; i < tiers.length; i++) {
+          if (Number(tiers[i]!.thresholdFromUsd) < Number(tiers[i - 1]!.thresholdFromUsd)) {
+            return false;
           }
-          return true;
-        },
-        { message: 'tier thresholds must be non-decreasing' },
-      ),
+        }
+        return true;
+      },
+      { message: 'tier thresholds must be non-decreasing' },
+    ),
   })
   .strict();
 

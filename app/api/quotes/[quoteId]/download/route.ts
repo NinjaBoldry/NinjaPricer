@@ -22,10 +22,7 @@ async function resolveUser(request: Request) {
   return getSessionUser();
 }
 
-export async function GET(
-  request: Request,
-  context: { params: { quoteId: string } },
-) {
+export async function GET(request: Request, context: { params: { quoteId: string } }) {
   const user = await resolveUser(request);
   if (!user) return notFound();
 

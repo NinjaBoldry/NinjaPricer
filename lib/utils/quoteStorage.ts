@@ -22,9 +22,7 @@ export function quotePdfPath({ scenarioId, quoteId, kind }: StorageArgs): string
   return path.join(baseDir(), scenarioId, `${quoteId}-${kind}.pdf`);
 }
 
-export async function writeQuotePdf(
-  args: StorageArgs & { buffer: Buffer },
-): Promise<string> {
+export async function writeQuotePdf(args: StorageArgs & { buffer: Buffer }): Promise<string> {
   const dest = quotePdfPath(args);
   await mkdir(path.dirname(dest), { recursive: true });
   await writeFile(dest, args.buffer);

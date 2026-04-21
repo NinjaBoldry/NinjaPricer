@@ -15,7 +15,8 @@ export default async function SettingsTokensPage() {
         <div>
           <h1 className="text-xl font-semibold">API tokens</h1>
           <p className="text-sm text-muted-foreground">
-            Issue tokens for Cowork, Claude Code, or any MCP client. Raw token is shown once at creation.
+            Issue tokens for Cowork, Claude Code, or any MCP client. Raw token is shown once at
+            creation.
           </p>
         </div>
         <NewTokenDialog />

@@ -14,7 +14,13 @@ vi.mock('@/lib/services/scenario', () => ({
   applyBundleToScenario: vi.fn(),
 }));
 
-import { ScenarioService, getScenarioById, upsertSaasConfig, setLaborLines, applyBundleToScenario } from '@/lib/services/scenario';
+import {
+  ScenarioService,
+  getScenarioById,
+  upsertSaasConfig,
+  setLaborLines,
+  applyBundleToScenario,
+} from '@/lib/services/scenario';
 import {
   createScenarioTool,
   updateScenarioTool,
@@ -99,11 +105,11 @@ describe('update_scenario', () => {
     });
   });
 
-  it('sales caller cannot update someone else\'s scenario → NotFoundError', async () => {
+  it("sales caller cannot update someone else's scenario → NotFoundError", async () => {
     vi.mocked(getScenarioById).mockResolvedValue({ id: 's1', ownerId: 'other' } as any);
-    await expect(updateScenarioTool.handler(salesCtx, { id: 's1', name: 'X' })).rejects.toBeInstanceOf(
-      NotFoundError,
-    );
+    await expect(
+      updateScenarioTool.handler(salesCtx, { id: 's1', name: 'X' }),
+    ).rejects.toBeInstanceOf(NotFoundError);
     expect(svc.update).not.toHaveBeenCalled();
   });
 
@@ -185,7 +191,10 @@ describe('set_scenario_saas_config', () => {
         scenarioId: 's',
         productId: 'p',
         seatCount: 10,
-        personaMix: [{ personaId: 'a', pct: 40 }, { personaId: 'b', pct: 50 }],
+        personaMix: [
+          { personaId: 'a', pct: 40 },
+          { personaId: 'b', pct: 50 },
+        ],
       }),
     ).toThrow();
   });
@@ -201,7 +210,13 @@ describe('set_scenario_labor_lines', () => {
       scenarioId: 's1',
       productId: 'p1',
       lines: [
-        { skuId: 'sku1', qty: '2', unit: 'PER_USER', costPerUnitUsd: '10', revenuePerUnitUsd: '20' },
+        {
+          skuId: 'sku1',
+          qty: '2',
+          unit: 'PER_USER',
+          costPerUnitUsd: '10',
+          revenuePerUnitUsd: '20',
+        },
       ],
     });
     expect(setLaborLines).toHaveBeenCalledWith(
@@ -226,7 +241,10 @@ describe('apply_bundle_to_scenario', () => {
   it('sales caller: own scenario → delegates', async () => {
     vi.mocked(getScenarioById).mockResolvedValue({ id: 's1', ownerId: 'u2' } as any);
     vi.mocked(applyBundleToScenario).mockResolvedValue({ scenarioId: 's1', bundleId: 'b1' } as any);
-    const out = await applyBundleToScenarioTool.handler(salesCtx, { scenarioId: 's1', bundleId: 'b1' });
+    const out = await applyBundleToScenarioTool.handler(salesCtx, {
+      scenarioId: 's1',
+      bundleId: 'b1',
+    });
     expect(applyBundleToScenario).toHaveBeenCalledWith({ scenarioId: 's1', bundleId: 'b1' });
     expect(out).toEqual({ scenarioId: 's1', bundleId: 'b1' });
   });
@@ -309,9 +327,9 @@ describe('generate_quote', () => {
 
   it('sales caller: non-owner → NotFoundError', async () => {
     vi.mocked(getScenarioById).mockResolvedValue({ id: 's1', ownerId: 'other' } as any);
-    await expect(
-      generateQuoteTool.handler(salesCtx, { scenarioId: 's1' }),
-    ).rejects.toBeInstanceOf(NotFoundError);
+    await expect(generateQuoteTool.handler(salesCtx, { scenarioId: 's1' })).rejects.toBeInstanceOf(
+      NotFoundError,
+    );
   });
 });
 
@@ -332,15 +350,11 @@ describe('schema .strict() enforcement', () => {
   });
 
   it('updateScenarioSchema rejects unknown keys', () => {
-    expect(() =>
-      updateScenarioTool.inputSchema.parse({ id: 's1', bogus: 'x' }),
-    ).toThrow();
+    expect(() => updateScenarioTool.inputSchema.parse({ id: 's1', bogus: 'x' })).toThrow();
   });
 
   it('archiveScenarioSchema rejects unknown keys', () => {
-    expect(() =>
-      archiveScenarioTool.inputSchema.parse({ id: 's1', extra: 1 }),
-    ).toThrow();
+    expect(() => archiveScenarioTool.inputSchema.parse({ id: 's1', extra: 1 })).toThrow();
   });
 
   it('setScenarioLaborLinesTool rejects unknown keys at top level', () => {
@@ -364,4 +378,3 @@ describe('schema .strict() enforcement', () => {
     ).toThrow();
   });
 });
-

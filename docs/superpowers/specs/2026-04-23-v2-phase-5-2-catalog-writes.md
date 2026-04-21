@@ -90,6 +90,7 @@ Each domain file exports a `<domain>Tools: ToolDefinition[]` array at the bottom
 Tools: `create_product`, `update_product`, `delete_product`.
 
 **Files:**
+
 - Create: `lib/mcp/tools/catalog/product.ts`
 - Create: `lib/mcp/tools/catalog/product.test.ts`
 - Modify: `app/api/mcp/route.ts`
@@ -160,9 +161,7 @@ describe('product catalog tools', () => {
     });
 
     it('rejects invalid kind', () => {
-      expect(() =>
-        createProductTool.inputSchema.parse({ name: 'X', kind: 'INVALID' }),
-      ).toThrow();
+      expect(() => createProductTool.inputSchema.parse({ name: 'X', kind: 'INVALID' })).toThrow();
     });
   });
 
@@ -303,12 +302,7 @@ Edit `app/api/mcp/route.ts`:
 ```typescript
 import { productCatalogTools } from '@/lib/mcp/tools/catalog/product';
 // ...
-const tools = [
-  ...readTools,
-  ...adminReadTools,
-  ...scenarioWriteTools,
-  ...productCatalogTools,
-];
+const tools = [...readTools, ...adminReadTools, ...scenarioWriteTools, ...productCatalogTools];
 ```
 
 - [ ] **Step 6: Run — pass**
@@ -338,23 +332,23 @@ Apply the pattern from 5.2-A.
 
 ### Tools
 
-| # | Tool | Service call | Input shape | targetEntityType | targetId |
-|---|---|---|---|---|---|
-| 1 | `create_vendor_rate` | `VendorRateService.upsert({productId, name, unitLabel, rateUsd})` | `{productId, name, unitLabel, rateUsd:string\|number}` | `VendorRate` | `output.id` |
-| 2 | `update_vendor_rate` | `VendorRateService.upsert({id, productId, ...})` | `{id, name?, unitLabel?, rateUsd?}` | `VendorRate` | `input.id` |
-| 3 | `delete_vendor_rate` | `VendorRateService.delete(id)` | `{id}` | `VendorRate` | `input.id` |
-| 4 | `set_base_usage` | `BaseUsageService.setForProduct(productId, entries)` | `{productId, entries:[{vendorRateId, usagePerMonth}]}` | `Product` | `input.productId` |
-| 5 | `set_other_variable` | `OtherVariableService.setForProduct(productId, usdPerUserPerMonth)` | `{productId, usdPerUserPerMonth:string\|number}` | `Product` | `input.productId` |
-| 6 | `create_persona` | `PersonaService.create({productId, name, multiplier, sortOrder?})` | `{productId, name, multiplier:string\|number, sortOrder?}` | `Persona` | `output.id` |
-| 7 | `update_persona` | `PersonaService.update(id, patch)` | `{id, name?, multiplier?, sortOrder?}` | `Persona` | `input.id` |
-| 8 | `delete_persona` | `PersonaService.delete(id)` | `{id}` | `Persona` | `input.id` |
-| 9 | `create_fixed_cost` | `ProductFixedCostService.create({productId, name, monthlyUsd})` | `{productId, name, monthlyUsd:string\|number}` | `ProductFixedCost` | `output.id` |
-| 10 | `update_fixed_cost` | `ProductFixedCostService.update(id, patch)` | `{id, name?, monthlyUsd?}` | `ProductFixedCost` | `input.id` |
-| 11 | `delete_fixed_cost` | `ProductFixedCostService.delete(id)` | `{id}` | `ProductFixedCost` | `input.id` |
-| 12 | `set_product_scale` | `ProductScaleService.setForProduct(productId, activeUsersAtScale)` | `{productId, activeUsersAtScale:int}` | `Product` | `input.productId` |
-| 13 | `set_list_price` | `ListPriceService.setForProduct(productId, usdPerSeatPerMonth)` | `{productId, usdPerSeatPerMonth:string\|number}` | `Product` | `input.productId` |
-| 14 | `set_volume_tiers` | `VolumeDiscountTierService.setForProduct(productId, tiers)` | `{productId, tiers:[{minSeats:int, discountPct:string\|number}]}` — REPLACES | `Product` | `input.productId` |
-| 15 | `set_contract_modifiers` | `ContractLengthModifierService.setForProduct(productId, modifiers)` | `{productId, modifiers:[{minMonths:int, additionalDiscountPct:string\|number}]}` — REPLACES | `Product` | `input.productId` |
+| #   | Tool                     | Service call                                                        | Input shape                                                                                 | targetEntityType   | targetId          |
+| --- | ------------------------ | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | ------------------ | ----------------- |
+| 1   | `create_vendor_rate`     | `VendorRateService.upsert({productId, name, unitLabel, rateUsd})`   | `{productId, name, unitLabel, rateUsd:string\|number}`                                      | `VendorRate`       | `output.id`       |
+| 2   | `update_vendor_rate`     | `VendorRateService.upsert({id, productId, ...})`                    | `{id, name?, unitLabel?, rateUsd?}`                                                         | `VendorRate`       | `input.id`        |
+| 3   | `delete_vendor_rate`     | `VendorRateService.delete(id)`                                      | `{id}`                                                                                      | `VendorRate`       | `input.id`        |
+| 4   | `set_base_usage`         | `BaseUsageService.setForProduct(productId, entries)`                | `{productId, entries:[{vendorRateId, usagePerMonth}]}`                                      | `Product`          | `input.productId` |
+| 5   | `set_other_variable`     | `OtherVariableService.setForProduct(productId, usdPerUserPerMonth)` | `{productId, usdPerUserPerMonth:string\|number}`                                            | `Product`          | `input.productId` |
+| 6   | `create_persona`         | `PersonaService.create({productId, name, multiplier, sortOrder?})`  | `{productId, name, multiplier:string\|number, sortOrder?}`                                  | `Persona`          | `output.id`       |
+| 7   | `update_persona`         | `PersonaService.update(id, patch)`                                  | `{id, name?, multiplier?, sortOrder?}`                                                      | `Persona`          | `input.id`        |
+| 8   | `delete_persona`         | `PersonaService.delete(id)`                                         | `{id}`                                                                                      | `Persona`          | `input.id`        |
+| 9   | `create_fixed_cost`      | `ProductFixedCostService.create({productId, name, monthlyUsd})`     | `{productId, name, monthlyUsd:string\|number}`                                              | `ProductFixedCost` | `output.id`       |
+| 10  | `update_fixed_cost`      | `ProductFixedCostService.update(id, patch)`                         | `{id, name?, monthlyUsd?}`                                                                  | `ProductFixedCost` | `input.id`        |
+| 11  | `delete_fixed_cost`      | `ProductFixedCostService.delete(id)`                                | `{id}`                                                                                      | `ProductFixedCost` | `input.id`        |
+| 12  | `set_product_scale`      | `ProductScaleService.setForProduct(productId, activeUsersAtScale)`  | `{productId, activeUsersAtScale:int}`                                                       | `Product`          | `input.productId` |
+| 13  | `set_list_price`         | `ListPriceService.setForProduct(productId, usdPerSeatPerMonth)`     | `{productId, usdPerSeatPerMonth:string\|number}`                                            | `Product`          | `input.productId` |
+| 14  | `set_volume_tiers`       | `VolumeDiscountTierService.setForProduct(productId, tiers)`         | `{productId, tiers:[{minSeats:int, discountPct:string\|number}]}` — REPLACES                | `Product`          | `input.productId` |
+| 15  | `set_contract_modifiers` | `ContractLengthModifierService.setForProduct(productId, modifiers)` | `{productId, modifiers:[{minMonths:int, additionalDiscountPct:string\|number}]}` — REPLACES | `Product`          | `input.productId` |
 
 ### Tests
 
@@ -389,21 +383,21 @@ For tools 14 and 15 (collection-replace), add an extra test asserting the servic
 
 ### Tools
 
-| # | Tool | Service call | Input shape | targetEntityType | targetId |
-|---|---|---|---|---|---|
-| 1 | `create_labor_sku` | `LaborSKUService.create({productId, name, unit, costPerUnitUsd, defaultRevenueUsd})` | `{productId, name, unit:PER_USER\|PER_SESSION\|PER_DAY\|FIXED, costPerUnitUsd:string\|number, defaultRevenueUsd:string\|number}` | `LaborSKU` | `output.id` |
-| 2 | `update_labor_sku` | `LaborSKUService.update(id, patch)` | `{id, name?, unit?, costPerUnitUsd?, defaultRevenueUsd?}` | `LaborSKU` | `input.id` |
-| 3 | `delete_labor_sku` | `LaborSKUService.delete(id)` | `{id}` | `LaborSKU` | `input.id` |
-| 4 | `create_department` | `DepartmentService.create({name})` | `{name}` | `Department` | `output.id` |
-| 5 | `update_department` | `DepartmentService.update(id, patch)` | `{id, name?}` | `Department` | `input.id` |
-| 6 | `delete_department` | `DepartmentService.delete(id)` | `{id}` | `Department` | `input.id` |
-| 7 | `set_department_bill_rate` | `DepartmentService.setBillRate(departmentId, billRatePerHour)` | `{departmentId, billRatePerHour:string\|number}` | `Department` | `input.departmentId` |
-| 8 | `create_employee` | `EmployeeService.create({name, departmentId, compensationType, annualSalaryUsd?, hourlyRateUsd?, standardHoursPerYear?, isActive?})` | matching service shape | `Employee` | `output.id` |
-| 9 | `update_employee` | `EmployeeService.update(id, patch)` | `{id, ...patch}` | `Employee` | `input.id` |
-| 10 | `delete_employee` | `EmployeeService.delete(id)` | `{id}` | `Employee` | `input.id` |
-| 11 | `create_burden` | `BurdenService.create({name, ratePct:string\|number, capUsd?:string\|number, scope:ALL_DEPARTMENTS\|DEPARTMENT, departmentId?, isActive?})` | matching | `Burden` | `output.id` |
-| 12 | `update_burden` | `BurdenService.update(id, patch)` | `{id, ...patch}` | `Burden` | `input.id` |
-| 13 | `delete_burden` | `BurdenService.delete(id)` | `{id}` | `Burden` | `input.id` |
+| #   | Tool                       | Service call                                                                                                                                | Input shape                                                                                                                      | targetEntityType | targetId             |
+| --- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ---------------- | -------------------- |
+| 1   | `create_labor_sku`         | `LaborSKUService.create({productId, name, unit, costPerUnitUsd, defaultRevenueUsd})`                                                        | `{productId, name, unit:PER_USER\|PER_SESSION\|PER_DAY\|FIXED, costPerUnitUsd:string\|number, defaultRevenueUsd:string\|number}` | `LaborSKU`       | `output.id`          |
+| 2   | `update_labor_sku`         | `LaborSKUService.update(id, patch)`                                                                                                         | `{id, name?, unit?, costPerUnitUsd?, defaultRevenueUsd?}`                                                                        | `LaborSKU`       | `input.id`           |
+| 3   | `delete_labor_sku`         | `LaborSKUService.delete(id)`                                                                                                                | `{id}`                                                                                                                           | `LaborSKU`       | `input.id`           |
+| 4   | `create_department`        | `DepartmentService.create({name})`                                                                                                          | `{name}`                                                                                                                         | `Department`     | `output.id`          |
+| 5   | `update_department`        | `DepartmentService.update(id, patch)`                                                                                                       | `{id, name?}`                                                                                                                    | `Department`     | `input.id`           |
+| 6   | `delete_department`        | `DepartmentService.delete(id)`                                                                                                              | `{id}`                                                                                                                           | `Department`     | `input.id`           |
+| 7   | `set_department_bill_rate` | `DepartmentService.setBillRate(departmentId, billRatePerHour)`                                                                              | `{departmentId, billRatePerHour:string\|number}`                                                                                 | `Department`     | `input.departmentId` |
+| 8   | `create_employee`          | `EmployeeService.create({name, departmentId, compensationType, annualSalaryUsd?, hourlyRateUsd?, standardHoursPerYear?, isActive?})`        | matching service shape                                                                                                           | `Employee`       | `output.id`          |
+| 9   | `update_employee`          | `EmployeeService.update(id, patch)`                                                                                                         | `{id, ...patch}`                                                                                                                 | `Employee`       | `input.id`           |
+| 10  | `delete_employee`          | `EmployeeService.delete(id)`                                                                                                                | `{id}`                                                                                                                           | `Employee`       | `input.id`           |
+| 11  | `create_burden`            | `BurdenService.create({name, ratePct:string\|number, capUsd?:string\|number, scope:ALL_DEPARTMENTS\|DEPARTMENT, departmentId?, isActive?})` | matching                                                                                                                         | `Burden`         | `output.id`          |
+| 12  | `update_burden`            | `BurdenService.update(id, patch)`                                                                                                           | `{id, ...patch}`                                                                                                                 | `Burden`         | `input.id`           |
+| 13  | `delete_burden`            | `BurdenService.delete(id)`                                                                                                                  | `{id}`                                                                                                                           | `Burden`         | `input.id`           |
 
 ### Execution
 
@@ -421,12 +415,12 @@ Service method gaps: if `DepartmentService.setBillRate(id, rate)` doesn't exist,
 
 ### Tools
 
-| # | Tool | Service call | Input shape | targetEntityType | targetId |
-|---|---|---|---|---|---|
-| 1 | `create_commission_rule` | `CommissionRuleService.create({name, scopeType, scopeProductId?, scopeDepartmentId?, baseMetric, recipientEmployeeId?, isActive?})` | per service | `CommissionRule` | `output.id` |
-| 2 | `update_commission_rule` | `CommissionRuleService.update(id, patch)` | `{id, ...patch}` | `CommissionRule` | `input.id` |
-| 3 | `delete_commission_rule` | `CommissionRuleService.delete(id)` | `{id}` | `CommissionRule` | `input.id` |
-| 4 | `set_commission_tiers` | `CommissionTierService.setForRule(ruleId, tiers)` | `{ruleId, tiers:[{thresholdFromUsd:string\|number, ratePct:string\|number, sortOrder?:int}]}` — REPLACES | `CommissionRule` | `input.ruleId` |
+| #   | Tool                     | Service call                                                                                                                        | Input shape                                                                                              | targetEntityType | targetId       |
+| --- | ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ---------------- | -------------- |
+| 1   | `create_commission_rule` | `CommissionRuleService.create({name, scopeType, scopeProductId?, scopeDepartmentId?, baseMetric, recipientEmployeeId?, isActive?})` | per service                                                                                              | `CommissionRule` | `output.id`    |
+| 2   | `update_commission_rule` | `CommissionRuleService.update(id, patch)`                                                                                           | `{id, ...patch}`                                                                                         | `CommissionRule` | `input.id`     |
+| 3   | `delete_commission_rule` | `CommissionRuleService.delete(id)`                                                                                                  | `{id}`                                                                                                   | `CommissionRule` | `input.id`     |
+| 4   | `set_commission_tiers`   | `CommissionTierService.setForRule(ruleId, tiers)`                                                                                   | `{ruleId, tiers:[{thresholdFromUsd:string\|number, ratePct:string\|number, sortOrder?:int}]}` — REPLACES | `CommissionRule` | `input.ruleId` |
 
 ### Execution
 
@@ -455,12 +449,12 @@ Input validation: `thresholdFromUsd` values must be non-decreasing across the ti
 
 ### Tools
 
-| # | Tool | Service call | Input shape | targetEntityType | targetId |
-|---|---|---|---|---|---|
-| 1 | `create_bundle` | `BundleService.create({name, description?, isActive?})` | per service | `Bundle` | `output.id` |
-| 2 | `update_bundle` | `BundleService.update(id, patch)` | `{id, name?, description?, isActive?}` | `Bundle` | `input.id` |
-| 3 | `delete_bundle` | `BundleService.delete(id)` | `{id}` | `Bundle` | `input.id` |
-| 4 | `set_bundle_items` | `BundleItemService.setForBundle(bundleId, items)` | `{bundleId, items:[{kind:SAAS_CONFIG\|LABOR_SKU\|DEPARTMENT_HOURS, saasConfig?, laborRef?, sortOrder?:int}]}` — REPLACES | `Bundle` | `input.bundleId` |
+| #   | Tool               | Service call                                            | Input shape                                                                                                              | targetEntityType | targetId         |
+| --- | ------------------ | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ---------------- | ---------------- |
+| 1   | `create_bundle`    | `BundleService.create({name, description?, isActive?})` | per service                                                                                                              | `Bundle`         | `output.id`      |
+| 2   | `update_bundle`    | `BundleService.update(id, patch)`                       | `{id, name?, description?, isActive?}`                                                                                   | `Bundle`         | `input.id`       |
+| 3   | `delete_bundle`    | `BundleService.delete(id)`                              | `{id}`                                                                                                                   | `Bundle`         | `input.id`       |
+| 4   | `set_bundle_items` | `BundleItemService.setForBundle(bundleId, items)`       | `{bundleId, items:[{kind:SAAS_CONFIG\|LABOR_SKU\|DEPARTMENT_HOURS, saasConfig?, laborRef?, sortOrder?:int}]}` — REPLACES | `Bundle`         | `input.bundleId` |
 
 ### Execution
 
@@ -468,22 +462,34 @@ Same 7 steps. Item shape for `set_bundle_items` is discriminated-union style:
 
 ```typescript
 const itemSchema = z.discriminatedUnion('kind', [
-  z.object({ kind: z.literal('SAAS_CONFIG'), saasConfig: z.object({
-    productId: z.string(),
-    seatCount: z.number().int().nonnegative(),
-    personaMix: z.array(z.object({ personaId: z.string(), pct: z.number() })),
-    discountOverridePct: z.union([z.string(), z.number()]).optional(),
-  }), sortOrder: z.number().int().optional() }),
-  z.object({ kind: z.literal('LABOR_SKU'), laborRef: z.object({
-    productId: z.string(),
-    skuId: z.string(),
-    qty: z.number(),
-  }), sortOrder: z.number().int().optional() }),
-  z.object({ kind: z.literal('DEPARTMENT_HOURS'), laborRef: z.object({
-    productId: z.string(),
-    departmentId: z.string(),
-    hours: z.number(),
-  }), sortOrder: z.number().int().optional() }),
+  z.object({
+    kind: z.literal('SAAS_CONFIG'),
+    saasConfig: z.object({
+      productId: z.string(),
+      seatCount: z.number().int().nonnegative(),
+      personaMix: z.array(z.object({ personaId: z.string(), pct: z.number() })),
+      discountOverridePct: z.union([z.string(), z.number()]).optional(),
+    }),
+    sortOrder: z.number().int().optional(),
+  }),
+  z.object({
+    kind: z.literal('LABOR_SKU'),
+    laborRef: z.object({
+      productId: z.string(),
+      skuId: z.string(),
+      qty: z.number(),
+    }),
+    sortOrder: z.number().int().optional(),
+  }),
+  z.object({
+    kind: z.literal('DEPARTMENT_HOURS'),
+    laborRef: z.object({
+      productId: z.string(),
+      departmentId: z.string(),
+      hours: z.number(),
+    }),
+    sortOrder: z.number().int().optional(),
+  }),
 ]);
 ```
 
@@ -499,11 +505,11 @@ Service gap: if `BundleItemService.setForBundle(bundleId, items)` doesn't exist,
 
 ### Tools
 
-| # | Tool | Service call | Input shape | targetEntityType | targetId |
-|---|---|---|---|---|---|
-| 1 | `create_rail` | `RailService.upsert({productId, kind, marginBasis, softThreshold, hardThreshold, isEnabled?})` | `{productId, kind:MIN_MARGIN_PCT\|MAX_DISCOUNT_PCT\|MIN_SEAT_PRICE\|MIN_CONTRACT_MONTHS, marginBasis:CONTRIBUTION\|NET, softThreshold:string\|number, hardThreshold:string\|number, isEnabled?:bool}` | `Rail` | `output.id` |
-| 2 | `update_rail` | `RailService.upsert({id, ...patch})` | `{id, kind?, marginBasis?, softThreshold?, hardThreshold?, isEnabled?}` | `Rail` | `input.id` |
-| 3 | `delete_rail` | `RailService.delete(id)` | `{id}` | `Rail` | `input.id` |
+| #   | Tool          | Service call                                                                                   | Input shape                                                                                                                                                                                           | targetEntityType | targetId    |
+| --- | ------------- | ---------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------- | ----------- |
+| 1   | `create_rail` | `RailService.upsert({productId, kind, marginBasis, softThreshold, hardThreshold, isEnabled?})` | `{productId, kind:MIN_MARGIN_PCT\|MAX_DISCOUNT_PCT\|MIN_SEAT_PRICE\|MIN_CONTRACT_MONTHS, marginBasis:CONTRIBUTION\|NET, softThreshold:string\|number, hardThreshold:string\|number, isEnabled?:bool}` | `Rail`           | `output.id` |
+| 2   | `update_rail` | `RailService.upsert({id, ...patch})`                                                           | `{id, kind?, marginBasis?, softThreshold?, hardThreshold?, isEnabled?}`                                                                                                                               | `Rail`           | `input.id`  |
+| 3   | `delete_rail` | `RailService.delete(id)`                                                                       | `{id}`                                                                                                                                                                                                | `Rail`           | `input.id`  |
 
 ### Execution
 
@@ -534,22 +540,48 @@ describe('Phase 5.2 catalog tools protocol conformance', () => {
     const body = await res.json();
     const names = body.result.tools.map((t: { name: string }) => t.name);
     const expected = [
-      'create_product', 'update_product', 'delete_product',
-      'create_vendor_rate', 'update_vendor_rate', 'delete_vendor_rate',
-      'set_base_usage', 'set_other_variable',
-      'create_persona', 'update_persona', 'delete_persona',
-      'create_fixed_cost', 'update_fixed_cost', 'delete_fixed_cost',
-      'set_product_scale', 'set_list_price',
-      'set_volume_tiers', 'set_contract_modifiers',
-      'create_labor_sku', 'update_labor_sku', 'delete_labor_sku',
-      'create_department', 'update_department', 'delete_department',
+      'create_product',
+      'update_product',
+      'delete_product',
+      'create_vendor_rate',
+      'update_vendor_rate',
+      'delete_vendor_rate',
+      'set_base_usage',
+      'set_other_variable',
+      'create_persona',
+      'update_persona',
+      'delete_persona',
+      'create_fixed_cost',
+      'update_fixed_cost',
+      'delete_fixed_cost',
+      'set_product_scale',
+      'set_list_price',
+      'set_volume_tiers',
+      'set_contract_modifiers',
+      'create_labor_sku',
+      'update_labor_sku',
+      'delete_labor_sku',
+      'create_department',
+      'update_department',
+      'delete_department',
       'set_department_bill_rate',
-      'create_employee', 'update_employee', 'delete_employee',
-      'create_burden', 'update_burden', 'delete_burden',
-      'create_commission_rule', 'update_commission_rule', 'delete_commission_rule',
+      'create_employee',
+      'update_employee',
+      'delete_employee',
+      'create_burden',
+      'update_burden',
+      'delete_burden',
+      'create_commission_rule',
+      'update_commission_rule',
+      'delete_commission_rule',
       'set_commission_tiers',
-      'create_bundle', 'update_bundle', 'delete_bundle', 'set_bundle_items',
-      'create_rail', 'update_rail', 'delete_rail',
+      'create_bundle',
+      'update_bundle',
+      'delete_bundle',
+      'set_bundle_items',
+      'create_rail',
+      'update_rail',
+      'delete_rail',
     ];
     for (const name of expected) {
       expect(names).toContain(name);
@@ -576,7 +608,10 @@ describe('Phase 5.2 catalog tools protocol conformance', () => {
       token: { id: 't2', label: 'y', ownerUserId: 'u2' },
     });
     const res = await POST(
-      rpc(102, 'tools/call', { name: 'create_product', arguments: { name: 'X', kind: 'SAAS_USAGE' } }),
+      rpc(102, 'tools/call', {
+        name: 'create_product',
+        arguments: { name: 'X', kind: 'SAAS_USAGE' },
+      }),
     );
     const body = await res.json();
     expect(body.error.code).toBe(-32002);
@@ -606,6 +641,7 @@ git commit -m "test(mcp): protocol conformance for catalog-write tools"
 ## File Map Summary
 
 **Created:**
+
 - `lib/mcp/tools/catalog/product.ts` + `.test.ts`
 - `lib/mcp/tools/catalog/saasRateCard.ts` + `.test.ts`
 - `lib/mcp/tools/catalog/labor.ts` + `.test.ts`
@@ -614,6 +650,7 @@ git commit -m "test(mcp): protocol conformance for catalog-write tools"
 - `lib/mcp/tools/catalog/rails.ts` + `.test.ts`
 
 **Modified:**
+
 - `app/api/mcp/route.ts` — spread all 6 new tool arrays into `tools`.
 - `app/api/mcp/protocol.test.ts` — catalog-tool conformance tests.
 - Various `lib/services/*.ts` — thin methods added where missing (delete methods, setFor-style collection-replace helpers). No behavior changes to existing methods.

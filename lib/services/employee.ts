@@ -100,9 +100,7 @@ export class EmployeeService {
 
 // --- Free-function wrappers for MCP tools ---
 
-export async function listEmployees(
-  repo: EmployeeRepository = new EmployeeRepository(prisma),
-) {
+export async function listEmployees(repo: EmployeeRepository = new EmployeeRepository(prisma)) {
   return repo.listAllWithDepartment();
 }
 

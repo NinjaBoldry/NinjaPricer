@@ -51,16 +51,16 @@
 
 ## Sub-phase Overview
 
-| Sub-phase | Theme | Key output |
-|-----------|-------|------------|
-| 4.0 | Intake — deps, env, storage bootstrap | `@react-pdf/renderer` installed; `QUOTE_STORAGE_DIR` env var; storage module skeleton |
-| 4.1 | QuoteRepository | Thin Prisma wrapper with `nextVersion` + `create` + `listByScenario` |
-| 4.2 | Rate-snapshot extraction | `lib/services/rateSnapshot.ts` factored out of `/api/compute` so QuoteService can reuse |
-| 4.3 | QuoteService (no PDF yet) | Re-runs engine, builds snapshots, writes a `Quote` row, returns metadata |
-| 4.4 | PDF renderers | Two pure functions returning `Buffer`: customer PDF, internal PDF |
-| 4.5 | `/api/quotes/generate` real implementation | Wires service + PDF + storage; replaces stub |
-| 4.6 | Quote history page + download route | `/scenarios/[id]/quotes` UI + `/api/quotes/[quoteId]/download` |
-| 4.7 | Header button wiring + Playwright smoke | `ScenarioHeaderButtons` posts and opens PDF; smoke test covers end-to-end |
+| Sub-phase | Theme                                      | Key output                                                                              |
+| --------- | ------------------------------------------ | --------------------------------------------------------------------------------------- |
+| 4.0       | Intake — deps, env, storage bootstrap      | `@react-pdf/renderer` installed; `QUOTE_STORAGE_DIR` env var; storage module skeleton   |
+| 4.1       | QuoteRepository                            | Thin Prisma wrapper with `nextVersion` + `create` + `listByScenario`                    |
+| 4.2       | Rate-snapshot extraction                   | `lib/services/rateSnapshot.ts` factored out of `/api/compute` so QuoteService can reuse |
+| 4.3       | QuoteService (no PDF yet)                  | Re-runs engine, builds snapshots, writes a `Quote` row, returns metadata                |
+| 4.4       | PDF renderers                              | Two pure functions returning `Buffer`: customer PDF, internal PDF                       |
+| 4.5       | `/api/quotes/generate` real implementation | Wires service + PDF + storage; replaces stub                                            |
+| 4.6       | Quote history page + download route        | `/scenarios/[id]/quotes` UI + `/api/quotes/[quoteId]/download`                          |
+| 4.7       | Header button wiring + Playwright smoke    | `ScenarioHeaderButtons` posts and opens PDF; smoke test covers end-to-end               |
 
 **Sequencing rationale:**
 
@@ -75,6 +75,7 @@
 **Goal:** Pull in the PDF library, wire up the storage directory env, add a tiny storage module used by later sub-phases, and verify CI still passes.
 
 **Files touched:**
+
 - Modify: `package.json` (add `@react-pdf/renderer`)
 - Modify: `.env.example` (add `QUOTE_STORAGE_DIR`)
 - Modify: `README.md` (one-line note on quote storage dir)
@@ -223,9 +224,7 @@ export function quotePdfPath({ scenarioId, quoteId, kind }: StorageArgs): string
   return path.join(baseDir(), scenarioId, `${quoteId}-${kind}.pdf`);
 }
 
-export async function writeQuotePdf(
-  args: StorageArgs & { buffer: Buffer },
-): Promise<string> {
+export async function writeQuotePdf(args: StorageArgs & { buffer: Buffer }): Promise<string> {
   const dest = quotePdfPath(args);
   await mkdir(path.dirname(dest), { recursive: true });
   await writeFile(dest, args.buffer);
@@ -262,6 +261,7 @@ git commit -m "feat(quotes): quoteStorage helpers for read/write of PDFs"
 **Goal:** Thin Prisma wrapper with exactly the three methods the service needs. Handles sequential versioning with a unique-constraint retry.
 
 **Files touched:**
+
 - Create: `lib/db/repositories/quote.ts`
 - Create: `lib/db/repositories/quote.test.ts`
 - Modify: `lib/db/repositories/index.ts`
@@ -435,6 +435,7 @@ git commit -m "feat(quotes): QuoteRepository with nextVersion/create/list/findBy
 **Goal:** Lift the DB-to-`ComputeRequest` assembly out of `app/api/compute/route.ts` into `lib/services/rateSnapshot.ts` so QuoteService can reuse it without HTTP coupling. No behavioral change to `/api/compute`.
 
 **Files touched:**
+
 - Create: `lib/services/rateSnapshot.ts`
 - Create: `lib/services/rateSnapshot.test.ts`
 - Modify: `app/api/compute/route.ts` (delegate)
@@ -484,9 +485,7 @@ import type {
   TabInput,
 } from '@/lib/engine/types';
 
-export type ScenarioWithConfigs = NonNullable<
-  Awaited<ReturnType<typeof fetchScenarioWithConfigs>>
->;
+export type ScenarioWithConfigs = NonNullable<Awaited<ReturnType<typeof fetchScenarioWithConfigs>>>;
 
 async function fetchScenarioWithConfigs(scenarioId: string) {
   return prisma.scenario.findUnique({
@@ -808,6 +807,7 @@ git commit -m "refactor(compute): extract rate-snapshot builder for reuse by Quo
 **Goal:** Define the service API that will be composed by the route. TDD: write the service first, mocking storage and PDF renderers behind simple function signatures, so the versioning + snapshot logic is provably correct.
 
 **Files touched:**
+
 - Create: `lib/services/quote.ts`
 - Create: `lib/services/quote.test.ts`
 - Modify: `lib/services/index.ts`
@@ -890,7 +890,10 @@ describe('generateQuote', () => {
   it('renders PDFs, writes them, and persists a quote row', async () => {
     nextVersion.mockResolvedValue(3);
     create.mockResolvedValue({ id: 'q_abc', version: 3, pdfUrl: 'scen_1/q_abc-customer.pdf' });
-    const pdf = { customer: vi.fn(async () => Buffer.from('C')), internal: vi.fn(async () => Buffer.from('I')) };
+    const pdf = {
+      customer: vi.fn(async () => Buffer.from('C')),
+      internal: vi.fn(async () => Buffer.from('I')),
+    };
 
     const out = await generateQuote(
       { scenarioId: 'scen_1', generatedById: 'u1' },
@@ -922,7 +925,10 @@ describe('generateQuote', () => {
       code: 'P2002',
     });
     create.mockRejectedValueOnce(uniqueErr).mockResolvedValueOnce({ id: 'q2', version: 2 });
-    const pdf = { customer: vi.fn(async () => Buffer.from('C')), internal: vi.fn(async () => Buffer.from('I')) };
+    const pdf = {
+      customer: vi.fn(async () => Buffer.from('C')),
+      internal: vi.fn(async () => Buffer.from('I')),
+    };
 
     const out = await generateQuote(
       { scenarioId: 'scen_1', generatedById: 'u1' },
@@ -982,10 +988,7 @@ interface Deps {
 
 function isP2002(e: unknown): boolean {
   return (
-    typeof e === 'object' &&
-    e !== null &&
-    'code' in e &&
-    (e as { code?: string }).code === 'P2002'
+    typeof e === 'object' && e !== null && 'code' in e && (e as { code?: string }).code === 'P2002'
   );
 }
 
@@ -1063,7 +1066,9 @@ export async function generateQuote(args: GenerateArgs, deps: Deps) {
     }
   }
 
-  throw new Error(`Could not acquire unique quote version for scenario ${scenarioId} after ${maxRetries} retries`);
+  throw new Error(
+    `Could not acquire unique quote version for scenario ${scenarioId} after ${maxRetries} retries`,
+  );
 }
 ```
 
@@ -1095,6 +1100,7 @@ git commit -m "feat(quotes): QuoteService with versioning retry + frozen snapsho
 **Goal:** Two pure functions that return `Buffer`: `renderCustomerPdf` and `renderInternalPdf`. Both take the same `RenderArgs` shape from `lib/services/quote.ts`. Layout is intentionally basic for v1 — matching the Design spec's "No costs or margins" / "cost breakdown, margin %, commissions" split.
 
 **Files touched:**
+
 - Create: `lib/pdf/customer.tsx`
 - Create: `lib/pdf/internal.tsx`
 - Create: `lib/pdf/shared.tsx`
@@ -1586,6 +1592,7 @@ git commit -m "feat(pdf): internal-summary PDF with cost/margin/commissions"
 **Goal:** Replace the stub 202 with a real handler that composes `generateQuote` with both renderers.
 
 **Files touched:**
+
 - Modify: `app/api/quotes/generate/route.ts`
 - Create: `app/api/quotes/generate/route.test.ts`
 
@@ -1710,6 +1717,7 @@ git commit -m "feat(quotes): implement /api/quotes/generate"
 **Goal:** Sales sees the history of quote versions and can download their own. Admin sees the same plus a separate internal-summary download.
 
 **Files touched:**
+
 - Create: `app/scenarios/[id]/quotes/page.tsx`
 - Create: `app/api/quotes/[quoteId]/download/route.ts`
 - Create: `app/api/quotes/[quoteId]/download/route.test.ts`
@@ -1801,10 +1809,7 @@ function notFound() {
   return NextResponse.json({ error: 'Not found' }, { status: 404 });
 }
 
-export async function GET(
-  request: Request,
-  context: { params: { quoteId: string } },
-) {
+export async function GET(request: Request, context: { params: { quoteId: string } }) {
   const user = await getSessionUser();
   if (!user) return notFound();
 
@@ -1971,6 +1976,7 @@ git commit -m "feat(quotes): history page with customer + admin-only internal do
 **Goal:** Replace the placeholder `alert('Quote generation is not yet implemented.')` in `ScenarioHeaderButtons.tsx` with real flow: POST, then navigate to the quotes history page (which shows the new version). Add a Playwright smoke test.
 
 **Files touched:**
+
 - Modify: `components/scenarios/ScenarioHeaderButtons.tsx`
 - Create or extend: `tests/e2e/quote-generation.spec.ts`
 
@@ -2075,7 +2081,10 @@ Append to whichever existing e2e file covers scenario creation (typically `tests
 ```typescript
 import { test, expect } from '@playwright/test';
 
-test('generate quote from scenario builder produces a downloadable version', async ({ page, baseURL }) => {
+test('generate quote from scenario builder produces a downloadable version', async ({
+  page,
+  baseURL,
+}) => {
   // Assumes a scenario already created by previous smoke test steps, or create one here.
   await page.goto('/scenarios');
   await page.getByRole('link', { name: /new scenario/i }).click();
@@ -2113,6 +2122,7 @@ git commit -m "test(e2e): smoke for quote generation flow"
 ## File Map Summary
 
 **Created:**
+
 - `lib/utils/quoteStorage.ts` + `.test.ts`
 - `lib/db/repositories/quote.ts` + `.test.ts`
 - `lib/services/rateSnapshot.ts` + `.test.ts`
@@ -2128,6 +2138,7 @@ git commit -m "test(e2e): smoke for quote generation flow"
 - `tests/e2e/scenario-builder.spec.ts` (extended; may be skipped if Playwright is not yet installed)
 
 **Modified:**
+
 - `package.json`, `package-lock.json` (dep)
 - `.env.example`, `.gitignore`, `README.md`
 - `lib/db/repositories/index.ts`

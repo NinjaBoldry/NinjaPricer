@@ -5,9 +5,7 @@ import type { ToolDefinition } from '@/lib/mcp/server';
 import type { ComputeRequest } from '@/lib/engine/types';
 
 // Helpers: Zod passes JSON-compatible input; engine wants Decimal. Convert at the boundary.
-const decimalFromString = z
-  .union([z.string(), z.number()])
-  .transform((v) => new Decimal(v));
+const decimalFromString = z.union([z.string(), z.number()]).transform((v) => new Decimal(v));
 
 const saasTabSchema = z.object({
   kind: z.literal('SAAS_USAGE'),
@@ -65,7 +63,11 @@ const personaSnapSchema = z.object({
   multiplier: decimalFromString,
 });
 
-const fixedCostSchema = z.object({ id: z.string(), name: z.string(), monthlyUsd: decimalFromString });
+const fixedCostSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  monthlyUsd: decimalFromString,
+});
 
 const volumeTierSchema = z.object({ minSeats: z.number().int(), discountPct: decimalFromString });
 const contractModifierSchema = z.object({
@@ -187,7 +189,8 @@ export const getProductTool: ToolDefinition<{ id: string }, unknown> = {
 
 export const listBundlesTool: ToolDefinition<Record<string, never>, unknown> = {
   name: 'list_bundles',
-  description: 'Lists bundles with item counts. Use before apply_bundle_to_scenario to see what is available.',
+  description:
+    'Lists bundles with item counts. Use before apply_bundle_to_scenario to see what is available.',
   inputSchema: z.object({}).strict() as z.ZodType<Record<string, never>>,
   requiresAdmin: false,
   handler: async () => listBundles(),
@@ -195,7 +198,8 @@ export const listBundlesTool: ToolDefinition<Record<string, never>, unknown> = {
 
 export const getBundleTool: ToolDefinition<{ id: string }, unknown> = {
   name: 'get_bundle',
-  description: 'Bundle detail including all items (SaaS configs, labor SKU references, department/hours references). Throws if not found.',
+  description:
+    'Bundle detail including all items (SaaS configs, labor SKU references, department/hours references). Throws if not found.',
   inputSchema: z.object({ id: z.string() }).strict(),
   requiresAdmin: false,
   handler: async (_ctx, { id }) => getBundleById(id),
@@ -211,10 +215,7 @@ const scenarioListInputSchema = z
   })
   .strict();
 
-export const listScenariosTool: ToolDefinition<
-  z.infer<typeof scenarioListInputSchema>,
-  unknown
-> = {
+export const listScenariosTool: ToolDefinition<z.infer<typeof scenarioListInputSchema>, unknown> = {
   name: 'list_scenarios',
   description:
     'Lists scenarios. Sales role sees only their own; admin sees everyone. Supports optional filters: status, customer (substring match).',
@@ -280,7 +281,10 @@ export const getQuoteTool: ToolDefinition<z.infer<typeof getQuoteInputSchema>, u
     const repo = new QuoteRepository(prisma);
     const quote = await repo.findById(input.id);
     if (!quote) throw new NotFoundError('Quote', input.id);
-    if (ctx.user.role === 'SALES' && (quote as { scenario: { ownerId: string } }).scenario.ownerId !== ctx.user.id) {
+    if (
+      ctx.user.role === 'SALES' &&
+      (quote as { scenario: { ownerId: string } }).scenario.ownerId !== ctx.user.id
+    ) {
       throw new NotFoundError('Quote', input.id);
     }
 

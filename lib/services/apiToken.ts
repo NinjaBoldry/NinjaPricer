@@ -61,8 +61,6 @@ export async function listApiTokensForUser(
   return repo.listForUser(ownerUserId);
 }
 
-export async function listAllApiTokens(
-  repo: ApiTokenRepository = new ApiTokenRepository(prisma),
-) {
+export async function listAllApiTokens(repo: ApiTokenRepository = new ApiTokenRepository(prisma)) {
   return repo.listAll();
 }

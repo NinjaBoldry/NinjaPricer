@@ -1,5 +1,10 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { PrismaClient, HubSpotProductKind, HubSpotReviewResolution, ProductKind } from '@prisma/client';
+import {
+  PrismaClient,
+  HubSpotProductKind,
+  HubSpotReviewResolution,
+  ProductKind,
+} from '@prisma/client';
 import { HubSpotReviewQueueItemRepository } from '@/lib/db/repositories/hubspotReviewQueueItem';
 import { ReviewQueueService } from './reviewQueue';
 
@@ -26,7 +31,11 @@ describe('ReviewQueueService', () => {
       changedFieldsHash: 'h',
     });
 
-    await service.resolve({ itemId: item.id, resolution: HubSpotReviewResolution.IGNORE, userId: 'u' });
+    await service.resolve({
+      itemId: item.id,
+      resolution: HubSpotReviewResolution.IGNORE,
+      userId: 'u',
+    });
 
     const updated = await prisma.product.findUnique({ where: { id: product.id } });
     expect(updated?.name).toBe('Notes');
@@ -46,7 +55,11 @@ describe('ReviewQueueService', () => {
       changedFieldsHash: 'h',
     });
 
-    await service.resolve({ itemId: item.id, resolution: HubSpotReviewResolution.ACCEPT_HUBSPOT, userId: 'u' });
+    await service.resolve({
+      itemId: item.id,
+      resolution: HubSpotReviewResolution.ACCEPT_HUBSPOT,
+      userId: 'u',
+    });
 
     const updated = await prisma.product.findUnique({ where: { id: product.id } });
     expect(updated?.name).toBe('Renamed');

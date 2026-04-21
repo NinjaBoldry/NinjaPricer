@@ -36,8 +36,7 @@ export const listDepartmentsTool: ToolDefinition = {
 
 export const listBurdensTool: ToolDefinition = {
   name: 'list_burdens',
-  description:
-    'Admin only. All active burden rates (FICA, FUTA, SUTA, etc.) with caps and scope.',
+  description: 'Admin only. All active burden rates (FICA, FUTA, SUTA, etc.) with caps and scope.',
   inputSchema: empty,
   requiresAdmin: true,
   handler: async () => listBurdens(),

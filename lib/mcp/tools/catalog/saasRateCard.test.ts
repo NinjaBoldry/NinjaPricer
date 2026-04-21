@@ -255,9 +255,7 @@ describe('SaaS rate card catalog tools', () => {
     });
 
     it('rejects missing id', () => {
-      expect(() =>
-        updateVendorRateTool.inputSchema.parse({ rateUsd: '1' }),
-      ).toThrow();
+      expect(() => updateVendorRateTool.inputSchema.parse({ rateUsd: '1' })).toThrow();
     });
   });
 
@@ -317,7 +315,9 @@ describe('SaaS rate card catalog tools', () => {
 
     it('rejects missing productId', () => {
       expect(() =>
-        setBaseUsageTool.inputSchema.parse({ entries: [{ vendorRateId: 'v', usagePerMonth: '1' }] }),
+        setBaseUsageTool.inputSchema.parse({
+          entries: [{ vendorRateId: 'v', usagePerMonth: '1' }],
+        }),
       ).toThrow();
     });
   });
@@ -393,7 +393,10 @@ describe('SaaS rate card catalog tools', () => {
         id: 'pe1',
         name: 'Casual User',
       });
-      expect(personaSvc.update).toHaveBeenCalledWith('pe1', expect.objectContaining({ name: 'Casual User' }));
+      expect(personaSvc.update).toHaveBeenCalledWith(
+        'pe1',
+        expect.objectContaining({ name: 'Casual User' }),
+      );
       expect(personaSvc.upsert).not.toHaveBeenCalled();
       expect(out).toEqual({ id: 'pe1' });
     });
@@ -449,9 +452,7 @@ describe('SaaS rate card catalog tools', () => {
     });
 
     it('rejects missing monthlyUsd', () => {
-      expect(() =>
-        createFixedCostTool.inputSchema.parse({ productId: 'p1', name: 'X' }),
-      ).toThrow();
+      expect(() => createFixedCostTool.inputSchema.parse({ productId: 'p1', name: 'X' })).toThrow();
     });
   });
 
@@ -483,9 +484,7 @@ describe('SaaS rate card catalog tools', () => {
     });
 
     it('rejects missing id', () => {
-      expect(() =>
-        updateFixedCostTool.inputSchema.parse({ monthlyUsd: '100' }),
-      ).toThrow();
+      expect(() => updateFixedCostTool.inputSchema.parse({ monthlyUsd: '100' })).toThrow();
     });
   });
 

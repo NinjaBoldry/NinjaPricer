@@ -4,7 +4,14 @@ import { useState, useTransition } from 'react';
 import { pushCatalogAction, pullCatalogAction } from '../actions';
 
 type Outcome =
-  | { kind: 'push'; created: number; updated: number; unchanged: number; failed: number; correlationId: string }
+  | {
+      kind: 'push';
+      created: number;
+      updated: number;
+      unchanged: number;
+      failed: number;
+      correlationId: string;
+    }
   | { kind: 'pull'; newReviewItems: number; orphans: number; correlationId: string }
   | { kind: 'error'; message: string };
 
@@ -32,7 +39,10 @@ export function SyncButtons() {
                   failed: r.failed.length,
                 });
               } catch (err) {
-                setResult({ kind: 'error', message: err instanceof Error ? err.message : String(err) });
+                setResult({
+                  kind: 'error',
+                  message: err instanceof Error ? err.message : String(err),
+                });
               }
             })
           }
@@ -55,7 +65,10 @@ export function SyncButtons() {
                   orphans: r.orphansInHubSpot.length,
                 });
               } catch (err) {
-                setResult({ kind: 'error', message: err instanceof Error ? err.message : String(err) });
+                setResult({
+                  kind: 'error',
+                  message: err instanceof Error ? err.message : String(err),
+                });
               }
             })
           }
@@ -69,13 +82,18 @@ export function SyncButtons() {
       {result?.kind === 'push' && (
         <div className="rounded-md border p-4 bg-green-50">
           <div className="font-medium">Push complete ({result.correlationId})</div>
-          <div>Created: {result.created}. Updated: {result.updated}. Unchanged: {result.unchanged}. Failed: {result.failed}.</div>
+          <div>
+            Created: {result.created}. Updated: {result.updated}. Unchanged: {result.unchanged}.
+            Failed: {result.failed}.
+          </div>
         </div>
       )}
       {result?.kind === 'pull' && (
         <div className="rounded-md border p-4 bg-blue-50">
           <div className="font-medium">Pull complete ({result.correlationId})</div>
-          <div>New review items: {result.newReviewItems}. Orphans: {result.orphans}.</div>
+          <div>
+            New review items: {result.newReviewItems}. Orphans: {result.orphans}.
+          </div>
         </div>
       )}
       {result?.kind === 'error' && (

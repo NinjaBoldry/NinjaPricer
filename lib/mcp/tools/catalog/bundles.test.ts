@@ -89,9 +89,7 @@ describe('bundle catalog tools', () => {
     });
 
     it('rejects extra unknown fields', () => {
-      expect(() =>
-        createBundleTool.inputSchema.parse({ name: 'B', unknownField: true }),
-      ).toThrow();
+      expect(() => createBundleTool.inputSchema.parse({ name: 'B', unknownField: true })).toThrow();
     });
   });
 

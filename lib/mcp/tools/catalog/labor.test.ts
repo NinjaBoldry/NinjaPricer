@@ -186,9 +186,7 @@ describe('labor catalog tools', () => {
     });
 
     it('rejects missing id', () => {
-      expect(() =>
-        updateLaborSkuTool.inputSchema.parse({ name: 'X' }),
-      ).toThrow();
+      expect(() => updateLaborSkuTool.inputSchema.parse({ name: 'X' })).toThrow();
     });
   });
 
@@ -325,7 +323,11 @@ describe('labor catalog tools', () => {
         standardHoursPerYear: 2080,
       });
       expect(employeeSvc.create).toHaveBeenCalledWith(
-        expect.objectContaining({ name: 'Alice', departmentId: 'dept1', compensationType: 'ANNUAL_SALARY' }),
+        expect.objectContaining({
+          name: 'Alice',
+          departmentId: 'dept1',
+          compensationType: 'ANNUAL_SALARY',
+        }),
       );
       expect(out).toEqual({ id: 'emp1' });
     });

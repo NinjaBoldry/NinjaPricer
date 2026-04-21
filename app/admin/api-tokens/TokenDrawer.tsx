@@ -82,9 +82,7 @@ export default function TokenDrawer({ tokenId, label, status }: Props) {
                         → {r.targetEntityType}:{r.targetEntityId}
                       </span>
                     )}
-                    <span
-                      className={r.result === 'OK' ? 'text-green-700' : 'text-red-700'}
-                    >
+                    <span className={r.result === 'OK' ? 'text-green-700' : 'text-red-700'}>
                       {r.result}
                       {r.errorCode ? ` (${r.errorCode})` : ''}
                     </span>

@@ -6,11 +6,7 @@ import { QuoteRepository } from '@/lib/db/repositories/quote';
 
 export const dynamic = 'force-dynamic';
 
-export default async function QuotesHistoryPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default async function QuotesHistoryPage({ params }: { params: { id: string } }) {
   const user = await requireAuth();
   const scenario = await prisma.scenario.findUnique({
     where: { id: params.id },
@@ -32,7 +28,9 @@ export default async function QuotesHistoryPage({
       </div>
 
       {quotes.length === 0 ? (
-        <p className="text-sm">No quotes generated yet. Use the Generate Quote button in the builder.</p>
+        <p className="text-sm">
+          No quotes generated yet. Use the Generate Quote button in the builder.
+        </p>
       ) : (
         <table className="w-full text-sm">
           <thead className="text-left border-b">

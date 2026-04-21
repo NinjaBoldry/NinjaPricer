@@ -139,10 +139,9 @@ const setScenarioSaasConfigSchema = z
     seatCount: z.number().int().nonnegative(),
     personaMix: z
       .array(z.object({ personaId: z.string(), pct: z.number().min(0).max(100) }))
-      .refine(
-        (arr) => Math.abs(arr.reduce((s, p) => s + p.pct, 0) - 100) < 0.001,
-        { message: 'personaMix percentages must sum to 100' },
-      ),
+      .refine((arr) => Math.abs(arr.reduce((s, p) => s + p.pct, 0) - 100) < 0.001, {
+        message: 'personaMix percentages must sum to 100',
+      }),
     // Accept string or number; pass through as string to match service signature
     discountOverridePct: z
       .union([z.string(), z.number()])

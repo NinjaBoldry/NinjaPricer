@@ -106,32 +106,33 @@ components/TopNav.tsx              # optional: "Tokens" link in user menu
 
 ## Sub-phase Overview
 
-| Sub-phase | Theme | Key output |
-|-----------|-------|------------|
-| 5.0-A | Install deps | `@modelcontextprotocol/sdk` in `package.json` |
-| 5.0-B | Prisma schema | `ApiToken`, `ApiAuditLog`, `AuditResult` migrated |
-| 5.0-C | Token repo | `ApiTokenRepository` with TDD |
-| 5.0-D | Audit repo | `ApiAuditLogRepository` with TDD |
-| 5.0-E | Token service | `issue/verify/revoke/list` with TDD |
-| 5.0-F | Audit service | `append` with TDD |
-| 5.0-G | MCP error map | Typed-error → JSON-RPC mapping |
-| 5.0-H | MCP context + auth | Bearer middleware with TDD |
-| 5.0-I | MCP server scaffold | `createMcpServer()` factory with tool-registration helper |
-| 5.0-J | `/api/mcp` route | HTTP handler + integration test |
-| 5.0-K | `compute_quote` tool | First tool — template |
-| 5.0-L | Product + bundle read tools | 4 tools |
-| 5.0-M | Scenario read tools | 2 tools (role-scoped) |
-| 5.0-N | Quote read tools | 2 tools (incl. opt-in PDF bytes) |
-| 5.0-O | Admin read tools | 5 tools (admin-gated) |
-| 5.0-P | MCP protocol conformance test | SDK client → our route, round-trip |
-| 5.0-Q | `/settings/tokens` UI | User self-serve |
-| 5.0-R | `/admin/api-tokens` UI | Admin cross-user + drill-in |
+| Sub-phase | Theme                         | Key output                                                |
+| --------- | ----------------------------- | --------------------------------------------------------- |
+| 5.0-A     | Install deps                  | `@modelcontextprotocol/sdk` in `package.json`             |
+| 5.0-B     | Prisma schema                 | `ApiToken`, `ApiAuditLog`, `AuditResult` migrated         |
+| 5.0-C     | Token repo                    | `ApiTokenRepository` with TDD                             |
+| 5.0-D     | Audit repo                    | `ApiAuditLogRepository` with TDD                          |
+| 5.0-E     | Token service                 | `issue/verify/revoke/list` with TDD                       |
+| 5.0-F     | Audit service                 | `append` with TDD                                         |
+| 5.0-G     | MCP error map                 | Typed-error → JSON-RPC mapping                            |
+| 5.0-H     | MCP context + auth            | Bearer middleware with TDD                                |
+| 5.0-I     | MCP server scaffold           | `createMcpServer()` factory with tool-registration helper |
+| 5.0-J     | `/api/mcp` route              | HTTP handler + integration test                           |
+| 5.0-K     | `compute_quote` tool          | First tool — template                                     |
+| 5.0-L     | Product + bundle read tools   | 4 tools                                                   |
+| 5.0-M     | Scenario read tools           | 2 tools (role-scoped)                                     |
+| 5.0-N     | Quote read tools              | 2 tools (incl. opt-in PDF bytes)                          |
+| 5.0-O     | Admin read tools              | 5 tools (admin-gated)                                     |
+| 5.0-P     | MCP protocol conformance test | SDK client → our route, round-trip                        |
+| 5.0-Q     | `/settings/tokens` UI         | User self-serve                                           |
+| 5.0-R     | `/admin/api-tokens` UI        | Admin cross-user + drill-in                               |
 
 ---
 
 ## Task 5.0-A: Install `@modelcontextprotocol/sdk`
 
 **Files:**
+
 - Modify: `package.json`, `package-lock.json`
 
 - [ ] **Step 1: Install**
@@ -157,6 +158,7 @@ git commit -m "chore(deps): add @modelcontextprotocol/sdk for MCP server"
 ## Task 5.0-B: Prisma schema — ApiToken + ApiAuditLog + User relations
 
 **Files:**
+
 - Modify: `prisma/schema.prisma`
 - Create: `prisma/migrations/<ts>_mcp_tokens_and_audit/migration.sql` (generated)
 
@@ -239,6 +241,7 @@ git commit -m "feat(mcp): ApiToken + ApiAuditLog schema"
 ## Task 5.0-C: ApiTokenRepository
 
 **Files:**
+
 - Create: `lib/db/repositories/apiToken.ts`
 - Create: `lib/db/repositories/apiToken.test.ts`
 - Modify: `lib/db/repositories/index.ts`
@@ -445,6 +448,7 @@ git commit -m "feat(mcp): ApiTokenRepository"
 ## Task 5.0-D: ApiAuditLogRepository
 
 **Files:**
+
 - Create: `lib/db/repositories/apiAuditLog.ts`
 - Create: `lib/db/repositories/apiAuditLog.test.ts`
 - Modify: `lib/db/repositories/index.ts`
@@ -583,6 +587,7 @@ git commit -m "feat(mcp): ApiAuditLogRepository"
 ## Task 5.0-E: ApiTokenService
 
 **Files:**
+
 - Create: `lib/services/apiToken.ts`
 - Create: `lib/services/apiToken.test.ts`
 - Modify: `lib/services/index.ts`
@@ -791,9 +796,7 @@ export async function listApiTokensForUser(
   return repo.listForUser(ownerUserId);
 }
 
-export async function listAllApiTokens(
-  repo: ApiTokenRepository = new ApiTokenRepository(prisma),
-) {
+export async function listAllApiTokens(repo: ApiTokenRepository = new ApiTokenRepository(prisma)) {
   return repo.listAll();
 }
 ```
@@ -830,6 +833,7 @@ git commit -m "feat(mcp): ApiTokenService with issue/verify/revoke/list"
 ## Task 5.0-F: ApiAuditLogService
 
 **Files:**
+
 - Create: `lib/services/apiAuditLog.ts`
 - Create: `lib/services/apiAuditLog.test.ts`
 - Modify: `lib/services/index.ts`
@@ -938,7 +942,9 @@ function canonicalize(value: unknown): unknown {
 }
 
 export function hashArgs(args: unknown): string {
-  return createHash('sha256').update(JSON.stringify(canonicalize(args))).digest('hex');
+  return createHash('sha256')
+    .update(JSON.stringify(canonicalize(args)))
+    .digest('hex');
 }
 
 export async function appendAudit(
@@ -991,6 +997,7 @@ git commit -m "feat(mcp): ApiAuditLogService with deterministic args hashing"
 ## Task 5.0-G: MCP error mapping
 
 **Files:**
+
 - Create: `lib/mcp/errors.ts`
 - Create: `lib/mcp/errors.test.ts`
 
@@ -1148,6 +1155,7 @@ git commit -m "feat(mcp): typed-error -> JSON-RPC code mapping"
 ## Task 5.0-H: MCP context + bearer auth middleware
 
 **Files:**
+
 - Create: `lib/mcp/context.ts`
 - Create: `lib/mcp/auth.ts`
 - Create: `lib/mcp/auth.test.ts`
@@ -1290,6 +1298,7 @@ git commit -m "feat(mcp): bearer-token auth middleware + McpContext"
 ## Task 5.0-I: MCP server scaffold
 
 **Files:**
+
 - Create: `lib/mcp/server.ts`
 - Create: `lib/mcp/server.test.ts`
 
@@ -1455,6 +1464,7 @@ git commit -m "feat(mcp): server factory with RBAC-filtered tool list"
 ## Task 5.0-J: `/api/mcp` route
 
 **Files:**
+
 - Create: `app/api/mcp/route.ts`
 - Create: `app/api/mcp/route.test.ts`
 
@@ -1608,6 +1618,7 @@ git commit -m "feat(mcp): POST /api/mcp handler with JSON-RPC envelope"
 ## Task 5.0-K: `compute_quote` tool (template)
 
 **Files:**
+
 - Create: `lib/mcp/tools/reads.ts`
 - Create: `lib/mcp/tools/reads.test.ts`
 - Modify: `app/api/mcp/route.ts` (register the tool)
@@ -1693,9 +1704,7 @@ import type { ToolDefinition } from '@/lib/mcp/server';
 import type { ComputeRequest, TabInput } from '@/lib/engine/types';
 
 // Helpers: Zod passes JSON-compatible input; engine wants Decimal. Convert at the boundary.
-const decimalFromString = z
-  .union([z.string(), z.number()])
-  .transform((v) => new Decimal(v));
+const decimalFromString = z.union([z.string(), z.number()]).transform((v) => new Decimal(v));
 
 const saasTabSchema = z.object({
   kind: z.literal('SAAS_USAGE'),
@@ -1753,7 +1762,11 @@ const personaSnapSchema = z.object({
   multiplier: decimalFromString,
 });
 
-const fixedCostSchema = z.object({ id: z.string(), name: z.string(), monthlyUsd: decimalFromString });
+const fixedCostSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  monthlyUsd: decimalFromString,
+});
 
 const volumeTierSchema = z.object({ minSeats: z.number().int(), discountPct: decimalFromString });
 const contractModifierSchema = z.object({
@@ -1870,6 +1883,7 @@ git commit -m "feat(mcp): compute_quote tool (pure, no DB write)"
 ## Task 5.0-L: Product + bundle read tools
 
 **Files:**
+
 - Modify: `lib/mcp/tools/reads.ts`
 - Modify: `lib/mcp/tools/reads.test.ts`
 
@@ -1889,12 +1903,7 @@ vi.mock('@/lib/services/bundle', () => ({
   getBundleById: vi.fn(),
 }));
 
-import {
-  listProductsTool,
-  getProductTool,
-  listBundlesTool,
-  getBundleTool,
-} from './reads';
+import { listProductsTool, getProductTool, listBundlesTool, getBundleTool } from './reads';
 import { listProducts, getProductById } from '@/lib/services/product';
 import { listBundles, getBundleById } from '@/lib/services/bundle';
 import { NotFoundError } from '@/lib/utils/errors';
@@ -1975,7 +1984,8 @@ export const getProductTool: ToolDefinition<{ id: string }, unknown> = {
 
 export const listBundlesTool: ToolDefinition<{}, unknown> = {
   name: 'list_bundles',
-  description: 'Lists bundles with item counts. Use before apply_bundle_to_scenario to see what is available.',
+  description:
+    'Lists bundles with item counts. Use before apply_bundle_to_scenario to see what is available.',
   inputSchema: z.object({}).strict(),
   requiresAdmin: false,
   handler: async () => listBundles(),
@@ -1983,7 +1993,8 @@ export const listBundlesTool: ToolDefinition<{}, unknown> = {
 
 export const getBundleTool: ToolDefinition<{ id: string }, unknown> = {
   name: 'get_bundle',
-  description: 'Bundle detail including all items (SaaS configs, labor SKU references, department/hours references). Throws if not found.',
+  description:
+    'Bundle detail including all items (SaaS configs, labor SKU references, department/hours references). Throws if not found.',
   inputSchema: z.object({ id: z.string() }).strict(),
   requiresAdmin: false,
   handler: async (_ctx, { id }) => getBundleById(id),
@@ -2014,6 +2025,7 @@ git commit -m "feat(mcp): list_products / get_product / list_bundles / get_bundl
 ## Task 5.0-M: Scenario read tools
 
 **Files:**
+
 - Modify: `lib/mcp/tools/reads.ts`
 - Modify: `lib/mcp/tools/reads.test.ts`
 
@@ -2069,7 +2081,7 @@ describe('get_scenario tool', () => {
     expect((out as any).id).toBe('s1');
   });
 
-  it('sales cannot get another user\'s scenario → NotFoundError', async () => {
+  it("sales cannot get another user's scenario → NotFoundError", async () => {
     vi.mocked(getScenarioById).mockResolvedValue({ id: 's1', ownerId: 'other' } as any);
     await expect(getScenarioTool.handler(salesCtx, { id: 's1' })).rejects.toBeInstanceOf(
       NotFoundError,
@@ -2104,10 +2116,7 @@ const scenarioListInputSchema = z
   })
   .strict();
 
-export const listScenariosTool: ToolDefinition<
-  z.infer<typeof scenarioListInputSchema>,
-  unknown
-> = {
+export const listScenariosTool: ToolDefinition<z.infer<typeof scenarioListInputSchema>, unknown> = {
   name: 'list_scenarios',
   description:
     'Lists scenarios. Sales role sees only their own; admin sees everyone. Supports optional filters: status, customer (substring match).',
@@ -2159,6 +2168,7 @@ git commit -m "feat(mcp): list_scenarios / get_scenario (role-scoped)"
 ## Task 5.0-N: Quote read tools
 
 **Files:**
+
 - Modify: `lib/mcp/tools/reads.ts`
 - Modify: `lib/mcp/tools/reads.test.ts`
 
@@ -2325,6 +2335,7 @@ git commit -m "feat(mcp): list_quotes_for_scenario / get_quote (opt-in PDF bytes
 ## Task 5.0-O: Admin-only read tools
 
 **Files:**
+
 - Create: `lib/mcp/tools/adminReads.ts`
 - Create: `lib/mcp/tools/adminReads.test.ts`
 - Modify: `app/api/mcp/route.ts`
@@ -2537,6 +2548,7 @@ git commit -m "feat(mcp): admin-only read tools (employees, departments, burdens
 ## Task 5.0-P: MCP protocol conformance test
 
 **Files:**
+
 - Create: `app/api/mcp/protocol.test.ts`
 
 Proves we're emitting valid MCP by connecting with `@modelcontextprotocol/sdk`'s client.
@@ -2619,6 +2631,7 @@ git commit -m "test(mcp): protocol conformance against POST /api/mcp"
 ## Task 5.0-Q: `/settings/tokens` user self-serve UI
 
 **Files:**
+
 - Create: `app/settings/tokens/page.tsx`
 - Create: `app/settings/tokens/actions.ts`
 - Create: `app/settings/tokens/NewTokenDialog.tsx`
@@ -2634,11 +2647,7 @@ Create `app/settings/tokens/actions.ts`:
 
 import { revalidatePath } from 'next/cache';
 import { requireAuth } from '@/lib/auth/session';
-import {
-  issueApiToken,
-  listApiTokensForUser,
-  revokeApiToken,
-} from '@/lib/services/apiToken';
+import { issueApiToken, listApiTokensForUser, revokeApiToken } from '@/lib/services/apiToken';
 import { NotFoundError } from '@/lib/utils/errors';
 import { prisma } from '@/lib/db/client';
 
@@ -2884,6 +2893,7 @@ git commit -m "feat(mcp): /settings/tokens self-serve UI"
 ## Task 5.0-R: `/admin/api-tokens` admin cross-user UI
 
 **Files:**
+
 - Create: `app/admin/api-tokens/page.tsx`
 - Create: `app/admin/api-tokens/actions.ts`
 - Create: `app/admin/api-tokens/TokenDrawer.tsx`
@@ -3112,6 +3122,7 @@ git commit -m "feat(mcp): /admin/api-tokens cross-user list + audit drawer"
 ## File Map Summary
 
 **Created:**
+
 - `lib/mcp/server.ts` + `.test.ts`
 - `lib/mcp/auth.ts` + `.test.ts`
 - `lib/mcp/context.ts`
@@ -3128,6 +3139,7 @@ git commit -m "feat(mcp): /admin/api-tokens cross-user list + audit drawer"
 - `prisma/migrations/<ts>_mcp_tokens_and_audit/migration.sql`
 
 **Modified:**
+
 - `package.json` + `package-lock.json`
 - `prisma/schema.prisma`
 - `lib/db/repositories/index.ts`

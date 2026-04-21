@@ -37,10 +37,7 @@ interface Deps {
 
 function isP2002(e: unknown): boolean {
   return (
-    typeof e === 'object' &&
-    e !== null &&
-    'code' in e &&
-    (e as { code?: string }).code === 'P2002'
+    typeof e === 'object' && e !== null && 'code' in e && (e as { code?: string }).code === 'P2002'
   );
 }
 
@@ -134,5 +131,7 @@ export async function generateQuote(args: GenerateArgs, deps: Deps) {
     }
   }
 
-  throw new Error(`Could not acquire unique quote version for scenario ${scenarioId} after ${maxRetries} retries`);
+  throw new Error(
+    `Could not acquire unique quote version for scenario ${scenarioId} after ${maxRetries} retries`,
+  );
 }

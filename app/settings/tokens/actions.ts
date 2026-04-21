@@ -2,11 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { requireAuth } from '@/lib/auth/session';
-import {
-  issueApiToken,
-  listApiTokensForUser,
-  revokeApiToken,
-} from '@/lib/services/apiToken';
+import { issueApiToken, listApiTokensForUser, revokeApiToken } from '@/lib/services/apiToken';
 import { NotFoundError } from '@/lib/utils/errors';
 import { prisma } from '@/lib/db/client';
 

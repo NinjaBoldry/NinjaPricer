@@ -12,33 +12,137 @@ export interface PropertyDefinition {
 
 export const REQUIRED_PROPERTIES: PropertyDefinition[] = [
   // Products
-  { objectType: 'products', name: 'pricer_managed', label: 'Pricer Managed', type: 'bool', fieldType: 'booleancheckbox', groupName: 'productinformation' },
-  { objectType: 'products', name: 'pricer_product_id', label: 'Pricer Product ID', type: 'string', fieldType: 'text', groupName: 'productinformation' },
-  { objectType: 'products', name: 'pricer_kind', label: 'Pricer Kind', type: 'enumeration', fieldType: 'select', groupName: 'productinformation', options: [{ label: 'Product', value: 'product' }, { label: 'Bundle', value: 'bundle' }] },
-  { objectType: 'products', name: 'pricer_last_synced_hash', label: 'Pricer Last Synced Hash', type: 'string', fieldType: 'text', groupName: 'productinformation' },
+  {
+    objectType: 'products',
+    name: 'pricer_managed',
+    label: 'Pricer Managed',
+    type: 'bool',
+    fieldType: 'booleancheckbox',
+    groupName: 'productinformation',
+  },
+  {
+    objectType: 'products',
+    name: 'pricer_product_id',
+    label: 'Pricer Product ID',
+    type: 'string',
+    fieldType: 'text',
+    groupName: 'productinformation',
+  },
+  {
+    objectType: 'products',
+    name: 'pricer_kind',
+    label: 'Pricer Kind',
+    type: 'enumeration',
+    fieldType: 'select',
+    groupName: 'productinformation',
+    options: [
+      { label: 'Product', value: 'product' },
+      { label: 'Bundle', value: 'bundle' },
+    ],
+  },
+  {
+    objectType: 'products',
+    name: 'pricer_last_synced_hash',
+    label: 'Pricer Last Synced Hash',
+    type: 'string',
+    fieldType: 'text',
+    groupName: 'productinformation',
+  },
   // Line items (used by later phases, created now so a single setup run covers everything)
-  { objectType: 'line_items', name: 'pricer_reason', label: 'Pricer Reason', type: 'enumeration', fieldType: 'select', groupName: 'lineiteminformation', options: [
-    { label: 'Bundle Rollup', value: 'bundle_rollup' },
-    { label: 'Negotiated', value: 'negotiated' },
-    { label: 'Ramp', value: 'ramp' },
-    { label: 'Other', value: 'other' },
-  ] },
-  { objectType: 'line_items', name: 'pricer_original_list_price', label: 'Pricer Original List Price', type: 'number', fieldType: 'number', groupName: 'lineiteminformation' },
-  { objectType: 'line_items', name: 'pricer_scenario_id', label: 'Pricer Scenario ID', type: 'string', fieldType: 'text', groupName: 'lineiteminformation' },
-  { objectType: 'line_items', name: 'pricer_ramp_schedule', label: 'Pricer Ramp Schedule (JSON)', type: 'string', fieldType: 'text', groupName: 'lineiteminformation' },
+  {
+    objectType: 'line_items',
+    name: 'pricer_reason',
+    label: 'Pricer Reason',
+    type: 'enumeration',
+    fieldType: 'select',
+    groupName: 'lineiteminformation',
+    options: [
+      { label: 'Bundle Rollup', value: 'bundle_rollup' },
+      { label: 'Negotiated', value: 'negotiated' },
+      { label: 'Ramp', value: 'ramp' },
+      { label: 'Other', value: 'other' },
+    ],
+  },
+  {
+    objectType: 'line_items',
+    name: 'pricer_original_list_price',
+    label: 'Pricer Original List Price',
+    type: 'number',
+    fieldType: 'number',
+    groupName: 'lineiteminformation',
+  },
+  {
+    objectType: 'line_items',
+    name: 'pricer_scenario_id',
+    label: 'Pricer Scenario ID',
+    type: 'string',
+    fieldType: 'text',
+    groupName: 'lineiteminformation',
+  },
+  {
+    objectType: 'line_items',
+    name: 'pricer_ramp_schedule',
+    label: 'Pricer Ramp Schedule (JSON)',
+    type: 'string',
+    fieldType: 'text',
+    groupName: 'lineiteminformation',
+  },
   // Deals
-  { objectType: 'deals', name: 'pricer_scenario_id', label: 'Pricer Scenario ID', type: 'string', fieldType: 'text', groupName: 'dealinformation' },
-  { objectType: 'deals', name: 'pricer_approval_status', label: 'Pricer Approval Status', type: 'enumeration', fieldType: 'select', groupName: 'dealinformation', options: [
-    { label: 'Not Required', value: 'not_required' },
-    { label: 'Pending', value: 'pending' },
-    { label: 'Approved', value: 'approved' },
-    { label: 'Rejected', value: 'rejected' },
-  ] },
-  { objectType: 'deals', name: 'pricer_margin_pct', label: 'Pricer Margin %', type: 'number', fieldType: 'number', groupName: 'dealinformation' },
+  {
+    objectType: 'deals',
+    name: 'pricer_scenario_id',
+    label: 'Pricer Scenario ID',
+    type: 'string',
+    fieldType: 'text',
+    groupName: 'dealinformation',
+  },
+  {
+    objectType: 'deals',
+    name: 'pricer_approval_status',
+    label: 'Pricer Approval Status',
+    type: 'enumeration',
+    fieldType: 'select',
+    groupName: 'dealinformation',
+    options: [
+      { label: 'Not Required', value: 'not_required' },
+      { label: 'Pending', value: 'pending' },
+      { label: 'Approved', value: 'approved' },
+      { label: 'Rejected', value: 'rejected' },
+    ],
+  },
+  {
+    objectType: 'deals',
+    name: 'pricer_margin_pct',
+    label: 'Pricer Margin %',
+    type: 'number',
+    fieldType: 'number',
+    groupName: 'dealinformation',
+  },
   // Quotes
-  { objectType: 'quotes', name: 'pricer_scenario_id', label: 'Pricer Scenario ID', type: 'string', fieldType: 'text', groupName: 'quoteinformation' },
-  { objectType: 'quotes', name: 'pricer_revision', label: 'Pricer Revision', type: 'number', fieldType: 'number', groupName: 'quoteinformation' },
-  { objectType: 'quotes', name: 'pricer_supersedes', label: 'Pricer Supersedes Quote ID', type: 'string', fieldType: 'text', groupName: 'quoteinformation' },
+  {
+    objectType: 'quotes',
+    name: 'pricer_scenario_id',
+    label: 'Pricer Scenario ID',
+    type: 'string',
+    fieldType: 'text',
+    groupName: 'quoteinformation',
+  },
+  {
+    objectType: 'quotes',
+    name: 'pricer_revision',
+    label: 'Pricer Revision',
+    type: 'number',
+    fieldType: 'number',
+    groupName: 'quoteinformation',
+  },
+  {
+    objectType: 'quotes',
+    name: 'pricer_supersedes',
+    label: 'Pricer Supersedes Quote ID',
+    type: 'string',
+    fieldType: 'text',
+    groupName: 'quoteinformation',
+  },
 ];
 
 export interface ProvisionSummary {
@@ -46,7 +150,9 @@ export interface ProvisionSummary {
   alreadyPresent: Array<{ objectType: string; name: string }>;
 }
 
-export async function provisionCustomProperties(opts: { correlationId: string }): Promise<ProvisionSummary> {
+export async function provisionCustomProperties(opts: {
+  correlationId: string;
+}): Promise<ProvisionSummary> {
   const summary: ProvisionSummary = { created: [], alreadyPresent: [] };
 
   for (const def of REQUIRED_PROPERTIES) {

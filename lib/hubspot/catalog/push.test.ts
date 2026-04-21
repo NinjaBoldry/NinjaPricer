@@ -84,8 +84,20 @@ describe('publishCatalogToHubSpot', () => {
     const result = await publishCatalogToHubSpot({
       snapshot,
       existingMappings: [
-        { pricerProductId: 'p-1', pricerBundleId: null, hubspotProductId: 'hs-1', kind: 'PRODUCT', lastSyncedHash: 'stale' },
-        { pricerProductId: 'p-2', pricerBundleId: null, hubspotProductId: 'hs-2', kind: 'PRODUCT', lastSyncedHash: p2Hash },
+        {
+          pricerProductId: 'p-1',
+          pricerBundleId: null,
+          hubspotProductId: 'hs-1',
+          kind: 'PRODUCT',
+          lastSyncedHash: 'stale',
+        },
+        {
+          pricerProductId: 'p-2',
+          pricerBundleId: null,
+          hubspotProductId: 'hs-2',
+          kind: 'PRODUCT',
+          lastSyncedHash: p2Hash,
+        },
       ],
       correlationId: 'c2',
       now: () => new Date(),

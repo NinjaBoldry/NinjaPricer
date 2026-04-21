@@ -52,9 +52,7 @@ describe('hubspot MCP tools', () => {
   });
 
   it('resolveReviewQueueItemTool requires itemId', () => {
-    expect(() =>
-      resolveReviewQueueItemTool.inputSchema.parse({ resolution: 'IGNORE' }),
-    ).toThrow();
+    expect(() => resolveReviewQueueItemTool.inputSchema.parse({ resolution: 'IGNORE' })).toThrow();
   });
 
   it('hubspotIntegrationStatusTool returns config snapshot', () => {

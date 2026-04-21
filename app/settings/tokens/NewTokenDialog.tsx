@@ -31,7 +31,9 @@ export default function NewTokenDialog() {
         <div className="bg-white dark:bg-gray-900 rounded p-6 max-w-lg space-y-3">
           <h2 className="text-lg font-semibold">Copy this token now</h2>
           <p className="text-sm">It won&apos;t be shown again. Save it somewhere safe.</p>
-          <code className="block p-3 text-xs bg-gray-100 dark:bg-gray-800 break-all font-mono">{issued}</code>
+          <code className="block p-3 text-xs bg-gray-100 dark:bg-gray-800 break-all font-mono">
+            {issued}
+          </code>
           <Button
             variant="destructive"
             onClick={() => {
@@ -58,7 +60,12 @@ export default function NewTokenDialog() {
             <h2 className="text-lg font-semibold">Issue API token</h2>
             <div>
               <label className="block text-sm">Label</label>
-              <input name="label" required className="w-full border rounded px-2 py-1" placeholder="e.g. Cowork" />
+              <input
+                name="label"
+                required
+                className="w-full border rounded px-2 py-1"
+                placeholder="e.g. Cowork"
+              />
             </div>
             <div>
               <label className="block text-sm">Expires at (optional)</label>

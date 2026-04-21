@@ -43,7 +43,13 @@ describe('pullHubSpotChanges', () => {
 
     const review = await pullHubSpotChanges({
       existingMappings: [
-        { pricerProductId: 'p-1', pricerBundleId: null, hubspotProductId: 'hs-1', kind: 'PRODUCT', lastSyncedHash: pricerHash },
+        {
+          pricerProductId: 'p-1',
+          pricerBundleId: null,
+          hubspotProductId: 'hs-1',
+          kind: 'PRODUCT',
+          lastSyncedHash: pricerHash,
+        },
       ],
       pricerSnapshot: {
         products: [
@@ -63,7 +69,9 @@ describe('pullHubSpotChanges', () => {
 
     expect(review.reviewItems.length).toBe(1);
     expect(review.reviewItems[0].pricerEntityId).toBe('p-1');
-    expect(review.reviewItems[0].changedFields).toMatchObject({ name: { pricer: 'Ninja Notes', hubspot: 'Renamed' } });
+    expect(review.reviewItems[0].changedFields).toMatchObject({
+      name: { pricer: 'Ninja Notes', hubspot: 'Renamed' },
+    });
   });
 
   it('skips items where HubSpot matches pricer (no drift)', async () => {
@@ -101,7 +109,13 @@ describe('pullHubSpotChanges', () => {
 
     const review = await pullHubSpotChanges({
       existingMappings: [
-        { pricerProductId: 'p-1', pricerBundleId: null, hubspotProductId: 'hs-1', kind: 'PRODUCT', lastSyncedHash: sharedHash },
+        {
+          pricerProductId: 'p-1',
+          pricerBundleId: null,
+          hubspotProductId: 'hs-1',
+          kind: 'PRODUCT',
+          lastSyncedHash: sharedHash,
+        },
       ],
       pricerSnapshot: {
         products: [
@@ -111,7 +125,10 @@ describe('pullHubSpotChanges', () => {
             kind: 'SAAS',
             sku: 'NN-01',
             description: '',
-            headlineMonthlyPrice: { toFixed: (d: number) => (500).toFixed(d), toString: () => '500' } as any,
+            headlineMonthlyPrice: {
+              toFixed: (d: number) => (500).toFixed(d),
+              toString: () => '500',
+            } as any,
           },
         ],
         bundles: [],

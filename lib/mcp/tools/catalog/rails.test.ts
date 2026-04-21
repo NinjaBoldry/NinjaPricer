@@ -20,12 +20,7 @@ vi.mock('@/lib/db/repositories/rail', () => ({ RailRepository: vi.fn() }));
 
 import { RailService } from '@/lib/services/rail';
 
-import {
-  createRailTool,
-  updateRailTool,
-  deleteRailTool,
-  railTools,
-} from './rails';
+import { createRailTool, updateRailTool, deleteRailTool, railTools } from './rails';
 import { NotFoundError } from '@/lib/utils/errors';
 
 const adminCtx: McpContext = {
@@ -91,9 +86,7 @@ describe('rail catalog tools', () => {
         softThreshold: '0.3',
         hardThreshold: '0.2',
       });
-      expect(railSvc.upsert).toHaveBeenCalledWith(
-        expect.objectContaining({ isEnabled: true }),
-      );
+      expect(railSvc.upsert).toHaveBeenCalledWith(expect.objectContaining({ isEnabled: true }));
     });
 
     it('rejects invalid kind', () => {
@@ -160,16 +153,16 @@ describe('rail catalog tools', () => {
 
     it('throws if rail not found', async () => {
       railSvc.findById.mockResolvedValue(null);
-      await expect(
-        updateRailTool.handler(adminCtx, { id: 'nonexistent' }),
-      ).rejects.toThrow('not found');
+      await expect(updateRailTool.handler(adminCtx, { id: 'nonexistent' })).rejects.toThrow(
+        'not found',
+      );
     });
 
     it('throws NotFoundError (not plain Error) when findById returns null', async () => {
       railSvc.findById.mockResolvedValue(null);
-      await expect(
-        updateRailTool.handler(adminCtx, { id: 'missing-rail' }),
-      ).rejects.toBeInstanceOf(NotFoundError);
+      await expect(updateRailTool.handler(adminCtx, { id: 'missing-rail' })).rejects.toBeInstanceOf(
+        NotFoundError,
+      );
     });
 
     it('rejects missing id', () => {

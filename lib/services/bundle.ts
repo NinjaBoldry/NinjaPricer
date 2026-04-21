@@ -65,9 +65,7 @@ export class BundleService {
 
 // --- Free-function wrappers for MCP tools ---
 
-export async function listBundles(
-  repo: BundleRepository = new BundleRepository(prisma),
-) {
+export async function listBundles(repo: BundleRepository = new BundleRepository(prisma)) {
   return repo.findAll();
 }
 

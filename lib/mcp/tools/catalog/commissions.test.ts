@@ -134,9 +134,7 @@ describe('commission catalog tools', () => {
     });
 
     it('rejects missing id', () => {
-      expect(() =>
-        updateCommissionRuleTool.inputSchema.parse({ name: 'X' }),
-      ).toThrow();
+      expect(() => updateCommissionRuleTool.inputSchema.parse({ name: 'X' })).toThrow();
     });
   });
 
@@ -222,9 +220,7 @@ describe('commission catalog tools', () => {
     });
 
     it('rejects missing ruleId', () => {
-      expect(() =>
-        setCommissionTiersTool.inputSchema.parse({ tiers: [] }),
-      ).toThrow();
+      expect(() => setCommissionTiersTool.inputSchema.parse({ tiers: [] })).toThrow();
     });
   });
 });

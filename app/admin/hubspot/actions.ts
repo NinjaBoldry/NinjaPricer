@@ -32,10 +32,7 @@ export async function resolveReviewItemAction(input: {
   resolution: HubSpotReviewResolution;
 }) {
   const user = await requireAdmin();
-  const service = new ReviewQueueService(
-    new HubSpotReviewQueueItemRepository(prisma),
-    prisma,
-  );
+  const service = new ReviewQueueService(new HubSpotReviewQueueItemRepository(prisma), prisma);
   await service.resolve({ itemId: input.itemId, resolution: input.resolution, userId: user.id });
   revalidatePath('/admin/hubspot/review-queue');
 }

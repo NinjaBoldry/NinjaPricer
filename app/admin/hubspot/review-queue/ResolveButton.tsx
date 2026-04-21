@@ -4,7 +4,15 @@ import { useTransition } from 'react';
 import { HubSpotReviewResolution } from '@prisma/client';
 import { resolveReviewItemAction } from '../actions';
 
-export function ResolveButton({ itemId, resolution, label }: { itemId: string; resolution: HubSpotReviewResolution; label: string }) {
+export function ResolveButton({
+  itemId,
+  resolution,
+  label,
+}: {
+  itemId: string;
+  resolution: HubSpotReviewResolution;
+  label: string;
+}) {
   const [pending, startTransition] = useTransition();
   return (
     <button

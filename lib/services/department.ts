@@ -13,7 +13,10 @@ export interface IDepartmentRepository {
   findById(id: string): Promise<unknown>;
   listAll(): Promise<unknown[]>;
   upsertBillRate(departmentId: string, billRatePerHour: Decimal): Promise<unknown>;
-  update(id: string, data: { name?: string | undefined; isActive?: boolean | undefined }): Promise<unknown>;
+  update(
+    id: string,
+    data: { name?: string | undefined; isActive?: boolean | undefined },
+  ): Promise<unknown>;
   delete(id: string): Promise<void>;
 }
 
@@ -79,14 +82,22 @@ export async function listDepartmentsWithLoadedRate(
       if (employees.length > 0) {
         // Use the first employee as a representative rate for display purposes.
         const emp = employees[0]!;
-        if (emp.compensationType === 'ANNUAL_SALARY' && emp.annualSalaryUsd && emp.standardHoursPerYear) {
+        if (
+          emp.compensationType === 'ANNUAL_SALARY' &&
+          emp.annualSalaryUsd &&
+          emp.standardHoursPerYear
+        ) {
           loadedRatePerHourUsd = computeLoadedHourlyRate({
             compensationType: 'ANNUAL_SALARY',
             annualSalaryUsd: new DecimalLib(emp.annualSalaryUsd.toString()),
             standardHoursPerYear: emp.standardHoursPerYear,
             burdens: burdenInputs,
           });
-        } else if (emp.compensationType === 'HOURLY' && emp.hourlyRateUsd && emp.standardHoursPerYear) {
+        } else if (
+          emp.compensationType === 'HOURLY' &&
+          emp.hourlyRateUsd &&
+          emp.standardHoursPerYear
+        ) {
           loadedRatePerHourUsd = computeLoadedHourlyRate({
             compensationType: 'HOURLY',
             hourlyRateUsd: new DecimalLib(emp.hourlyRateUsd.toString()),
@@ -99,7 +110,9 @@ export async function listDepartmentsWithLoadedRate(
       return {
         id: dept.id,
         name: dept.name,
-        billRatePerHourUsd: dept.billRate ? new DecimalLib(dept.billRate.billRatePerHour.toString()) : null,
+        billRatePerHourUsd: dept.billRate
+          ? new DecimalLib(dept.billRate.billRatePerHour.toString())
+          : null,
         loadedRatePerHourUsd,
       };
     }),

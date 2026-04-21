@@ -23,10 +23,7 @@ const createRailSchema = z
   })
   .strict();
 
-export const createRailTool: ToolDefinition<
-  z.infer<typeof createRailSchema>,
-  { id: string }
-> = {
+export const createRailTool: ToolDefinition<z.infer<typeof createRailSchema>, { id: string }> = {
   name: 'create_rail',
   description:
     'Admin only. Creates (or upserts) a guardrail for a product. kind: MIN_MARGIN_PCT | MAX_DISCOUNT_PCT | MIN_SEAT_PRICE | MIN_CONTRACT_MONTHS. marginBasis: CONTRIBUTION | NET. For percentage rails, thresholds are fractions (0..1). Returns the rail id.',
@@ -64,10 +61,7 @@ const updateRailSchema = z
   })
   .strict();
 
-export const updateRailTool: ToolDefinition<
-  z.infer<typeof updateRailSchema>,
-  { id: string }
-> = {
+export const updateRailTool: ToolDefinition<z.infer<typeof updateRailSchema>, { id: string }> = {
   name: 'update_rail',
   description:
     'Admin only. Updates a guardrail by id. All fields except id are optional patches. Threshold semantics are the same as create_rail.',
@@ -78,7 +72,7 @@ export const updateRailTool: ToolDefinition<
   extractTargetId: (input) => input.id,
   handler: async (_ctx, { id, kind, marginBasis, softThreshold, hardThreshold, isEnabled }) => {
     const svc = new RailService(new RailRepository(prisma));
-    const current = await svc.findById(id) as Rail | null;
+    const current = (await svc.findById(id)) as Rail | null;
 
     if (!current) {
       throw new NotFoundError('Rail', id);
@@ -135,10 +129,7 @@ export const updateRailTool: ToolDefinition<
 
 const deleteRailSchema = z.object({ id: z.string().min(1) }).strict();
 
-export const deleteRailTool: ToolDefinition<
-  z.infer<typeof deleteRailSchema>,
-  { id: string }
-> = {
+export const deleteRailTool: ToolDefinition<z.infer<typeof deleteRailSchema>, { id: string }> = {
   name: 'delete_rail',
   description:
     'Admin only. Hard-deletes a guardrail by id. Use update_rail { isEnabled: false } to disable without deleting.',

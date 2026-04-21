@@ -13,8 +13,18 @@ export interface ExistingMapping {
 }
 
 export interface PushOutcome {
-  created: Array<{ pricerId: string; kind: 'PRODUCT' | 'BUNDLE'; hubspotProductId: string; hash: string }>;
-  updated: Array<{ pricerId: string; kind: 'PRODUCT' | 'BUNDLE'; hubspotProductId: string; hash: string }>;
+  created: Array<{
+    pricerId: string;
+    kind: 'PRODUCT' | 'BUNDLE';
+    hubspotProductId: string;
+    hash: string;
+  }>;
+  updated: Array<{
+    pricerId: string;
+    kind: 'PRODUCT' | 'BUNDLE';
+    hubspotProductId: string;
+    hash: string;
+  }>;
   unchanged: Array<{ pricerId: string; kind: 'PRODUCT' | 'BUNDLE'; hubspotProductId: string }>;
   failed: Array<{ pricerId: string; kind: 'PRODUCT' | 'BUNDLE'; error: string }>;
 }
@@ -51,7 +61,11 @@ export async function publishCatalogToHubSpot(input: PushInput): Promise<PushOut
         });
         outcome.created.push({ pricerId: p.id, kind: 'PRODUCT', hubspotProductId: res.id, hash });
       } else if (mapping.lastSyncedHash === hash) {
-        outcome.unchanged.push({ pricerId: p.id, kind: 'PRODUCT', hubspotProductId: mapping.hubspotProductId });
+        outcome.unchanged.push({
+          pricerId: p.id,
+          kind: 'PRODUCT',
+          hubspotProductId: mapping.hubspotProductId,
+        });
       } else {
         await hubspotFetch({
           method: 'PATCH',
@@ -59,7 +73,12 @@ export async function publishCatalogToHubSpot(input: PushInput): Promise<PushOut
           body: { properties: { ...payload.properties, pricer_last_synced_hash: hash } },
           correlationId: input.correlationId,
         });
-        outcome.updated.push({ pricerId: p.id, kind: 'PRODUCT', hubspotProductId: mapping.hubspotProductId, hash });
+        outcome.updated.push({
+          pricerId: p.id,
+          kind: 'PRODUCT',
+          hubspotProductId: mapping.hubspotProductId,
+          hash,
+        });
       }
     } catch (err) {
       outcome.failed.push({
@@ -85,7 +104,11 @@ export async function publishCatalogToHubSpot(input: PushInput): Promise<PushOut
         });
         outcome.created.push({ pricerId: b.id, kind: 'BUNDLE', hubspotProductId: res.id, hash });
       } else if (mapping.lastSyncedHash === hash) {
-        outcome.unchanged.push({ pricerId: b.id, kind: 'BUNDLE', hubspotProductId: mapping.hubspotProductId });
+        outcome.unchanged.push({
+          pricerId: b.id,
+          kind: 'BUNDLE',
+          hubspotProductId: mapping.hubspotProductId,
+        });
       } else {
         await hubspotFetch({
           method: 'PATCH',
@@ -93,7 +116,12 @@ export async function publishCatalogToHubSpot(input: PushInput): Promise<PushOut
           body: { properties: { ...payload.properties, pricer_last_synced_hash: hash } },
           correlationId: input.correlationId,
         });
-        outcome.updated.push({ pricerId: b.id, kind: 'BUNDLE', hubspotProductId: mapping.hubspotProductId, hash });
+        outcome.updated.push({
+          pricerId: b.id,
+          kind: 'BUNDLE',
+          hubspotProductId: mapping.hubspotProductId,
+          hash,
+        });
       }
     } catch (err) {
       outcome.failed.push({

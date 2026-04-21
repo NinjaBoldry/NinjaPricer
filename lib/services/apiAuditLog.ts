@@ -25,7 +25,9 @@ function canonicalize(value: unknown): unknown {
 }
 
 export function hashArgs(args: unknown): string {
-  return createHash('sha256').update(JSON.stringify(canonicalize(args))).digest('hex');
+  return createHash('sha256')
+    .update(JSON.stringify(canonicalize(args)))
+    .digest('hex');
 }
 
 export async function appendAudit(

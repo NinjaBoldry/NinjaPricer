@@ -31,23 +31,23 @@ No business logic is duplicated. Every sync, publish, and approval path runs thr
 
 ## Decisions Summary
 
-| # | Decision | Chosen |
-|---|----------|--------|
-| 1 | Catalog source of truth | Two-way sync, pricer authoritative; HubSpot conflicts flag to review queue |
-| 2 | What syncs | Products and bundles only; tiers/rails/rate cards/cost basis stay pricer-only |
-| 3 | Quote terminal artifact | Native HubSpot Quote (HubSpot sends, signs, collects payment) |
-| 4 | Line item shape | Hybrid by reason: bundle→override, negotiated→list+discount, ramp→override+property |
-| 5 | Tier representation in quotes | Deferred to Omni/future product |
-| 6 | Approval trigger | Per-product hard-rail overrides (existing `Rail` model). Soft rails stay advisory. |
-| 7 | Approval UX | HubSpot workflow owns routing, notification, decision capture |
-| 8 | Post-publish round-trip | Webhooks for terminal states only (Accepted / Declined / Won / Lost) |
-| 9 | Revisions | Create new HubSpot Quote, mark prior as superseded via `pricer_supersedes` property; do not auto-void |
-| 10 | Sync cadence | Fully manual both directions; admin button + MCP tool |
-| 11 | Initial seeding | One-time push from pricer to HubSpot via same manual tool, triggered when admin decides catalog is ready |
-| 12 | App/auth model | HubSpot Developer Project (platform 2026.03) containing a project-built private app + App Card + App Functions |
-| 13 | Entry points | App Card on Deal record (phase 1); pricer-first with Deal linkage required at publish (phase 1); stage-triggered workflow task (phase 2) |
-| 14 | Pricer-first Deal linkage | Deal optional during scratch work; required at publish time; duplicate detection on email / company domain at that moment |
-| 15 | Architecture shape | Embedded in existing Next.js app (Approach 1); no sidecar service |
+| #   | Decision                      | Chosen                                                                                                                                   |
+| --- | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Catalog source of truth       | Two-way sync, pricer authoritative; HubSpot conflicts flag to review queue                                                               |
+| 2   | What syncs                    | Products and bundles only; tiers/rails/rate cards/cost basis stay pricer-only                                                            |
+| 3   | Quote terminal artifact       | Native HubSpot Quote (HubSpot sends, signs, collects payment)                                                                            |
+| 4   | Line item shape               | Hybrid by reason: bundle→override, negotiated→list+discount, ramp→override+property                                                      |
+| 5   | Tier representation in quotes | Deferred to Omni/future product                                                                                                          |
+| 6   | Approval trigger              | Per-product hard-rail overrides (existing `Rail` model). Soft rails stay advisory.                                                       |
+| 7   | Approval UX                   | HubSpot workflow owns routing, notification, decision capture                                                                            |
+| 8   | Post-publish round-trip       | Webhooks for terminal states only (Accepted / Declined / Won / Lost)                                                                     |
+| 9   | Revisions                     | Create new HubSpot Quote, mark prior as superseded via `pricer_supersedes` property; do not auto-void                                    |
+| 10  | Sync cadence                  | Fully manual both directions; admin button + MCP tool                                                                                    |
+| 11  | Initial seeding               | One-time push from pricer to HubSpot via same manual tool, triggered when admin decides catalog is ready                                 |
+| 12  | App/auth model                | HubSpot Developer Project (platform 2026.03) containing a project-built private app + App Card + App Functions                           |
+| 13  | Entry points                  | App Card on Deal record (phase 1); pricer-first with Deal linkage required at publish (phase 1); stage-triggered workflow task (phase 2) |
+| 14  | Pricer-first Deal linkage     | Deal optional during scratch work; required at publish time; duplicate detection on email / company domain at that moment                |
+| 15  | Architecture shape            | Embedded in existing Next.js app (Approach 1); no sidecar service                                                                        |
 
 ## Architecture
 
@@ -294,23 +294,27 @@ The project is the unit of deployment for everything HubSpot-facing.
 Created once by `scripts/hubspot-setup.ts`. The script is idempotent — re-running only creates missing properties.
 
 **Product (HubSpot object type `PRODUCT`):**
+
 - `pricer_managed` (bool) — true for Ninja-owned products; false or absent means HubSpot-only, out of scope for sync
 - `pricer_product_id` (string) — backreference to pricer `Product.id` or `Bundle.id`
 - `pricer_kind` (enum: `product | bundle`)
 - `pricer_last_synced_hash` (string)
 
 **Line Item:**
+
 - `pricer_reason` (enum: `bundle_rollup | negotiated | ramp | other`)
 - `pricer_original_list_price` (number; populated on override so the spread is recoverable)
 - `pricer_scenario_id` (string)
 - `pricer_ramp_schedule` (string, JSON; populated for ramp lines)
 
 **Deal:**
+
 - `pricer_scenario_id` (string)
 - `pricer_approval_status` (enum: `not_required | pending | approved | rejected`)
 - `pricer_margin_pct` (number)
 
 **Quote:**
+
 - `pricer_scenario_id` (string)
 - `pricer_revision` (int)
 - `pricer_supersedes` (string → prior HubSpot quote ID)
@@ -345,7 +349,7 @@ Created once by `scripts/hubspot-setup.ts`. The script is idempotent — re-runn
 Synced fields only, hashed with stable serialization (sorted keys, canonical number formatting) so the hash is identical on both sides for equivalent data.
 
 - **Products.** `name`, `description`, `sku`, `unitPrice`, `recurringBillingFrequency`, plus any pricer marketing-facing custom properties (e.g., `displayDescription`).
-- **Bundles** (represented as a single HubSpot Product). `name`, `description`, `sku` (bundle SKU), rolled-up headline price (`unitPrice`), and a deterministic serialization of the bundle's *included-item identifiers and rollup parameters* (not the full item list — just enough that changing which items are in the bundle, or their rollup weights, changes the hash). This lets us detect when a HubSpot edit to bundle name/description/price collides with pricer state, while treating the bundle as one synced record on HubSpot's side.
+- **Bundles** (represented as a single HubSpot Product). `name`, `description`, `sku` (bundle SKU), rolled-up headline price (`unitPrice`), and a deterministic serialization of the bundle's _included-item identifiers and rollup parameters_ (not the full item list — just enough that changing which items are in the bundle, or their rollup weights, changes the hash). This lets us detect when a HubSpot edit to bundle name/description/price collides with pricer state, while treating the bundle as one synced record on HubSpot's side.
 
 Cost basis, tier definitions, rails, commissions, and bundle-item individual costs are **not** in the hash — they never reach HubSpot and therefore can never be part of a conflict.
 
@@ -397,7 +401,7 @@ Triggered when Step 2 of publish detects hard-rail overrides.
    - Rejected → pricer Quote transitions to `APPROVAL_REJECTED`. Rep sees the outcome in the pricer UI and the App Card; can revise the scenario to remove the override and re-publish.
 7. The App Card on the Deal shows live approval state by reading `pricer_approval_status` directly from the Deal.
 
-**Unification with the existing admin override path.** The pricer already permits admin overrides of hard rails. When a rep publishes with an override, the HubSpot approval workflow *is* the admin override gate — no separate in-pricer override release is needed. Admins who approve in HubSpot are the same people who have override authority in the pricer admin, so identity and trust model line up.
+**Unification with the existing admin override path.** The pricer already permits admin overrides of hard rails. When a rep publishes with an override, the HubSpot approval workflow _is_ the admin override gate — no separate in-pricer override release is needed. Admins who approve in HubSpot are the same people who have override authority in the pricer admin, so identity and trust model line up.
 
 **What the spec does not build.** The HubSpot Workflow itself (routing rules, notification template, approver group) is configured by whoever owns HubSpot admin. This spec documents the required contract:
 
@@ -451,18 +455,18 @@ Lives at `src/app/cards/ninja-pricer-card.tsx`. Renders in the Deal record's rig
 
 Slot into the existing v2 MCP server as new tools in `lib/mcp/tools/hubspot.ts`. All are thin wrappers over `lib/hubspot/*` service functions; RBAC matches v2 conventions.
 
-| Tool | Scope | Purpose |
-|------|-------|---------|
-| `publish_catalog_to_hubspot` | admin | One-shot push of pricer catalog to HubSpot |
-| `pull_hubspot_changes` | admin | Pull HubSpot-side edits into review queue |
-| `resolve_review_queue_item` | admin | Accept / reject / ignore a review item |
-| `archive_hubspot_product` | admin | Explicit archive in HubSpot for deactivated pricer products |
-| `link_scenario_to_hubspot_deal` | sales + admin | Link an existing Deal |
-| `create_hubspot_deal_for_scenario` | sales + admin | Create new Deal with dedupe |
-| `publish_scenario_to_hubspot` | sales + admin | Publish a scenario; may return `pending_approval` |
-| `check_publish_status` | sales + admin | Current state + quote URL + approval status |
-| `supersede_hubspot_quote` | sales + admin | Convenience wrapper: create revision + publish |
-| `hubspot_integration_status` | admin | Config flags, last sync, queue counts |
+| Tool                               | Scope         | Purpose                                                     |
+| ---------------------------------- | ------------- | ----------------------------------------------------------- |
+| `publish_catalog_to_hubspot`       | admin         | One-shot push of pricer catalog to HubSpot                  |
+| `pull_hubspot_changes`             | admin         | Pull HubSpot-side edits into review queue                   |
+| `resolve_review_queue_item`        | admin         | Accept / reject / ignore a review item                      |
+| `archive_hubspot_product`          | admin         | Explicit archive in HubSpot for deactivated pricer products |
+| `link_scenario_to_hubspot_deal`    | sales + admin | Link an existing Deal                                       |
+| `create_hubspot_deal_for_scenario` | sales + admin | Create new Deal with dedupe                                 |
+| `publish_scenario_to_hubspot`      | sales + admin | Publish a scenario; may return `pending_approval`           |
+| `check_publish_status`             | sales + admin | Current state + quote URL + approval status                 |
+| `supersede_hubspot_quote`          | sales + admin | Convenience wrapper: create revision + publish              |
+| `hubspot_integration_status`       | admin         | Config flags, last sync, queue counts                       |
 
 The admin UI's sync/publish/review buttons POST through the same handler chain, not duplicated code paths.
 
@@ -475,6 +479,7 @@ The admin UI's sync/publish/review buttons POST through the same handler chain, 
 **Webhook handler failures.** Handler always returns 200 after writing the event to `HubSpotWebhookEvent`. Processing is decoupled. Failed processing sets `processingError` and leaves `processedAt` null; admin UI offers a retry action.
 
 **Idempotency keys.**
+
 - Publish: `(scenarioId, revision)` — pricer checks for an existing `HubSpotQuote` at that key before starting.
 - Catalog push: per-row, driven by `(entity, id, lastSyncedHash)`. If HubSpot rejects a duplicate create, we pull the existing record by SKU and reconcile.
 - Webhooks: `hubspotEventId` unique constraint on `HubSpotWebhookEvent`; duplicate events are no-ops.
@@ -485,6 +490,7 @@ The admin UI's sync/publish/review buttons POST through the same handler chain, 
 ## Testing
 
 **Unit (Vitest, pure).**
+
 - `translator.ts` — scenario + catalog → line-item list, every `pricer_reason` path.
 - `hash.ts` — equivalence of hashes for equivalent inputs; stable key order; number canonicalization.
 - `catalog/pull.ts` diff logic.
@@ -492,6 +498,7 @@ The admin UI's sync/publish/review buttons POST through the same handler chain, 
 - State-machine guards in `quote/publish.ts`.
 
 **Integration (HubSpot Developer Test Account).**
+
 - Catalog push/pull round-trip; review-queue population; resolution actions.
 - Publish happy path: scenario → HubSpot Quote → associations → publishable state → URL.
 - Publish with approval: scenario with hard-rail override → `pending_approval` → simulated workflow flip → resume → published.
@@ -501,6 +508,7 @@ The admin UI's sync/publish/review buttons POST through the same handler chain, 
 **Contract tests.** Pin expected response shapes for `POST /crm/v3/objects/products`, `POST /crm/v3/objects/quotes`, and the associations API. Any breaking change in HubSpot's API shape fails CI fast.
 
 **Manual QA matrix.** Documented in a companion `docs/superpowers/runbooks/hubspot-qa.md` (created in phase 1):
+
 - First-time setup (property provisioning, developer-project deploy).
 - Seed push with empty HubSpot product library.
 - HubSpot edit → review queue → each resolution option.
@@ -511,6 +519,7 @@ The admin UI's sync/publish/review buttons POST through the same handler chain, 
 ## Deployment and Setup
 
 **Environment.** Added to the pricer's existing environment:
+
 - `HUBSPOT_ACCESS_TOKEN` — the private app's token (from the developer project deploy)
 - `HUBSPOT_PORTAL_ID`
 - `HUBSPOT_WEBHOOK_SECRET` — signature verification on inbound webhooks
@@ -521,6 +530,7 @@ The admin UI's sync/publish/review buttons POST through the same handler chain, 
 **One-time setup script.** `scripts/hubspot-setup.ts`, run once per environment against Ninja's HubSpot portal. Idempotent. Creates custom properties, verifies scopes, confirms webhook subscriptions are live.
 
 **Go-live sequence.**
+
 1. Pricer team finalizes catalog inside the pricer (the work that's happening now).
 2. Deploy the developer project to HubSpot; run `hubspot-setup.ts`.
 3. In the pricer admin, enable the HubSpot integration in `HubSpotConfig` (flag `enabled = true`).
