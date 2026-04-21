@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createReadStream, statSync } from 'node:fs';
 import { getSessionUser } from '@/lib/auth/session';
+import { authenticateMcpRequest } from '@/lib/mcp/auth';
 import { QuoteRepository } from '@/lib/db/repositories/quote';
 import { prisma } from '@/lib/db/client';
 
@@ -8,11 +9,24 @@ function notFound() {
   return NextResponse.json({ error: 'Not found' }, { status: 404 });
 }
 
+async function resolveUser(request: Request) {
+  const header = request.headers.get('authorization') ?? request.headers.get('Authorization');
+  if (header?.startsWith('Bearer ')) {
+    try {
+      const ctx = await authenticateMcpRequest(request);
+      return ctx.user;
+    } catch {
+      return null;
+    }
+  }
+  return getSessionUser();
+}
+
 export async function GET(
   request: Request,
   context: { params: { quoteId: string } },
 ) {
-  const user = await getSessionUser();
+  const user = await resolveUser(request);
   if (!user) return notFound();
 
   const repo = new QuoteRepository(prisma);
