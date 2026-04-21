@@ -5,8 +5,14 @@ import { toMcpError } from '@/lib/mcp/errors';
 import { readTools } from '@/lib/mcp/tools/reads';
 import { adminReadTools } from '@/lib/mcp/tools/adminReads';
 import { scenarioWriteTools } from '@/lib/mcp/tools/scenarioWrites';
+import { productCatalogTools } from '@/lib/mcp/tools/catalog/product';
 
-const tools: Parameters<typeof createMcpServer>[0] = [...readTools, ...adminReadTools, ...scenarioWriteTools];
+const tools: Parameters<typeof createMcpServer>[0] = [
+  ...readTools,
+  ...adminReadTools,
+  ...scenarioWriteTools,
+  ...productCatalogTools,
+];
 
 const server = createMcpServer(tools);
 

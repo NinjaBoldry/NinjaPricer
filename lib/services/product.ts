@@ -11,6 +11,7 @@ export interface IProductRepository {
   listActive(): Promise<Product[]>;
   listAll(): Promise<Product[]>;
   update(id: string, data: Partial<{ name: string; isActive: boolean }>): Promise<Product>;
+  delete(id: string): Promise<Product>;
 }
 
 const CreateProductSchema = z.object({
@@ -49,6 +50,10 @@ export class ProductService {
 
   async listProducts() {
     return this.repo.listAll();
+  }
+
+  async deleteProduct(id: string) {
+    return this.repo.delete(id);
   }
 }
 

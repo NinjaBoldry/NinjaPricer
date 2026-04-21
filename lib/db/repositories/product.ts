@@ -22,4 +22,8 @@ export class ProductRepository {
   async update(id: string, data: Partial<{ name: string; isActive: boolean }>): Promise<Product> {
     return this.db.product.update({ where: { id }, data });
   }
+
+  async delete(id: string): Promise<Product> {
+    return this.db.product.delete({ where: { id } });
+  }
 }
