@@ -17,5 +17,6 @@ export function mockEmployeeRepo(): IEmployeeRepository {
     findById: vi.fn().mockResolvedValue(null),
     findByDepartment: vi.fn().mockResolvedValue([]),
     update: vi.fn().mockResolvedValue({}),
+    delete: vi.fn().mockResolvedValue(undefined),
   };
 }

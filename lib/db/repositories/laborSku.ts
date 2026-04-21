@@ -40,6 +40,18 @@ export class LaborSKURepository {
     return this.db.laborSKU.findUnique({ where: { id } });
   }
 
+  async update(
+    id: string,
+    data: {
+      name?: string;
+      unit?: LaborSKUUnit;
+      costPerUnitUsd?: Decimal;
+      defaultRevenueUsd?: Decimal;
+    },
+  ): Promise<LaborSKU> {
+    return this.db.laborSKU.update({ where: { id }, data });
+  }
+
   async delete(id: string): Promise<void> {
     await this.db.laborSKU.delete({ where: { id } });
   }

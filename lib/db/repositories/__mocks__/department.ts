@@ -9,5 +9,7 @@ export function mockDepartmentRepo(): IDepartmentRepository {
     upsertBillRate: vi
       .fn()
       .mockResolvedValue({ id: 'br1', departmentId: 'd1', billRatePerHour: '150' }),
+    update: vi.fn().mockResolvedValue({}),
+    delete: vi.fn().mockResolvedValue(undefined),
   };
 }

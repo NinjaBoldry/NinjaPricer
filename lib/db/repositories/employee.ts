@@ -48,4 +48,8 @@ export class EmployeeRepository {
   ): Promise<Employee> {
     return this.db.employee.update({ where: { id }, data });
   }
+
+  async delete(id: string): Promise<void> {
+    await this.db.employee.delete({ where: { id } });
+  }
 }
