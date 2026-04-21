@@ -18,6 +18,26 @@ export class PersonaRepository {
     });
   }
 
+  async create(data: {
+    productId: string;
+    name: string;
+    multiplier: Decimal;
+    sortOrder: number;
+  }): Promise<Persona> {
+    return this.db.persona.create({ data });
+  }
+
+  async update(
+    id: string,
+    patch: Partial<{ name: string; multiplier: Decimal; sortOrder: number }>,
+  ): Promise<Persona> {
+    return this.db.persona.update({ where: { id }, data: patch });
+  }
+
+  async findById(id: string): Promise<Persona | null> {
+    return this.db.persona.findUnique({ where: { id } });
+  }
+
   async findByProduct(productId: string): Promise<Persona[]> {
     return this.db.persona.findMany({
       where: { productId },

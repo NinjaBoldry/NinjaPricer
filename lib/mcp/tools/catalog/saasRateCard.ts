@@ -210,7 +210,7 @@ export const createPersonaTool: ToolDefinition<
 > = {
   name: 'create_persona',
   description:
-    'Admin only. Creates a new persona for a product (name, multiplier). multiplier must be > 0. sortOrder defaults to 0.',
+    'Admin only. Creates a new persona for a product (name, multiplier). multiplier must be > 0. sortOrder defaults to 0. FAILS with unique-constraint error if a persona with the same name already exists for this product.',
   inputSchema: createPersonaSchema,
   requiresAdmin: true,
   isWrite: true,
@@ -218,7 +218,7 @@ export const createPersonaTool: ToolDefinition<
   extractTargetId: (_input, output) => output?.id,
   handler: async (_ctx, input) => {
     const svc = new PersonaService(new PersonaRepository(prisma));
-    const row = await svc.upsert({
+    const row = await svc.create({
       productId: input.productId,
       name: input.name,
       multiplier: new Decimal(input.multiplier),
@@ -235,7 +235,6 @@ export const createPersonaTool: ToolDefinition<
 const updatePersonaSchema = z
   .object({
     id: z.string().min(1),
-    productId: z.string().min(1),
     name: z.string().min(1).optional(),
     multiplier: z.union([z.string(), z.number()]).optional(),
     sortOrder: z.number().int().nonnegative().optional(),
@@ -248,7 +247,7 @@ export const updatePersonaTool: ToolDefinition<
 > = {
   name: 'update_persona',
   description:
-    'Admin only. Updates an existing persona (name, multiplier, sortOrder). Requires id and productId for upsert key resolution.',
+    'Admin only. Updates an existing persona by id (name, multiplier, sortOrder). Patch semantics — only provided fields are changed.',
   inputSchema: updatePersonaSchema,
   requiresAdmin: true,
   isWrite: true,
@@ -256,14 +255,11 @@ export const updatePersonaTool: ToolDefinition<
   extractTargetId: (input) => input.id,
   handler: async (_ctx, input) => {
     const svc = new PersonaService(new PersonaRepository(prisma));
-    const payload: Record<string, unknown> = {
-      id: input.id,
-      productId: input.productId,
-    };
-    if (input.name !== undefined) payload.name = input.name;
-    if (input.multiplier !== undefined) payload.multiplier = new Decimal(input.multiplier);
-    if (input.sortOrder !== undefined) payload.sortOrder = input.sortOrder;
-    const row = await svc.upsert(payload);
+    const patch: Record<string, unknown> = {};
+    if (input.name !== undefined) patch.name = input.name;
+    if (input.multiplier !== undefined) patch.multiplier = new Decimal(input.multiplier);
+    if (input.sortOrder !== undefined) patch.sortOrder = input.sortOrder;
+    const row = await svc.update(input.id, patch);
     return { id: (row as { id: string }).id };
   },
 };

@@ -14,6 +14,9 @@ const fakePersona: Persona = {
 export function mockPersonaRepo(): IPersonaRepository {
   return {
     upsert: vi.fn().mockResolvedValue(fakePersona),
+    create: vi.fn().mockResolvedValue(fakePersona),
+    update: vi.fn().mockResolvedValue(fakePersona),
+    findById: vi.fn().mockResolvedValue(fakePersona),
     findByProduct: vi.fn().mockResolvedValue([]),
     delete: vi.fn().mockResolvedValue(undefined),
   };
