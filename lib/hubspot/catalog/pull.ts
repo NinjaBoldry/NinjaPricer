@@ -17,28 +17,51 @@ export interface PullOutcome {
   orphansInHubSpot: Array<{ hubspotId: string; pricerEntityId: string }>;
 }
 
+const PAGE_LIMIT = 100;
+const MAX_PAGES = 50; // safety cap: 50 × 100 = 5 000 products
+
 export async function pullHubSpotChanges(input: {
   existingMappings: ExistingMapping[];
   pricerSnapshot: CatalogSnapshot;
   correlationId: string;
 }): Promise<PullOutcome> {
-  // Query HubSpot for pricer-managed products
+  // Query HubSpot for pricer-managed products, paginating until exhausted
   const properties =
     'name,hs_sku,description,price,recurringbillingfrequency,pricer_managed,pricer_product_id,pricer_kind,pricer_last_synced_hash';
-  const res = await hubspotFetch<{
-    results: Array<{ id: string; properties: Record<string, string> }>;
-  }>({
-    method: 'POST',
-    path: '/crm/v3/objects/products/search',
-    body: {
-      filterGroups: [
-        { filters: [{ propertyName: 'pricer_managed', operator: 'EQ', value: 'true' }] },
-      ],
-      properties: properties.split(','),
-      limit: 100,
-    },
-    correlationId: input.correlationId,
-  });
+
+  const allResults: Array<{ id: string; properties: Record<string, string> }> = [];
+  let after: string | undefined;
+  let pages = 0;
+
+  do {
+    if (pages >= MAX_PAGES) {
+      throw new Error(
+        `pullHubSpotChanges: exceeded ${MAX_PAGES}-page safety cap (${MAX_PAGES * PAGE_LIMIT} products). ` +
+          'Possible malformed API response — aborting to prevent an infinite loop.',
+      );
+    }
+
+    const res = await hubspotFetch<{
+      results: Array<{ id: string; properties: Record<string, string> }>;
+      paging?: { next?: { after: string } };
+    }>({
+      method: 'POST',
+      path: '/crm/v3/objects/products/search',
+      body: {
+        filterGroups: [
+          { filters: [{ propertyName: 'pricer_managed', operator: 'EQ', value: 'true' }] },
+        ],
+        properties: properties.split(','),
+        limit: PAGE_LIMIT,
+        ...(after ? { after } : {}),
+      },
+      correlationId: input.correlationId,
+    });
+
+    allResults.push(...res.results);
+    after = res.paging?.next?.after;
+    pages++;
+  } while (after);
 
   const mapByHubspotId = new Map(input.existingMappings.map((m) => [m.hubspotProductId, m]));
   const pricerProductById = new Map(input.pricerSnapshot.products.map((p) => [p.id, p]));
@@ -47,7 +70,7 @@ export async function pullHubSpotChanges(input: {
   const reviewItems: ReviewItemInput[] = [];
   const orphans: PullOutcome['orphansInHubSpot'] = [];
 
-  for (const row of res.results) {
+  for (const row of allResults) {
     const mapping = mapByHubspotId.get(row.id);
     const pricerId = row.properties.pricer_product_id;
     const kind = row.properties.pricer_kind === 'bundle' ? 'BUNDLE' : 'PRODUCT';
