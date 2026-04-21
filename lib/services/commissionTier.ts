@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import Decimal from 'decimal.js';
 import { ValidationError } from '../utils/errors';
+import type { PrismaClient } from '@prisma/client';
 
 export interface ICommissionTierRepository {
   upsert(data: {
@@ -40,5 +41,28 @@ export class CommissionTierService {
 
   async findByRule(ruleId: string) {
     return this.repo.findByRule(ruleId);
+  }
+
+  /**
+   * Atomically replace all commission tiers for a rule.
+   */
+  async setForRule(
+    ruleId: string,
+    tiers: { thresholdFromUsd: Decimal; ratePct: Decimal; sortOrder: number }[],
+    db: PrismaClient,
+  ) {
+    await db.$transaction(async (tx) => {
+      await tx.commissionTier.deleteMany({ where: { ruleId } });
+      for (const tier of tiers) {
+        await tx.commissionTier.create({
+          data: {
+            ruleId,
+            thresholdFromUsd: tier.thresholdFromUsd,
+            ratePct: tier.ratePct,
+            sortOrder: tier.sortOrder,
+          },
+        });
+      }
+    });
   }
 }

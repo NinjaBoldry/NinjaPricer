@@ -77,4 +77,8 @@ export class CommissionRuleRepository {
       },
     });
   }
+
+  async delete(id: string): Promise<CommissionRule> {
+    return this.db.commissionRule.delete({ where: { id } });
+  }
 }

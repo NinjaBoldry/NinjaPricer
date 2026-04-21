@@ -8,6 +8,9 @@ import { scenarioWriteTools } from '@/lib/mcp/tools/scenarioWrites';
 import { productCatalogTools } from '@/lib/mcp/tools/catalog/product';
 import { saasRateCardTools } from '@/lib/mcp/tools/catalog/saasRateCard';
 import { laborTools } from '@/lib/mcp/tools/catalog/labor';
+import { commissionTools } from '@/lib/mcp/tools/catalog/commissions';
+import { bundleTools } from '@/lib/mcp/tools/catalog/bundles';
+import { railTools } from '@/lib/mcp/tools/catalog/rails';
 
 const tools: Parameters<typeof createMcpServer>[0] = [
   ...readTools,
@@ -16,6 +19,9 @@ const tools: Parameters<typeof createMcpServer>[0] = [
   ...productCatalogTools,
   ...saasRateCardTools,
   ...laborTools,
+  ...commissionTools,
+  ...bundleTools,
+  ...railTools,
 ];
 
 const server = createMcpServer(tools);
