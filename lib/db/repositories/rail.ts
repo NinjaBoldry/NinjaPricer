@@ -35,4 +35,8 @@ export class RailRepository {
 
     return this.db.rail.create({ data });
   }
+
+  async delete(id: string): Promise<Rail> {
+    return this.db.rail.delete({ where: { id } });
+  }
 }

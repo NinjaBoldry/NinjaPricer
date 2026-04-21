@@ -13,6 +13,7 @@ export interface IRailRepository {
     hardThreshold: Decimal;
     isEnabled: boolean;
   }): Promise<unknown>;
+  delete(id: string): Promise<unknown>;
 }
 
 const UpsertRailSchema = z.object({
@@ -74,5 +75,9 @@ export class RailService {
 
   async findByProduct(productId: string) {
     return this.repo.findByProduct(productId);
+  }
+
+  async delete(id: string) {
+    return this.repo.delete(id);
   }
 }

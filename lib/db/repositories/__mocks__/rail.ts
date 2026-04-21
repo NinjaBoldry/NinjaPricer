@@ -17,5 +17,6 @@ export function mockRailRepo(): IRailRepository {
   return {
     findByProduct: vi.fn().mockResolvedValue([]),
     upsert: vi.fn().mockResolvedValue(fakeRail),
+    delete: vi.fn().mockResolvedValue(fakeRail),
   };
 }
