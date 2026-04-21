@@ -5,6 +5,7 @@ import type { ToolDefinition } from '@/lib/mcp/server';
 import { prisma } from '@/lib/db/client';
 import { RailService } from '@/lib/services/rail';
 import { RailRepository } from '@/lib/db/repositories/rail';
+import type { Rail } from '@prisma/client';
 
 // ---------------------------------------------------------------------------
 // create_rail
@@ -75,38 +76,54 @@ export const updateRailTool: ToolDefinition<
   targetEntityType: 'Rail',
   extractTargetId: (input) => input.id,
   handler: async (_ctx, { id, kind, marginBasis, softThreshold, hardThreshold, isEnabled }) => {
-    const repo = new RailRepository(prisma);
-    const svc = new RailService(repo);
-    // Fetch current rail to fill in fields not being patched
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const current = await (prisma as any).rail.findUnique({ where: { id } }) as {
-      productId: string;
-      kind: RailKind;
-      marginBasis: MarginBasis;
-      softThreshold: { toString(): string };
-      hardThreshold: { toString(): string };
-      isEnabled: boolean;
-    } | null;
+    const svc = new RailService(new RailRepository(prisma));
+    const current = await svc.findById(id) as Rail | null;
 
     if (!current) {
       throw new Error(`Rail ${id} not found`);
     }
 
-    const row = await svc.upsert({
+    // Merge patch with current values and run full threshold validation via upsert.
+    // upsert's internal repo call does a findFirst-by-kind — for same-kind updates
+    // it finds and updates the current row, which is correct. We then separately
+    // call update(id) so the return value is id-stable.
+    const mergedKind = kind ?? current.kind;
+    const mergedSoftThreshold =
+      softThreshold !== undefined
+        ? new Decimal(softThreshold)
+        : new Decimal(current.softThreshold.toString());
+    const mergedHardThreshold =
+      hardThreshold !== undefined
+        ? new Decimal(hardThreshold)
+        : new Decimal(current.hardThreshold.toString());
+    const mergedMarginBasis = marginBasis ?? current.marginBasis;
+    const mergedIsEnabled = isEnabled !== undefined ? isEnabled : current.isEnabled;
+
+    // Run threshold validation (range + ordering) through the service's upsert
+    // validator without an extra DB round-trip: patch only fields that changed.
+    const patch: Partial<{
+      marginBasis: MarginBasis;
+      softThreshold: Decimal;
+      hardThreshold: Decimal;
+      isEnabled: boolean;
+    }> = {};
+    if (marginBasis !== undefined) patch.marginBasis = mergedMarginBasis;
+    if (softThreshold !== undefined) patch.softThreshold = mergedSoftThreshold;
+    if (hardThreshold !== undefined) patch.hardThreshold = mergedHardThreshold;
+    if (isEnabled !== undefined) patch.isEnabled = mergedIsEnabled;
+
+    // Validate merged state (throws ValidationError on bad threshold input).
+    // The actual write is performed via update(id) to ensure we mutate the correct row by id.
+    svc.validateMerged({
       productId: current.productId,
-      kind: kind ?? current.kind,
-      marginBasis: marginBasis ?? current.marginBasis,
-      softThreshold:
-        softThreshold !== undefined
-          ? new Decimal(softThreshold)
-          : new Decimal(current.softThreshold.toString()),
-      hardThreshold:
-        hardThreshold !== undefined
-          ? new Decimal(hardThreshold)
-          : new Decimal(current.hardThreshold.toString()),
-      isEnabled: isEnabled !== undefined ? isEnabled : current.isEnabled,
+      kind: mergedKind,
+      marginBasis: mergedMarginBasis,
+      softThreshold: mergedSoftThreshold,
+      hardThreshold: mergedHardThreshold,
+      isEnabled: mergedIsEnabled,
     });
 
+    const row = await svc.update(id, patch);
     return { id: (row as { id: string }).id };
   },
 };

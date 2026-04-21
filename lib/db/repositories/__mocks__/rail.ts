@@ -16,7 +16,9 @@ const fakeRail: Rail = {
 export function mockRailRepo(): IRailRepository {
   return {
     findByProduct: vi.fn().mockResolvedValue([]),
+    findById: vi.fn().mockResolvedValue(fakeRail),
     upsert: vi.fn().mockResolvedValue(fakeRail),
+    update: vi.fn().mockResolvedValue(fakeRail),
     delete: vi.fn().mockResolvedValue(fakeRail),
   };
 }

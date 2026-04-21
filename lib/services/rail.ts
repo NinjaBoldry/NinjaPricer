@@ -5,6 +5,7 @@ import { ValidationError } from '../utils/errors';
 
 export interface IRailRepository {
   findByProduct(productId: string): Promise<unknown[]>;
+  findById(id: string): Promise<unknown | null>;
   upsert(data: {
     productId: string;
     kind: RailKind;
@@ -13,6 +14,15 @@ export interface IRailRepository {
     hardThreshold: Decimal;
     isEnabled: boolean;
   }): Promise<unknown>;
+  update(
+    id: string,
+    patch: Partial<{
+      marginBasis: MarginBasis;
+      softThreshold: Decimal;
+      hardThreshold: Decimal;
+      isEnabled: boolean;
+    }>,
+  ): Promise<unknown>;
   delete(id: string): Promise<unknown>;
 }
 
@@ -28,13 +38,12 @@ const UpsertRailSchema = z.object({
 export class RailService {
   constructor(private repo: IRailRepository) {}
 
-  async upsert(data: unknown) {
-    const parsed = UpsertRailSchema.safeParse(data);
-    if (!parsed.success) {
-      const issue = parsed.error.issues[0]!;
-      throw new ValidationError(issue.path.join('.') || 'rail', issue.message);
-    }
-    const { kind, softThreshold, hardThreshold } = parsed.data;
+  /**
+   * Validates threshold semantics for the given rail data. Throws ValidationError if invalid.
+   * Separated so it can be called without performing a DB write (e.g. in update_rail).
+   */
+  validateMerged(data: z.infer<typeof UpsertRailSchema>): void {
+    const { kind, softThreshold, hardThreshold } = data;
 
     // Validate threshold range for percentage rails
     const isPercentageRail = kind === 'MIN_MARGIN_PCT' || kind === 'MAX_DISCOUNT_PCT';
@@ -69,8 +78,43 @@ export class RailService {
         throw new ValidationError('softThreshold', 'must be ≤ hardThreshold for MIN rails');
       }
     }
+  }
 
+  async upsert(data: unknown) {
+    const parsed = UpsertRailSchema.safeParse(data);
+    if (!parsed.success) {
+      const issue = parsed.error.issues[0]!;
+      throw new ValidationError(issue.path.join('.') || 'rail', issue.message);
+    }
+    this.validateMerged(parsed.data);
     return this.repo.upsert(parsed.data);
+  }
+
+  async findById(id: string) {
+    return this.repo.findById(id);
+  }
+
+  async update(
+    id: string,
+    patch: Partial<{
+      marginBasis: MarginBasis;
+      softThreshold: Decimal;
+      hardThreshold: Decimal;
+      isEnabled: boolean;
+    }>,
+  ) {
+    // Build clean patch to satisfy exactOptionalPropertyTypes
+    const cleanPatch: Partial<{
+      marginBasis: MarginBasis;
+      softThreshold: Decimal;
+      hardThreshold: Decimal;
+      isEnabled: boolean;
+    }> = {};
+    if (patch.marginBasis !== undefined) cleanPatch.marginBasis = patch.marginBasis;
+    if (patch.softThreshold !== undefined) cleanPatch.softThreshold = patch.softThreshold;
+    if (patch.hardThreshold !== undefined) cleanPatch.hardThreshold = patch.hardThreshold;
+    if (patch.isEnabled !== undefined) cleanPatch.isEnabled = patch.isEnabled;
+    return this.repo.update(id, cleanPatch);
   }
 
   async findByProduct(productId: string) {

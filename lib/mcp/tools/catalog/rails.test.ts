@@ -2,16 +2,15 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { McpContext } from '@/lib/mcp/context';
 
 vi.mock('@/lib/db/client', () => ({
-  prisma: {
-    rail: {
-      findUnique: vi.fn(),
-    },
-  },
+  prisma: {},
 }));
 
 vi.mock('@/lib/services/rail', () => ({
   RailService: vi.fn(function (this: any) {
     this.upsert = vi.fn();
+    this.findById = vi.fn();
+    this.update = vi.fn();
+    this.validateMerged = vi.fn();
     this.delete = vi.fn();
     return this;
   }),
@@ -20,7 +19,6 @@ vi.mock('@/lib/services/rail', () => ({
 vi.mock('@/lib/db/repositories/rail', () => ({ RailRepository: vi.fn() }));
 
 import { RailService } from '@/lib/services/rail';
-import { prisma } from '@/lib/db/client';
 
 import {
   createRailTool,
@@ -131,8 +129,9 @@ describe('rail catalog tools', () => {
       expect(updateRailTool.targetEntityType).toBe('Rail');
     });
 
-    it('fetches current rail and calls service.upsert with merged data, returns {id}', async () => {
+    it('uses svc.findById (not prisma as any) and calls svc.update(id, patch), returns {id}', async () => {
       const currentRail = {
+        id: 'r1',
         productId: 'p1',
         kind: 'MIN_MARGIN_PCT',
         marginBasis: 'CONTRIBUTION',
@@ -140,26 +139,26 @@ describe('rail catalog tools', () => {
         hardThreshold: { toString: () => '0.15' },
         isEnabled: true,
       };
-      (prisma as any).rail.findUnique.mockResolvedValue(currentRail);
-      railSvc.upsert.mockResolvedValue({ id: 'r1' });
+      railSvc.findById.mockResolvedValue(currentRail);
+      railSvc.validateMerged.mockReturnValue(undefined);
+      railSvc.update.mockResolvedValue({ id: 'r1' });
 
       const out = await updateRailTool.handler(adminCtx, {
         id: 'r1',
         isEnabled: false,
       });
-      expect((prisma as any).rail.findUnique).toHaveBeenCalledWith({ where: { id: 'r1' } });
-      expect(railSvc.upsert).toHaveBeenCalledWith(
-        expect.objectContaining({
-          productId: 'p1',
-          kind: 'MIN_MARGIN_PCT',
-          isEnabled: false,
-        }),
+      expect(railSvc.findById).toHaveBeenCalledWith('r1');
+      expect(railSvc.update).toHaveBeenCalledWith(
+        'r1',
+        expect.objectContaining({ isEnabled: false }),
       );
+      // upsert must NOT be called — that was the buggy path
+      expect(railSvc.upsert).not.toHaveBeenCalled();
       expect(out).toEqual({ id: 'r1' });
     });
 
     it('throws if rail not found', async () => {
-      (prisma as any).rail.findUnique.mockResolvedValue(null);
+      railSvc.findById.mockResolvedValue(null);
       await expect(
         updateRailTool.handler(adminCtx, { id: 'nonexistent' }),
       ).rejects.toThrow('not found');
