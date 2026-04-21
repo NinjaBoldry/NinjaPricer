@@ -2,9 +2,10 @@ import { NextResponse } from 'next/server';
 import { authenticateMcpRequest } from '@/lib/mcp/auth';
 import { createMcpServer } from '@/lib/mcp/server';
 import { toMcpError } from '@/lib/mcp/errors';
+import { readTools } from '@/lib/mcp/tools/reads';
 
 // Tools are registered here. 5.0-K onward will add to this list.
-const tools: Parameters<typeof createMcpServer>[0] = [];
+const tools: Parameters<typeof createMcpServer>[0] = [...readTools];
 
 const server = createMcpServer(tools);
 
