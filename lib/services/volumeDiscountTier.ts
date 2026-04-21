@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import Decimal from 'decimal.js';
 import { ValidationError } from '../utils/errors';
+import type { PrismaClient } from '@prisma/client';
 
 export interface IVolumeDiscountTierRepository {
   upsert(data: { productId: string; minSeats: number; discountPct: Decimal }): Promise<unknown>;
@@ -38,5 +39,24 @@ export class VolumeDiscountTierService {
 
   async delete(id: string) {
     return this.repo.delete(id);
+  }
+
+  /**
+   * Atomically replace all volume-discount tiers for a product.
+   * Deletes existing tiers then creates the provided tiers in a transaction.
+   */
+  async setForProduct(
+    productId: string,
+    tiers: { minSeats: number; discountPct: Decimal }[],
+    db: PrismaClient,
+  ) {
+    await db.$transaction(async (tx) => {
+      await tx.volumeDiscountTier.deleteMany({ where: { productId } });
+      for (const tier of tiers) {
+        await tx.volumeDiscountTier.create({
+          data: { productId, minSeats: tier.minSeats, discountPct: tier.discountPct },
+        });
+      }
+    });
   }
 }

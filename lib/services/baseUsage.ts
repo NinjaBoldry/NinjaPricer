@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import Decimal from 'decimal.js';
 import { ValidationError } from '../utils/errors';
+import type { PrismaClient } from '@prisma/client';
 
 export interface IBaseUsageRepository {
   upsert(data: {
@@ -34,5 +35,24 @@ export class BaseUsageService {
 
   async findByProduct(productId: string) {
     return this.repo.findByProduct(productId);
+  }
+
+  /**
+   * Atomically replace all base-usage entries for a product.
+   * Deletes existing rows then creates the provided entries in a transaction.
+   */
+  async setForProduct(
+    productId: string,
+    entries: { vendorRateId: string; usagePerMonth: Decimal }[],
+    db: PrismaClient,
+  ) {
+    await db.$transaction(async (tx) => {
+      await tx.baseUsage.deleteMany({ where: { productId } });
+      for (const entry of entries) {
+        await tx.baseUsage.create({
+          data: { productId, vendorRateId: entry.vendorRateId, usagePerMonth: entry.usagePerMonth },
+        });
+      }
+    });
   }
 }

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import Decimal from 'decimal.js';
 import { ValidationError } from '../utils/errors';
+import type { PrismaClient } from '@prisma/client';
 
 export interface IContractLengthModifierRepository {
   upsert(data: {
@@ -42,5 +43,28 @@ export class ContractLengthModifierService {
 
   async delete(id: string) {
     return this.repo.delete(id);
+  }
+
+  /**
+   * Atomically replace all contract-length modifiers for a product.
+   * Deletes existing modifiers then creates the provided modifiers in a transaction.
+   */
+  async setForProduct(
+    productId: string,
+    modifiers: { minMonths: number; additionalDiscountPct: Decimal }[],
+    db: PrismaClient,
+  ) {
+    await db.$transaction(async (tx) => {
+      await tx.contractLengthModifier.deleteMany({ where: { productId } });
+      for (const mod of modifiers) {
+        await tx.contractLengthModifier.create({
+          data: {
+            productId,
+            minMonths: mod.minMonths,
+            additionalDiscountPct: mod.additionalDiscountPct,
+          },
+        });
+      }
+    });
   }
 }
