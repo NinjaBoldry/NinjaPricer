@@ -226,3 +226,18 @@ describe('get_quote', () => {
     expect((out as any).internalPdfBase64).toBeUndefined();
   });
 });
+
+describe('computeQuoteSchema .strict() enforcement', () => {
+  it('rejects an unknown top-level key', () => {
+    expect(() =>
+      computeQuoteTool.inputSchema.parse({
+        contractMonths: 12,
+        tabs: [],
+        products: { saas: {}, laborSKUs: {}, departments: {} },
+        commissionRules: [],
+        rails: [],
+        unknownField: true,
+      }),
+    ).toThrow();
+  });
+});

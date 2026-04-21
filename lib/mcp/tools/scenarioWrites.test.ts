@@ -315,3 +315,53 @@ describe('generate_quote', () => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// .strict() enforcement — extra keys must cause a Zod error
+// ---------------------------------------------------------------------------
+
+describe('schema .strict() enforcement', () => {
+  it('createScenarioSchema rejects unknown keys', () => {
+    expect(() =>
+      createScenarioTool.inputSchema.parse({
+        name: 'Test',
+        customerName: 'Acme',
+        contractMonths: 12,
+        unknownField: true,
+      }),
+    ).toThrow();
+  });
+
+  it('updateScenarioSchema rejects unknown keys', () => {
+    expect(() =>
+      updateScenarioTool.inputSchema.parse({ id: 's1', bogus: 'x' }),
+    ).toThrow();
+  });
+
+  it('archiveScenarioSchema rejects unknown keys', () => {
+    expect(() =>
+      archiveScenarioTool.inputSchema.parse({ id: 's1', extra: 1 }),
+    ).toThrow();
+  });
+
+  it('setScenarioLaborLinesTool rejects unknown keys at top level', () => {
+    expect(() =>
+      setScenarioLaborLinesTool.inputSchema.parse({
+        scenarioId: 's1',
+        productId: 'p1',
+        lines: [],
+        unexpected: true,
+      }),
+    ).toThrow();
+  });
+
+  it('setScenarioLaborLinesTool rejects unknown keys inside a line', () => {
+    expect(() =>
+      setScenarioLaborLinesTool.inputSchema.parse({
+        scenarioId: 's1',
+        productId: 'p1',
+        lines: [{ qty: '1', unit: 'hr', costPerUnitUsd: '0', revenuePerUnitUsd: '0', ghost: true }],
+      }),
+    ).toThrow();
+  });
+});
+
