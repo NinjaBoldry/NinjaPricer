@@ -242,6 +242,67 @@ export const getScenarioTool: ToolDefinition<{ id: string }, unknown> = {
   },
 };
 
+import { readFile } from 'node:fs/promises';
+import { QuoteRepository } from '@/lib/db/repositories/quote';
+import { prisma } from '@/lib/db/client';
+
+export const listQuotesForScenarioTool: ToolDefinition<{ scenarioId: string }, unknown> = {
+  name: 'list_quotes_for_scenario',
+  description: 'All quote versions for a scenario, ordered version desc.',
+  inputSchema: z.object({ scenarioId: z.string() }).strict(),
+  requiresAdmin: false,
+  handler: async (ctx, { scenarioId }) => {
+    // Ownership check: if sales, reject if scenario not owned by caller.
+    if (ctx.user.role === 'SALES') {
+      const scenario = await getScenarioById(scenarioId);
+      if ((scenario as any).ownerId !== ctx.user.id) {
+        throw new NotFoundError('Scenario', scenarioId);
+      }
+    }
+    const repo = new QuoteRepository(prisma);
+    return repo.listByScenario(scenarioId);
+  },
+};
+
+const getQuoteInputSchema = z
+  .object({ id: z.string(), include_pdf_bytes: z.boolean().optional() })
+  .strict();
+
+export const getQuoteTool: ToolDefinition<z.infer<typeof getQuoteInputSchema>, unknown> = {
+  name: 'get_quote',
+  description:
+    'Quote detail including frozen totals. By default returns metadata only; pass include_pdf_bytes=true to inline the customer PDF (admin callers also get the internal PDF). Non-owner sales callers receive 404.',
+  inputSchema: getQuoteInputSchema,
+  requiresAdmin: false,
+  handler: async (ctx, input) => {
+    const repo = new QuoteRepository(prisma);
+    const quote = await repo.findById(input.id);
+    if (!quote) throw new NotFoundError('Quote', input.id);
+    if (ctx.user.role === 'SALES' && (quote as any).scenario.ownerId !== ctx.user.id) {
+      throw new NotFoundError('Quote', input.id);
+    }
+
+    const base = {
+      id: quote.id,
+      version: quote.version,
+      generatedAt: quote.generatedAt,
+      totals: quote.totals,
+      downloadUrl: `/api/quotes/${quote.id}/download`,
+    };
+
+    if (!input.include_pdf_bytes) return base;
+
+    const customerPdf = await readFile(quote.pdfUrl);
+    const withCustomer = { ...base, customerPdfBase64: customerPdf.toString('base64') };
+
+    if (ctx.user.role === 'ADMIN' && quote.internalPdfUrl) {
+      const internalPdf = await readFile(quote.internalPdfUrl);
+      return { ...withCustomer, internalPdfBase64: internalPdf.toString('base64') };
+    }
+    return withCustomer;
+  },
+};
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const readTools: ToolDefinition<any, any>[] = [
   computeQuoteTool,
@@ -251,4 +312,6 @@ export const readTools: ToolDefinition<any, any>[] = [
   getBundleTool,
   listScenariosTool,
   getScenarioTool,
+  listQuotesForScenarioTool,
+  getQuoteTool,
 ];

@@ -165,3 +165,64 @@ describe('get_scenario tool', () => {
     expect((out as any).id).toBe('s1');
   });
 });
+
+vi.mock('@/lib/db/repositories/quote', () => ({
+  QuoteRepository: vi.fn(function (this: any) {
+    this.listByScenario = vi.fn(async () => []);
+    this.findById = vi.fn();
+    return this;
+  }),
+}));
+vi.mock('node:fs/promises', () => ({
+  readFile: vi.fn(async () => Buffer.from('PDF-BYTES')),
+}));
+
+import { listQuotesForScenarioTool, getQuoteTool } from './reads';
+import { QuoteRepository } from '@/lib/db/repositories/quote';
+
+describe('list_quotes_for_scenario', () => {
+  it('forwards scenarioId to repo', async () => {
+    const repoInstance = { listByScenario: vi.fn(async () => []), findById: vi.fn() };
+    (QuoteRepository as any).mockImplementation(function () { return repoInstance; });
+    await listQuotesForScenarioTool.handler(ctx, { scenarioId: 's1' });
+    expect(repoInstance.listByScenario).toHaveBeenCalledWith('s1');
+  });
+});
+
+describe('get_quote', () => {
+  const quote = {
+    id: 'q1',
+    version: 1,
+    generatedAt: new Date(),
+    scenario: { ownerId: 'u1' },
+    pdfUrl: '/tmp/customer.pdf',
+    internalPdfUrl: '/tmp/internal.pdf',
+    totals: {},
+  };
+
+  it('returns metadata by default (no bytes)', async () => {
+    const repoInstance = { listByScenario: vi.fn(), findById: vi.fn().mockResolvedValue(quote) };
+    (QuoteRepository as any).mockImplementation(function () { return repoInstance; });
+    const out = await getQuoteTool.handler(ctx, { id: 'q1' });
+    expect((out as any).customerPdfBase64).toBeUndefined();
+    expect((out as any).internalPdfBase64).toBeUndefined();
+    expect((out as any).downloadUrl).toBe('/api/quotes/q1/download');
+  });
+
+  it('returns customerPdfBase64 when include_pdf_bytes:true', async () => {
+    const repoInstance = { listByScenario: vi.fn(), findById: vi.fn().mockResolvedValue(quote) };
+    (QuoteRepository as any).mockImplementation(function () { return repoInstance; });
+    const out = await getQuoteTool.handler(ctx, { id: 'q1', include_pdf_bytes: true });
+    expect((out as any).customerPdfBase64).toBe(Buffer.from('PDF-BYTES').toString('base64'));
+    expect((out as any).internalPdfBase64).toBe(Buffer.from('PDF-BYTES').toString('base64'));
+  });
+
+  it('internalPdfBase64 withheld for sales caller even if include_pdf_bytes:true', async () => {
+    const salesQuote = { ...quote, scenario: { ownerId: salesCtx.user.id } };
+    const repoInstance = { listByScenario: vi.fn(), findById: vi.fn().mockResolvedValue(salesQuote) };
+    (QuoteRepository as any).mockImplementation(function () { return repoInstance; });
+    const out = await getQuoteTool.handler(salesCtx, { id: 'q1', include_pdf_bytes: true });
+    expect((out as any).customerPdfBase64).toBeDefined();
+    expect((out as any).internalPdfBase64).toBeUndefined();
+  });
+});
