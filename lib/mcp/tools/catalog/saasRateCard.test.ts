@@ -6,6 +6,8 @@ vi.mock('@/lib/db/client', () => ({ prisma: {} }));
 vi.mock('@/lib/services/vendorRate', () => ({
   VendorRateService: vi.fn(function (this: any) {
     this.upsert = vi.fn();
+    this.create = vi.fn();
+    this.update = vi.fn();
     this.delete = vi.fn();
     return this;
   }),
@@ -28,6 +30,8 @@ vi.mock('@/lib/services/otherVariable', () => ({
 vi.mock('@/lib/services/persona', () => ({
   PersonaService: vi.fn(function (this: any) {
     this.upsert = vi.fn();
+    this.create = vi.fn();
+    this.update = vi.fn();
     this.delete = vi.fn();
     return this;
   }),
@@ -36,6 +40,8 @@ vi.mock('@/lib/services/persona', () => ({
 vi.mock('@/lib/services/productFixedCost', () => ({
   ProductFixedCostService: vi.fn(function (this: any) {
     this.upsert = vi.fn();
+    this.create = vi.fn();
+    this.update = vi.fn();
     this.delete = vi.fn();
     return this;
   }),
@@ -198,17 +204,18 @@ describe('SaaS rate card catalog tools', () => {
       expect(createVendorRateTool.targetEntityType).toBe('VendorRate');
     });
 
-    it('calls upsert without id and returns {id}', async () => {
-      vendorRateSvc.upsert.mockResolvedValue({ id: 'vr1' });
+    it('calls svc.create (not upsert) and returns {id}', async () => {
+      vendorRateSvc.create.mockResolvedValue({ id: 'vr1' });
       const out = await createVendorRateTool.handler(adminCtx, {
         productId: 'p1',
         name: 'AWS S3',
         unitLabel: 'GB',
         rateUsd: '0.023',
       });
-      expect(vendorRateSvc.upsert).toHaveBeenCalledWith(
+      expect(vendorRateSvc.create).toHaveBeenCalledWith(
         expect.objectContaining({ productId: 'p1', name: 'AWS S3', unitLabel: 'GB' }),
       );
+      expect(vendorRateSvc.upsert).not.toHaveBeenCalled();
       expect(out).toEqual({ id: 'vr1' });
     });
 
@@ -229,22 +236,27 @@ describe('SaaS rate card catalog tools', () => {
       expect(updateVendorRateTool.targetEntityType).toBe('VendorRate');
     });
 
-    it('calls upsert with id and returns {id}', async () => {
-      vendorRateSvc.upsert.mockResolvedValue({ id: 'vr1' });
+    it('calls svc.update(id, patch) — no productId required — and returns {id}', async () => {
+      vendorRateSvc.update.mockResolvedValue({ id: 'vr1' });
       const out = await updateVendorRateTool.handler(adminCtx, {
         id: 'vr1',
-        productId: 'p1',
         rateUsd: '0.05',
       });
-      expect(vendorRateSvc.upsert).toHaveBeenCalledWith(
-        expect.objectContaining({ id: 'vr1', productId: 'p1' }),
-      );
+      expect(vendorRateSvc.update).toHaveBeenCalledWith('vr1', expect.objectContaining({}));
+      expect(vendorRateSvc.upsert).not.toHaveBeenCalled();
       expect(out).toEqual({ id: 'vr1' });
+    });
+
+    it('does not require productId', () => {
+      // productId is no longer in the schema — this should parse fine
+      expect(() =>
+        updateVendorRateTool.inputSchema.parse({ id: 'vr1', rateUsd: '1' }),
+      ).not.toThrow();
     });
 
     it('rejects missing id', () => {
       expect(() =>
-        updateVendorRateTool.inputSchema.parse({ productId: 'p1', rateUsd: '1' }),
+        updateVendorRateTool.inputSchema.parse({ rateUsd: '1' }),
       ).toThrow();
     });
   });
@@ -343,17 +355,18 @@ describe('SaaS rate card catalog tools', () => {
       expect(createPersonaTool.targetEntityType).toBe('Persona');
     });
 
-    it('calls upsert without id and returns {id}', async () => {
-      personaSvc.upsert.mockResolvedValue({ id: 'pe1' });
+    it('calls svc.create (not upsert) and returns {id}', async () => {
+      personaSvc.create.mockResolvedValue({ id: 'pe1' });
       const out = await createPersonaTool.handler(adminCtx, {
         productId: 'p1',
         name: 'Power User',
         multiplier: '1.5',
         sortOrder: 0,
       });
-      expect(personaSvc.upsert).toHaveBeenCalledWith(
+      expect(personaSvc.create).toHaveBeenCalledWith(
         expect.objectContaining({ productId: 'p1', name: 'Power User' }),
       );
+      expect(personaSvc.upsert).not.toHaveBeenCalled();
       expect(out).toEqual({ id: 'pe1' });
     });
 
@@ -374,21 +387,23 @@ describe('SaaS rate card catalog tools', () => {
       expect(updatePersonaTool.targetEntityType).toBe('Persona');
     });
 
-    it('calls upsert with id patch and returns {id}', async () => {
-      personaSvc.upsert.mockResolvedValue({ id: 'pe1' });
+    it('calls svc.update(id, patch) — no productId required — and returns {id}', async () => {
+      personaSvc.update.mockResolvedValue({ id: 'pe1' });
       const out = await updatePersonaTool.handler(adminCtx, {
         id: 'pe1',
-        productId: 'p1',
         name: 'Casual User',
       });
-      expect(personaSvc.upsert).toHaveBeenCalledWith(
-        expect.objectContaining({ id: 'pe1', name: 'Casual User' }),
-      );
+      expect(personaSvc.update).toHaveBeenCalledWith('pe1', expect.objectContaining({ name: 'Casual User' }));
+      expect(personaSvc.upsert).not.toHaveBeenCalled();
       expect(out).toEqual({ id: 'pe1' });
     });
 
+    it('does not require productId', () => {
+      expect(() => updatePersonaTool.inputSchema.parse({ id: 'pe1', name: 'X' })).not.toThrow();
+    });
+
     it('rejects missing id', () => {
-      expect(() => updatePersonaTool.inputSchema.parse({ productId: 'p1', name: 'X' })).toThrow();
+      expect(() => updatePersonaTool.inputSchema.parse({ name: 'X' })).toThrow();
     });
   });
 
@@ -419,16 +434,17 @@ describe('SaaS rate card catalog tools', () => {
       expect(createFixedCostTool.targetEntityType).toBe('ProductFixedCost');
     });
 
-    it('calls upsert without id and returns {id}', async () => {
-      fixedCostSvc.upsert.mockResolvedValue({ id: 'fc1' });
+    it('calls svc.create (not upsert) and returns {id}', async () => {
+      fixedCostSvc.create.mockResolvedValue({ id: 'fc1' });
       const out = await createFixedCostTool.handler(adminCtx, {
         productId: 'p1',
         name: 'Hosting',
         monthlyUsd: '500',
       });
-      expect(fixedCostSvc.upsert).toHaveBeenCalledWith(
+      expect(fixedCostSvc.create).toHaveBeenCalledWith(
         expect.objectContaining({ productId: 'p1', name: 'Hosting' }),
       );
+      expect(fixedCostSvc.upsert).not.toHaveBeenCalled();
       expect(out).toEqual({ id: 'fc1' });
     });
 
@@ -449,22 +465,26 @@ describe('SaaS rate card catalog tools', () => {
       expect(updateFixedCostTool.targetEntityType).toBe('ProductFixedCost');
     });
 
-    it('calls upsert with id and returns {id}', async () => {
-      fixedCostSvc.upsert.mockResolvedValue({ id: 'fc1' });
+    it('calls svc.update(id, patch) — no productId required — and returns {id}', async () => {
+      fixedCostSvc.update.mockResolvedValue({ id: 'fc1' });
       const out = await updateFixedCostTool.handler(adminCtx, {
         id: 'fc1',
-        productId: 'p1',
         monthlyUsd: '600',
       });
-      expect(fixedCostSvc.upsert).toHaveBeenCalledWith(
-        expect.objectContaining({ id: 'fc1', productId: 'p1' }),
-      );
+      expect(fixedCostSvc.update).toHaveBeenCalledWith('fc1', expect.objectContaining({}));
+      expect(fixedCostSvc.upsert).not.toHaveBeenCalled();
       expect(out).toEqual({ id: 'fc1' });
+    });
+
+    it('does not require productId', () => {
+      expect(() =>
+        updateFixedCostTool.inputSchema.parse({ id: 'fc1', monthlyUsd: '100' }),
+      ).not.toThrow();
     });
 
     it('rejects missing id', () => {
       expect(() =>
-        updateFixedCostTool.inputSchema.parse({ productId: 'p1', monthlyUsd: '100' }),
+        updateFixedCostTool.inputSchema.parse({ monthlyUsd: '100' }),
       ).toThrow();
     });
   });

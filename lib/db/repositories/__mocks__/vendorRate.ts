@@ -16,6 +16,9 @@ const fakeVendorRate: VendorRate = {
 export function mockVendorRateRepo(): IVendorRateRepository {
   return {
     upsert: vi.fn().mockResolvedValue(fakeVendorRate),
+    create: vi.fn().mockResolvedValue(fakeVendorRate),
+    update: vi.fn().mockResolvedValue(fakeVendorRate),
+    findById: vi.fn().mockResolvedValue(fakeVendorRate),
     findByProduct: vi.fn().mockResolvedValue([]),
     delete: vi.fn().mockResolvedValue(undefined),
   };

@@ -17,6 +17,25 @@ export class ProductFixedCostRepository {
     });
   }
 
+  async create(data: {
+    productId: string;
+    name: string;
+    monthlyUsd: Decimal;
+  }): Promise<ProductFixedCost> {
+    return this.db.productFixedCost.create({ data });
+  }
+
+  async update(
+    id: string,
+    patch: Partial<{ name: string; monthlyUsd: Decimal }>,
+  ): Promise<ProductFixedCost> {
+    return this.db.productFixedCost.update({ where: { id }, data: patch });
+  }
+
+  async findById(id: string): Promise<ProductFixedCost | null> {
+    return this.db.productFixedCost.findUnique({ where: { id } });
+  }
+
   async findByProduct(productId: string): Promise<ProductFixedCost[]> {
     return this.db.productFixedCost.findMany({
       where: { productId },

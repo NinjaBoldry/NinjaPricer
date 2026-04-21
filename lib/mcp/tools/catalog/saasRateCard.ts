@@ -40,7 +40,7 @@ export const createVendorRateTool: ToolDefinition<
 > = {
   name: 'create_vendor_rate',
   description:
-    'Admin only. Creates a new vendor rate row for a product (name, unitLabel, rateUsd). Returns the new row id. FAILS if rateUsd <= 0.',
+    'Admin only. Creates a new vendor rate row for a product (name, unitLabel, rateUsd). Returns the new row id. FAILS if rateUsd <= 0. FAILS with unique-constraint error if a vendor rate with the same name already exists for this product.',
   inputSchema: createVendorRateSchema,
   requiresAdmin: true,
   isWrite: true,
@@ -48,7 +48,7 @@ export const createVendorRateTool: ToolDefinition<
   extractTargetId: (_input, output) => output?.id,
   handler: async (_ctx, input) => {
     const svc = new VendorRateService(new VendorRateRepository(prisma));
-    const row = await svc.upsert({
+    const row = await svc.create({
       productId: input.productId,
       name: input.name,
       unitLabel: input.unitLabel,
@@ -65,7 +65,6 @@ export const createVendorRateTool: ToolDefinition<
 const updateVendorRateSchema = z
   .object({
     id: z.string().min(1),
-    productId: z.string().min(1),
     name: z.string().min(1).optional(),
     unitLabel: z.string().min(1).optional(),
     rateUsd: z.union([z.string(), z.number()]).optional(),
@@ -78,7 +77,7 @@ export const updateVendorRateTool: ToolDefinition<
 > = {
   name: 'update_vendor_rate',
   description:
-    'Admin only. Updates an existing vendor rate (name, unitLabel, rateUsd). Requires id and productId for upsert key resolution.',
+    'Admin only. Updates an existing vendor rate by id (name, unitLabel, rateUsd). Patch semantics — only provided fields are changed.',
   inputSchema: updateVendorRateSchema,
   requiresAdmin: true,
   isWrite: true,
@@ -86,14 +85,11 @@ export const updateVendorRateTool: ToolDefinition<
   extractTargetId: (input) => input.id,
   handler: async (_ctx, input) => {
     const svc = new VendorRateService(new VendorRateRepository(prisma));
-    const payload: Record<string, unknown> = {
-      id: input.id,
-      productId: input.productId,
-    };
-    if (input.name !== undefined) payload.name = input.name;
-    if (input.unitLabel !== undefined) payload.unitLabel = input.unitLabel;
-    if (input.rateUsd !== undefined) payload.rateUsd = new Decimal(input.rateUsd);
-    const row = await svc.upsert(payload);
+    const patch: Record<string, unknown> = {};
+    if (input.name !== undefined) patch.name = input.name;
+    if (input.unitLabel !== undefined) patch.unitLabel = input.unitLabel;
+    if (input.rateUsd !== undefined) patch.rateUsd = new Decimal(input.rateUsd);
+    const row = await svc.update(input.id, patch);
     return { id: (row as { id: string }).id };
   },
 };
@@ -214,7 +210,7 @@ export const createPersonaTool: ToolDefinition<
 > = {
   name: 'create_persona',
   description:
-    'Admin only. Creates a new persona for a product (name, multiplier). multiplier must be > 0. sortOrder defaults to 0.',
+    'Admin only. Creates a new persona for a product (name, multiplier). multiplier must be > 0. sortOrder defaults to 0. FAILS with unique-constraint error if a persona with the same name already exists for this product.',
   inputSchema: createPersonaSchema,
   requiresAdmin: true,
   isWrite: true,
@@ -222,7 +218,7 @@ export const createPersonaTool: ToolDefinition<
   extractTargetId: (_input, output) => output?.id,
   handler: async (_ctx, input) => {
     const svc = new PersonaService(new PersonaRepository(prisma));
-    const row = await svc.upsert({
+    const row = await svc.create({
       productId: input.productId,
       name: input.name,
       multiplier: new Decimal(input.multiplier),
@@ -239,7 +235,6 @@ export const createPersonaTool: ToolDefinition<
 const updatePersonaSchema = z
   .object({
     id: z.string().min(1),
-    productId: z.string().min(1),
     name: z.string().min(1).optional(),
     multiplier: z.union([z.string(), z.number()]).optional(),
     sortOrder: z.number().int().nonnegative().optional(),
@@ -252,7 +247,7 @@ export const updatePersonaTool: ToolDefinition<
 > = {
   name: 'update_persona',
   description:
-    'Admin only. Updates an existing persona (name, multiplier, sortOrder). Requires id and productId for upsert key resolution.',
+    'Admin only. Updates an existing persona by id (name, multiplier, sortOrder). Patch semantics — only provided fields are changed.',
   inputSchema: updatePersonaSchema,
   requiresAdmin: true,
   isWrite: true,
@@ -260,14 +255,11 @@ export const updatePersonaTool: ToolDefinition<
   extractTargetId: (input) => input.id,
   handler: async (_ctx, input) => {
     const svc = new PersonaService(new PersonaRepository(prisma));
-    const payload: Record<string, unknown> = {
-      id: input.id,
-      productId: input.productId,
-    };
-    if (input.name !== undefined) payload.name = input.name;
-    if (input.multiplier !== undefined) payload.multiplier = new Decimal(input.multiplier);
-    if (input.sortOrder !== undefined) payload.sortOrder = input.sortOrder;
-    const row = await svc.upsert(payload);
+    const patch: Record<string, unknown> = {};
+    if (input.name !== undefined) patch.name = input.name;
+    if (input.multiplier !== undefined) patch.multiplier = new Decimal(input.multiplier);
+    if (input.sortOrder !== undefined) patch.sortOrder = input.sortOrder;
+    const row = await svc.update(input.id, patch);
     return { id: (row as { id: string }).id };
   },
 };
@@ -315,7 +307,7 @@ export const createFixedCostTool: ToolDefinition<
 > = {
   name: 'create_fixed_cost',
   description:
-    'Admin only. Creates a new fixed-cost row for a product (name, monthlyUsd). monthlyUsd must be >= 0.',
+    'Admin only. Creates a new fixed-cost row for a product (name, monthlyUsd). monthlyUsd must be >= 0. FAILS with unique-constraint error if a fixed cost with the same name already exists for this product.',
   inputSchema: createFixedCostSchema,
   requiresAdmin: true,
   isWrite: true,
@@ -323,7 +315,7 @@ export const createFixedCostTool: ToolDefinition<
   extractTargetId: (_input, output) => output?.id,
   handler: async (_ctx, input) => {
     const svc = new ProductFixedCostService(new ProductFixedCostRepository(prisma));
-    const row = await svc.upsert({
+    const row = await svc.create({
       productId: input.productId,
       name: input.name,
       monthlyUsd: new Decimal(input.monthlyUsd),
@@ -339,7 +331,6 @@ export const createFixedCostTool: ToolDefinition<
 const updateFixedCostSchema = z
   .object({
     id: z.string().min(1),
-    productId: z.string().min(1),
     name: z.string().min(1).optional(),
     monthlyUsd: z.union([z.string(), z.number()]).optional(),
   })
@@ -351,7 +342,7 @@ export const updateFixedCostTool: ToolDefinition<
 > = {
   name: 'update_fixed_cost',
   description:
-    'Admin only. Updates an existing fixed-cost row (name, monthlyUsd). Requires id and productId for upsert key resolution.',
+    'Admin only. Updates an existing fixed-cost row by id (name, monthlyUsd). Patch semantics — only provided fields are changed.',
   inputSchema: updateFixedCostSchema,
   requiresAdmin: true,
   isWrite: true,
@@ -359,13 +350,10 @@ export const updateFixedCostTool: ToolDefinition<
   extractTargetId: (input) => input.id,
   handler: async (_ctx, input) => {
     const svc = new ProductFixedCostService(new ProductFixedCostRepository(prisma));
-    const payload: Record<string, unknown> = {
-      id: input.id,
-      productId: input.productId,
-    };
-    if (input.name !== undefined) payload.name = input.name;
-    if (input.monthlyUsd !== undefined) payload.monthlyUsd = new Decimal(input.monthlyUsd);
-    const row = await svc.upsert(payload);
+    const patch: Record<string, unknown> = {};
+    if (input.name !== undefined) patch.name = input.name;
+    if (input.monthlyUsd !== undefined) patch.monthlyUsd = new Decimal(input.monthlyUsd);
+    const row = await svc.update(input.id, patch);
     return { id: (row as { id: string }).id };
   },
 };

@@ -60,17 +60,32 @@ describe('product catalog tools', () => {
   });
 
   describe('update_product', () => {
-    it('accepts patch fields', async () => {
+    it('accepts isActive directly and passes it through unchanged', async () => {
       svc.updateProduct.mockResolvedValue({ id: 'p1' });
       await updateProductTool.handler(adminCtx, {
         id: 'p1',
         name: 'Renamed',
-        isArchived: true,
+        isActive: false,
       });
       expect(svc.updateProduct).toHaveBeenCalledWith('p1', {
         name: 'Renamed',
         isActive: false,
       });
+    });
+
+    it('setting isActive: true re-enables the product', async () => {
+      svc.updateProduct.mockResolvedValue({ id: 'p1' });
+      await updateProductTool.handler(adminCtx, {
+        id: 'p1',
+        isActive: true,
+      });
+      expect(svc.updateProduct).toHaveBeenCalledWith('p1', { isActive: true });
+    });
+
+    it('does not accept isArchived (removed from schema)', () => {
+      expect(() =>
+        updateProductTool.inputSchema.parse({ id: 'p1', isArchived: true }),
+      ).toThrow();
     });
 
     it('rejects empty patch', () => {

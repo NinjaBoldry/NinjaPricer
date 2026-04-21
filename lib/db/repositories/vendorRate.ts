@@ -18,6 +18,26 @@ export class VendorRateRepository {
     });
   }
 
+  async create(data: {
+    productId: string;
+    name: string;
+    unitLabel: string;
+    rateUsd: Decimal;
+  }): Promise<VendorRate> {
+    return this.db.vendorRate.create({ data });
+  }
+
+  async update(
+    id: string,
+    patch: Partial<{ name: string; unitLabel: string; rateUsd: Decimal }>,
+  ): Promise<VendorRate> {
+    return this.db.vendorRate.update({ where: { id }, data: patch });
+  }
+
+  async findById(id: string): Promise<VendorRate | null> {
+    return this.db.vendorRate.findUnique({ where: { id } });
+  }
+
   async findByProduct(productId: string): Promise<VendorRate[]> {
     return this.db.vendorRate.findMany({
       where: { productId },

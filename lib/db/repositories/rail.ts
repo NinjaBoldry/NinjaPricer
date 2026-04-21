@@ -8,6 +8,10 @@ export class RailRepository {
     return this.db.rail.findMany({ where: { productId }, orderBy: { kind: 'asc' } });
   }
 
+  async findById(id: string): Promise<Rail | null> {
+    return this.db.rail.findUnique({ where: { id } });
+  }
+
   async upsert(data: {
     productId: string;
     kind: RailKind;
@@ -34,6 +38,18 @@ export class RailRepository {
     }
 
     return this.db.rail.create({ data });
+  }
+
+  async update(
+    id: string,
+    patch: Partial<{
+      marginBasis: MarginBasis;
+      softThreshold: Decimal;
+      hardThreshold: Decimal;
+      isEnabled: boolean;
+    }>,
+  ): Promise<Rail> {
+    return this.db.rail.update({ where: { id }, data: patch });
   }
 
   async delete(id: string): Promise<Rail> {
