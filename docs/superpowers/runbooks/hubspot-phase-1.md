@@ -1,0 +1,37 @@
+# HubSpot Phase 1 — Manual QA Runbook
+
+## Prerequisites
+
+1. HubSpot Developer Test Account created.
+2. Developer Project created under that account; note the private-app access token.
+3. `.env.local` populated:
+   ```
+   HUBSPOT_ACCESS_TOKEN=<token>
+   HUBSPOT_PORTAL_ID=<portal id>
+   RUN_HUBSPOT_INTEGRATION=true
+   ```
+
+## Run setup
+
+```bash
+npm run hubspot:setup
+```
+
+Expected: 10+ custom properties created across Products, Line Items, Deals, Quotes.
+
+## Run integration test
+
+```bash
+npm run test:integration -- tests/integration/hubspot/
+```
+
+## Manual smoke
+
+1. Start dev server: `npm run dev`
+2. Visit `/admin/hubspot`. Set `HubSpotConfig.enabled = true` via DB console or upsert.
+3. Click "Push catalog to HubSpot" on `/admin/hubspot/sync`.
+4. Open HubSpot test portal → Settings → Products & Services. Verify products/bundles appear with `pricer_managed = true`.
+5. In HubSpot, rename a product.
+6. Back in pricer, click "Pull changes from HubSpot".
+7. Visit `/admin/hubspot/review-queue`. The edit should appear.
+8. Click "Accept" — the pricer product name should update to match.
