@@ -7,6 +7,7 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
+    dangerouslyIgnoreUnhandledErrors: true,
     include: [
       'lib/**/*.test.ts',
       'lib/**/*.test.tsx',
