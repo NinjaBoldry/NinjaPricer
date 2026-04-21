@@ -47,8 +47,8 @@ export async function pullHubSpotChanges(input: {
     const pricerId = row.properties.pricer_product_id;
     const kind = row.properties.pricer_kind === 'bundle' ? 'BUNDLE' : 'PRODUCT';
 
-    if (!mapping) {
-      orphans.push({ hubspotId: row.id, pricerEntityId: pricerId });
+    if (!mapping || !pricerId) {
+      orphans.push({ hubspotId: row.id, pricerEntityId: pricerId ?? '' });
       continue;
     }
 
@@ -115,7 +115,7 @@ function buildHubSpotSyncFieldsFromRow(row: { properties: Record<string, string>
 
 function diffFields(a: Record<string, unknown>, b: Record<string, unknown>): Record<string, { pricer: unknown; hubspot: unknown }> {
   const diff: Record<string, { pricer: unknown; hubspot: unknown }> = {};
-  const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
+  const keys = Array.from(new Set([...Object.keys(a), ...Object.keys(b)]));
   for (const k of keys) {
     if (k === 'kind' || k === 'itemIdentifiers') continue;
     if (a[k] !== b[k]) diff[k] = { pricer: a[k], hubspot: b[k] };

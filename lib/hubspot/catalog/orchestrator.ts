@@ -1,4 +1,4 @@
-import type { PrismaClient } from '@prisma/client';
+import type { PrismaClient, Prisma } from '@prisma/client';
 import { HubSpotConfigRepository } from '@/lib/db/repositories/hubspotConfig';
 import { HubSpotProductMapRepository } from '@/lib/db/repositories/hubspotProductMap';
 import { HubSpotReviewQueueItemRepository } from '@/lib/db/repositories/hubspotReviewQueueItem';
@@ -96,7 +96,7 @@ export async function runCatalogPull(input: {
       entityType: item.entityType,
       hubspotId: item.hubspotId,
       pricerEntityId: item.pricerEntityId,
-      changedFields: item.changedFields as unknown as any,
+      changedFields: item.changedFields as unknown as Prisma.InputJsonValue,
       changedFieldsHash: item.changedFieldsHash,
     });
   }

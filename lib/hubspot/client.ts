@@ -51,7 +51,7 @@ export async function hubspotFetch<T = unknown>(options: HubSpotFetchOptions): P
       Accept: 'application/json',
       'X-Correlation-Id': options.correlationId,
     },
-    body: options.body === undefined ? undefined : JSON.stringify(options.body),
+    ...(options.body !== undefined ? { body: JSON.stringify(options.body) } : {}),
   };
 
   let lastError: HubSpotApiError | null = null;
