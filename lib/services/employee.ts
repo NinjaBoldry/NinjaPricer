@@ -1,7 +1,9 @@
 import { z } from 'zod';
 import Decimal from 'decimal.js';
 import { EmployeeCompensationType } from '@prisma/client';
-import { ValidationError } from '../utils/errors';
+import { ValidationError, NotFoundError } from '../utils/errors';
+import { prisma } from '@/lib/db/client';
+import { EmployeeRepository } from '@/lib/db/repositories/employee';
 
 export interface IEmployeeRepository {
   create(data: {
@@ -76,4 +78,21 @@ export class EmployeeService {
   async findByDepartment(departmentId: string) {
     return this.repo.findByDepartment(departmentId);
   }
+}
+
+// --- Free-function wrappers for MCP tools ---
+
+export async function listEmployees(
+  repo: EmployeeRepository = new EmployeeRepository(prisma),
+) {
+  return repo.listAllWithDepartment();
+}
+
+export async function getEmployeeById(
+  id: string,
+  repo: EmployeeRepository = new EmployeeRepository(prisma),
+) {
+  const employee = await repo.findById(id);
+  if (!employee) throw new NotFoundError('Employee', id);
+  return employee;
 }

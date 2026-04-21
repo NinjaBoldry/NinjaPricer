@@ -3,9 +3,9 @@ import { authenticateMcpRequest } from '@/lib/mcp/auth';
 import { createMcpServer } from '@/lib/mcp/server';
 import { toMcpError } from '@/lib/mcp/errors';
 import { readTools } from '@/lib/mcp/tools/reads';
+import { adminReadTools } from '@/lib/mcp/tools/adminReads';
 
-// Tools are registered here. 5.0-K onward will add to this list.
-const tools: Parameters<typeof createMcpServer>[0] = [...readTools];
+const tools: Parameters<typeof createMcpServer>[0] = [...readTools, ...adminReadTools];
 
 const server = createMcpServer(tools);
 
