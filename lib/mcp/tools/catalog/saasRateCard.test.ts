@@ -6,6 +6,8 @@ vi.mock('@/lib/db/client', () => ({ prisma: {} }));
 vi.mock('@/lib/services/vendorRate', () => ({
   VendorRateService: vi.fn(function (this: any) {
     this.upsert = vi.fn();
+    this.create = vi.fn();
+    this.update = vi.fn();
     this.delete = vi.fn();
     return this;
   }),
@@ -198,17 +200,18 @@ describe('SaaS rate card catalog tools', () => {
       expect(createVendorRateTool.targetEntityType).toBe('VendorRate');
     });
 
-    it('calls upsert without id and returns {id}', async () => {
-      vendorRateSvc.upsert.mockResolvedValue({ id: 'vr1' });
+    it('calls svc.create (not upsert) and returns {id}', async () => {
+      vendorRateSvc.create.mockResolvedValue({ id: 'vr1' });
       const out = await createVendorRateTool.handler(adminCtx, {
         productId: 'p1',
         name: 'AWS S3',
         unitLabel: 'GB',
         rateUsd: '0.023',
       });
-      expect(vendorRateSvc.upsert).toHaveBeenCalledWith(
+      expect(vendorRateSvc.create).toHaveBeenCalledWith(
         expect.objectContaining({ productId: 'p1', name: 'AWS S3', unitLabel: 'GB' }),
       );
+      expect(vendorRateSvc.upsert).not.toHaveBeenCalled();
       expect(out).toEqual({ id: 'vr1' });
     });
 
@@ -229,22 +232,27 @@ describe('SaaS rate card catalog tools', () => {
       expect(updateVendorRateTool.targetEntityType).toBe('VendorRate');
     });
 
-    it('calls upsert with id and returns {id}', async () => {
-      vendorRateSvc.upsert.mockResolvedValue({ id: 'vr1' });
+    it('calls svc.update(id, patch) — no productId required — and returns {id}', async () => {
+      vendorRateSvc.update.mockResolvedValue({ id: 'vr1' });
       const out = await updateVendorRateTool.handler(adminCtx, {
         id: 'vr1',
-        productId: 'p1',
         rateUsd: '0.05',
       });
-      expect(vendorRateSvc.upsert).toHaveBeenCalledWith(
-        expect.objectContaining({ id: 'vr1', productId: 'p1' }),
-      );
+      expect(vendorRateSvc.update).toHaveBeenCalledWith('vr1', expect.objectContaining({}));
+      expect(vendorRateSvc.upsert).not.toHaveBeenCalled();
       expect(out).toEqual({ id: 'vr1' });
+    });
+
+    it('does not require productId', () => {
+      // productId is no longer in the schema — this should parse fine
+      expect(() =>
+        updateVendorRateTool.inputSchema.parse({ id: 'vr1', rateUsd: '1' }),
+      ).not.toThrow();
     });
 
     it('rejects missing id', () => {
       expect(() =>
-        updateVendorRateTool.inputSchema.parse({ productId: 'p1', rateUsd: '1' }),
+        updateVendorRateTool.inputSchema.parse({ rateUsd: '1' }),
       ).toThrow();
     });
   });

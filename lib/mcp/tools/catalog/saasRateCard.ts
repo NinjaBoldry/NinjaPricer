@@ -40,7 +40,7 @@ export const createVendorRateTool: ToolDefinition<
 > = {
   name: 'create_vendor_rate',
   description:
-    'Admin only. Creates a new vendor rate row for a product (name, unitLabel, rateUsd). Returns the new row id. FAILS if rateUsd <= 0.',
+    'Admin only. Creates a new vendor rate row for a product (name, unitLabel, rateUsd). Returns the new row id. FAILS if rateUsd <= 0. FAILS with unique-constraint error if a vendor rate with the same name already exists for this product.',
   inputSchema: createVendorRateSchema,
   requiresAdmin: true,
   isWrite: true,
@@ -48,7 +48,7 @@ export const createVendorRateTool: ToolDefinition<
   extractTargetId: (_input, output) => output?.id,
   handler: async (_ctx, input) => {
     const svc = new VendorRateService(new VendorRateRepository(prisma));
-    const row = await svc.upsert({
+    const row = await svc.create({
       productId: input.productId,
       name: input.name,
       unitLabel: input.unitLabel,
@@ -65,7 +65,6 @@ export const createVendorRateTool: ToolDefinition<
 const updateVendorRateSchema = z
   .object({
     id: z.string().min(1),
-    productId: z.string().min(1),
     name: z.string().min(1).optional(),
     unitLabel: z.string().min(1).optional(),
     rateUsd: z.union([z.string(), z.number()]).optional(),
@@ -78,7 +77,7 @@ export const updateVendorRateTool: ToolDefinition<
 > = {
   name: 'update_vendor_rate',
   description:
-    'Admin only. Updates an existing vendor rate (name, unitLabel, rateUsd). Requires id and productId for upsert key resolution.',
+    'Admin only. Updates an existing vendor rate by id (name, unitLabel, rateUsd). Patch semantics — only provided fields are changed.',
   inputSchema: updateVendorRateSchema,
   requiresAdmin: true,
   isWrite: true,
@@ -86,14 +85,11 @@ export const updateVendorRateTool: ToolDefinition<
   extractTargetId: (input) => input.id,
   handler: async (_ctx, input) => {
     const svc = new VendorRateService(new VendorRateRepository(prisma));
-    const payload: Record<string, unknown> = {
-      id: input.id,
-      productId: input.productId,
-    };
-    if (input.name !== undefined) payload.name = input.name;
-    if (input.unitLabel !== undefined) payload.unitLabel = input.unitLabel;
-    if (input.rateUsd !== undefined) payload.rateUsd = new Decimal(input.rateUsd);
-    const row = await svc.upsert(payload);
+    const patch: Record<string, unknown> = {};
+    if (input.name !== undefined) patch.name = input.name;
+    if (input.unitLabel !== undefined) patch.unitLabel = input.unitLabel;
+    if (input.rateUsd !== undefined) patch.rateUsd = new Decimal(input.rateUsd);
+    const row = await svc.update(input.id, patch);
     return { id: (row as { id: string }).id };
   },
 };
