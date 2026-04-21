@@ -1,0 +1,9 @@
+{
+  "ninja-pricer": {
+    "type": "http",
+    "url": "https://ninjapricer-production.up.railway.app/api/mcp",
+    "headers": {
+      "Authorization": "Bearer ${NINJA_PRICER_TOKEN}"
+    }
+  }
+}
