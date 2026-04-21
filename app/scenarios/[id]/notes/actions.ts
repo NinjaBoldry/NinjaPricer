@@ -1,9 +1,8 @@
 'use server';
 import { revalidatePath } from 'next/cache';
 import { requireAuth } from '@/lib/auth/session';
-import { prisma } from '@/lib/db/client';
-import { ScenarioSaaSConfigRepository } from '@/lib/db/repositories/scenarioSaaSConfig';
 import { ValidationError } from '@/lib/utils/errors';
+import { upsertSaasConfig } from '@/lib/services/scenario';
 
 export async function upsertSaaSConfigAction(formData: FormData) {
   await requireAuth();
@@ -25,11 +24,7 @@ export async function upsertSaaSConfigAction(formData: FormData) {
     throw new ValidationError('personaMix', 'must sum to 100%');
   }
 
-  const repo = new ScenarioSaaSConfigRepository(prisma);
-  await repo.upsert(scenarioId, productId, {
-    seatCount,
-    personaMix,
-  });
+  await upsertSaasConfig({ scenarioId, productId, seatCount, personaMix });
 
   revalidatePath(`/scenarios/${scenarioId}/notes`);
 }
