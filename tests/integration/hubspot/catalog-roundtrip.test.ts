@@ -9,6 +9,10 @@ import { runCatalogPush, runCatalogPull } from '@/lib/hubspot/catalog/orchestrat
 const shouldRun =
   process.env.HUBSPOT_ACCESS_TOKEN && process.env.RUN_HUBSPOT_INTEGRATION === 'true';
 
+// Guard destructive cleanup (deleteMany) behind an explicit flag so that running
+// this test against a shared/production portal cannot accidentally wipe real mappings.
+const DESTRUCTIVE = process.env.HUBSPOT_INTEGRATION_DESTRUCTIVE === 'true';
+
 const prisma = new PrismaClient();
 
 (shouldRun ? describe : describe.skip)('HubSpot catalog round-trip (live)', () => {
@@ -17,7 +21,9 @@ const prisma = new PrismaClient();
 
   beforeAll(async () => {
     await provisionCustomProperties({ correlationId });
-    await prisma.hubSpotProductMap.deleteMany();
+    if (DESTRUCTIVE) {
+      await prisma.hubSpotProductMap.deleteMany();
+    }
     await prisma.product.deleteMany({ where: { name: { startsWith: 'IntegrationTest-' } } });
     await prisma.hubSpotConfig.upsert({
       where: { portalId: process.env.HUBSPOT_PORTAL_ID ?? 'test' },
@@ -40,7 +46,9 @@ const prisma = new PrismaClient();
       }).catch(() => {});
     }
     await prisma.product.deleteMany({ where: { name: { startsWith: 'IntegrationTest-' } } });
-    await prisma.hubSpotProductMap.deleteMany();
+    if (DESTRUCTIVE) {
+      await prisma.hubSpotProductMap.deleteMany();
+    }
   });
 
   it('push creates a product in HubSpot and records the mapping', async () => {

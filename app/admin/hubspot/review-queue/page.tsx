@@ -1,9 +1,12 @@
+import { requireAdmin } from '@/lib/auth/session';
 import { prisma } from '@/lib/db/client';
 import { HubSpotReviewQueueItemRepository } from '@/lib/db/repositories/hubspotReviewQueueItem';
 import { HubSpotReviewResolution } from '@prisma/client';
 import { ResolveButton } from './ResolveButton';
 
 export default async function ReviewQueuePage() {
+  await requireAdmin();
+
   const items = await new HubSpotReviewQueueItemRepository(prisma).listOpen();
 
   return (

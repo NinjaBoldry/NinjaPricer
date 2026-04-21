@@ -136,10 +136,9 @@ export const hubspotIntegrationStatusTool: ToolDefinition<
 // Exported tool list
 // ---------------------------------------------------------------------------
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const hubspotCatalogTools: ToolDefinition<any, any>[] = [
-  publishCatalogTool,
-  pullHubSpotChangesTool,
-  resolveReviewQueueItemTool,
-  hubspotIntegrationStatusTool,
+export const hubspotCatalogTools: ToolDefinition<unknown, unknown>[] = [
+  publishCatalogTool as ToolDefinition<unknown, unknown>,
+  pullHubSpotChangesTool as ToolDefinition<unknown, unknown>,
+  resolveReviewQueueItemTool as ToolDefinition<unknown, unknown>,
+  hubspotIntegrationStatusTool as ToolDefinition<unknown, unknown>,
 ];

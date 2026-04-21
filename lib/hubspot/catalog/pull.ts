@@ -141,7 +141,8 @@ function buildHubSpotSyncFieldsFromRow(row: {
     recurringBillingFrequency: row.properties.recurringbillingfrequency ?? 'monthly',
   };
   if (row.properties.pricer_kind === 'bundle') {
-    return { kind: 'BUNDLE', ...common, itemIdentifiers: [] }; // bundle-item membership is not in HubSpot side
+    // HubSpot Product has no bundle membership; we never review membership changes — pricer push is authoritative for that.
+    return { kind: 'BUNDLE', ...common, itemIdentifiers: [] };
   }
   return { kind: 'PRODUCT', ...common };
 }

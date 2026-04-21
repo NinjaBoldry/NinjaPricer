@@ -25,6 +25,12 @@ Expected: 10+ custom properties created across Products, Line Items, Deals, Quot
 npm run test:integration -- tests/integration/hubspot/
 ```
 
+> **Destructive cleanup flag** — the integration test calls `prisma.hubSpotProductMap.deleteMany()` in `beforeAll` and `afterAll` to ensure a clean slate. This is gated behind `HUBSPOT_INTEGRATION_DESTRUCTIVE=true` to prevent accidental data loss when running against a shared portal. Only set this flag when targeting a dedicated test portal:
+>
+> ```bash
+> HUBSPOT_INTEGRATION_DESTRUCTIVE=true npm run test:integration -- tests/integration/hubspot/
+> ```
+
 ## Manual smoke
 
 1. Start dev server: `npm run dev`
