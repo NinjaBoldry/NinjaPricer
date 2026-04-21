@@ -11,6 +11,7 @@ import { laborTools } from '@/lib/mcp/tools/catalog/labor';
 import { commissionTools } from '@/lib/mcp/tools/catalog/commissions';
 import { bundleTools } from '@/lib/mcp/tools/catalog/bundles';
 import { railTools } from '@/lib/mcp/tools/catalog/rails';
+import { hubspotCatalogTools } from '@/lib/mcp/tools/hubspot';
 
 const tools: Parameters<typeof createMcpServer>[0] = [
   ...readTools,
@@ -22,6 +23,7 @@ const tools: Parameters<typeof createMcpServer>[0] = [
   ...commissionTools,
   ...bundleTools,
   ...railTools,
+  ...hubspotCatalogTools,
 ];
 
 const server = createMcpServer(tools);
