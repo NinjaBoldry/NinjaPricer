@@ -94,3 +94,34 @@ describe('ScenarioService.archive', () => {
     expect(repo.archive).toHaveBeenCalledWith('s1');
   });
 });
+
+import {
+  upsertSaasConfig,
+  setLaborLines,
+  applyBundleToScenario,
+  unapplyBundleFromScenario,
+} from './scenario';
+
+describe('upsertSaasConfig', () => {
+  it('is exported as a function', () => {
+    expect(typeof upsertSaasConfig).toBe('function');
+  });
+});
+
+describe('setLaborLines', () => {
+  it('is exported as a function', () => {
+    expect(typeof setLaborLines).toBe('function');
+  });
+});
+
+describe('applyBundleToScenario', () => {
+  it('is exported as a function', () => {
+    expect(typeof applyBundleToScenario).toBe('function');
+  });
+});
+
+describe('unapplyBundleFromScenario', () => {
+  it('is exported as a function', () => {
+    expect(typeof unapplyBundleFromScenario).toBe('function');
+  });
+});

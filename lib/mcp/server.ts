@@ -1,6 +1,7 @@
 import type { z } from 'zod';
 import { ForbiddenError } from './errors';
 import type { McpContext } from './context';
+import { wrapWithAudit } from './auditWrapper';
 
 export interface ToolDefinition<I = unknown, O = unknown> {
   name: string;
@@ -8,6 +9,13 @@ export interface ToolDefinition<I = unknown, O = unknown> {
   inputSchema: z.ZodType<I>;
   requiresAdmin: boolean;
   handler: (ctx: McpContext, input: I) => Promise<O>;
+  /**
+   * If true, the server wraps this handler in wrapWithAudit, appending
+   * an ApiAuditLog row on success and failure.
+   */
+  isWrite?: boolean;
+  targetEntityType?: string;
+  extractTargetId?: (input: I, output: O | undefined) => string | undefined;
 }
 
 export interface McpServer {
@@ -49,6 +57,9 @@ export function createMcpServer(tools: ToolDefinition[]): McpServer {
         throw new ForbiddenError(`Forbidden: admin role required for ${name}`);
       }
       const parsed = tool.inputSchema.parse(rawInput);
+      if (tool.isWrite) {
+        return wrapWithAudit(tool, ctx, parsed);
+      }
       return tool.handler(ctx, parsed);
     },
   };
