@@ -5,6 +5,7 @@ import type { ToolDefinition } from '@/lib/mcp/server';
 import { prisma } from '@/lib/db/client';
 import { RailService } from '@/lib/services/rail';
 import { RailRepository } from '@/lib/db/repositories/rail';
+import { NotFoundError } from '@/lib/utils/errors';
 import type { Rail } from '@prisma/client';
 
 // ---------------------------------------------------------------------------
@@ -80,7 +81,7 @@ export const updateRailTool: ToolDefinition<
     const current = await svc.findById(id) as Rail | null;
 
     if (!current) {
-      throw new Error(`Rail ${id} not found`);
+      throw new NotFoundError('Rail', id);
     }
 
     // Merge patch with current values and run full threshold validation via upsert.
