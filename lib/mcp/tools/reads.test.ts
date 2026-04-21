@@ -53,3 +53,56 @@ describe('compute_quote tool', () => {
     ).toThrow();
   });
 });
+
+vi.mock('@/lib/services/product', () => ({
+  listProducts: vi.fn(),
+  getProductById: vi.fn(),
+}));
+vi.mock('@/lib/services/bundle', () => ({
+  listBundles: vi.fn(),
+  getBundleById: vi.fn(),
+}));
+
+import {
+  listProductsTool,
+  getProductTool,
+  listBundlesTool,
+  getBundleTool,
+} from './reads';
+import { listProducts, getProductById } from '@/lib/services/product';
+import { listBundles, getBundleById } from '@/lib/services/bundle';
+import { NotFoundError } from '@/lib/utils/errors';
+
+describe('list_products tool', () => {
+  it('returns sanitized product list (id, name, kind, isArchived)', async () => {
+    vi.mocked(listProducts).mockResolvedValue([
+      { id: 'p1', name: 'Ninja Notes', kind: 'SAAS_USAGE', isArchived: false } as any,
+    ]);
+    const out = await listProductsTool.handler(ctx, {});
+    expect(out).toEqual([{ id: 'p1', name: 'Ninja Notes', kind: 'SAAS_USAGE', isArchived: false }]);
+  });
+});
+
+describe('get_product tool', () => {
+  it('passes id to service', async () => {
+    vi.mocked(getProductById).mockResolvedValue({ id: 'p1', name: 'X' } as any);
+    await getProductTool.handler(ctx, { id: 'p1' });
+    expect(getProductById).toHaveBeenCalledWith('p1');
+  });
+  it('NotFoundError propagates', async () => {
+    vi.mocked(getProductById).mockRejectedValue(new NotFoundError('Product', 'zzz'));
+    await expect(getProductTool.handler(ctx, { id: 'zzz' })).rejects.toBeInstanceOf(NotFoundError);
+  });
+});
+
+describe('list_bundles / get_bundle', () => {
+  it('list_bundles returns array from service', async () => {
+    vi.mocked(listBundles).mockResolvedValue([]);
+    expect(await listBundlesTool.handler(ctx, {})).toEqual([]);
+  });
+  it('get_bundle forwards id', async () => {
+    vi.mocked(getBundleById).mockResolvedValue({ id: 'b1' } as any);
+    await getBundleTool.handler(ctx, { id: 'b1' });
+    expect(getBundleById).toHaveBeenCalledWith('b1');
+  });
+});

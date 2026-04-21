@@ -154,5 +154,56 @@ export const computeQuoteTool: ToolDefinition<ComputeQuoteInput, unknown> = {
   },
 };
 
+import { listProducts, getProductById } from '@/lib/services/product';
+import { listBundles, getBundleById } from '@/lib/services/bundle';
+
+export const listProductsTool: ToolDefinition<Record<string, never>, unknown> = {
+  name: 'list_products',
+  description:
+    'Lists every product with id, name, kind (SAAS_USAGE | PACKAGED_LABOR | CUSTOM_LABOR), and archive flag. Use as the starting point for discovering what pricing is available.',
+  inputSchema: z.object({}).strict() as z.ZodType<Record<string, never>>,
+  requiresAdmin: false,
+  handler: async () => {
+    const products = await listProducts();
+    return products.map((p) => ({
+      id: p.id,
+      name: p.name,
+      kind: p.kind,
+      isArchived: (p as unknown as { isArchived?: boolean }).isArchived ?? false,
+    }));
+  },
+};
+
+export const getProductTool: ToolDefinition<{ id: string }, unknown> = {
+  name: 'get_product',
+  description:
+    'Full product snapshot including rate card, personas, list price, volume tiers, contract modifiers, and rails. Returns the same shape the engine consumes. Admin callers see additional fields (loaded rates). Throws if the id does not exist.',
+  inputSchema: z.object({ id: z.string() }).strict(),
+  requiresAdmin: false,
+  handler: async (_ctx, { id }) => getProductById(id),
+};
+
+export const listBundlesTool: ToolDefinition<Record<string, never>, unknown> = {
+  name: 'list_bundles',
+  description: 'Lists bundles with item counts. Use before apply_bundle_to_scenario to see what is available.',
+  inputSchema: z.object({}).strict() as z.ZodType<Record<string, never>>,
+  requiresAdmin: false,
+  handler: async () => listBundles(),
+};
+
+export const getBundleTool: ToolDefinition<{ id: string }, unknown> = {
+  name: 'get_bundle',
+  description: 'Bundle detail including all items (SaaS configs, labor SKU references, department/hours references). Throws if not found.',
+  inputSchema: z.object({ id: z.string() }).strict(),
+  requiresAdmin: false,
+  handler: async (_ctx, { id }) => getBundleById(id),
+};
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const readTools: ToolDefinition<any, any>[] = [computeQuoteTool];
+export const readTools: ToolDefinition<any, any>[] = [
+  computeQuoteTool,
+  listProductsTool,
+  getProductTool,
+  listBundlesTool,
+  getBundleTool,
+];
