@@ -14,6 +14,9 @@ export async function TopNav() {
           <Link href="/scenarios" className="text-sm">
             My Scenarios
           </Link>
+          <Link href="/settings/tokens" className="text-sm">
+            Tokens
+          </Link>
           {user?.role === 'ADMIN' && (
             <Link href="/admin" className="text-sm">
               Admin

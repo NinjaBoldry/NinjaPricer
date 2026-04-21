@@ -1,7 +1,9 @@
 import { z } from 'zod';
-import { ValidationError } from '../utils/errors';
+import { ValidationError, NotFoundError } from '../utils/errors';
 import { ProductKind } from '@prisma/client';
 import type { Product } from '@prisma/client';
+import { prisma } from '@/lib/db/client';
+import { ProductRepository } from '@/lib/db/repositories/product';
 
 export interface IProductRepository {
   create(data: { name: string; kind: ProductKind; isActive: boolean }): Promise<Product>;
@@ -48,4 +50,21 @@ export class ProductService {
   async listProducts() {
     return this.repo.listAll();
   }
+}
+
+// --- Free-function wrappers for MCP tools ---
+
+export async function listProducts(
+  repo: ProductRepository = new ProductRepository(prisma),
+): Promise<Product[]> {
+  return repo.listAll();
+}
+
+export async function getProductById(
+  id: string,
+  repo: ProductRepository = new ProductRepository(prisma),
+): Promise<Product> {
+  const product = await repo.findById(id);
+  if (!product) throw new NotFoundError('Product', id);
+  return product;
 }

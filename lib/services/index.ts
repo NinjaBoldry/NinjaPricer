@@ -23,3 +23,12 @@ export { UserService } from './user';
 export { ScenarioService } from './scenario';
 export { generateQuote } from './quote';
 export type { QuotePdfRenderer, RenderArgs } from './quote';
+export {
+  issueApiToken,
+  verifyApiToken,
+  revokeApiToken,
+  listApiTokensForUser,
+  listAllApiTokens,
+  TOKEN_PREFIX,
+} from './apiToken';
+export { appendAudit, listAuditForToken, hashArgs } from './apiAuditLog';

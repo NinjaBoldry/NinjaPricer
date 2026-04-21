@@ -1,5 +1,7 @@
 import { z } from 'zod';
-import { ValidationError } from '../utils/errors';
+import { ValidationError, NotFoundError } from '../utils/errors';
+import { prisma } from '@/lib/db/client';
+import { BundleRepository } from '@/lib/db/repositories/bundle';
 
 export interface IBundleRepository {
   create(data: { name: string; description?: string | undefined }): Promise<unknown>;
@@ -54,4 +56,21 @@ export class BundleService {
   async findById(id: string) {
     return this.repo.findById(id);
   }
+}
+
+// --- Free-function wrappers for MCP tools ---
+
+export async function listBundles(
+  repo: BundleRepository = new BundleRepository(prisma),
+) {
+  return repo.findAll();
+}
+
+export async function getBundleById(
+  id: string,
+  repo: BundleRepository = new BundleRepository(prisma),
+) {
+  const bundle = await repo.findById(id);
+  if (!bundle) throw new NotFoundError('Bundle', id);
+  return bundle;
 }

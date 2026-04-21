@@ -1,6 +1,8 @@
 import { z } from 'zod';
 import { CommissionScopeType, CommissionBaseMetric } from '@prisma/client';
-import { ValidationError } from '../utils/errors';
+import { ValidationError, NotFoundError } from '../utils/errors';
+import { prisma } from '@/lib/db/client';
+import { CommissionRuleRepository } from '@/lib/db/repositories/commissionRule';
 
 export interface ICommissionRuleRepository {
   create(data: {
@@ -123,4 +125,21 @@ export class CommissionRuleService {
     validateScope(merged);
     return this.repo.update(id, parsed.data);
   }
+}
+
+// --- Free-function wrappers for MCP tools ---
+
+export async function listCommissionRules(
+  repo: CommissionRuleRepository = new CommissionRuleRepository(prisma),
+) {
+  return repo.findAll();
+}
+
+export async function getCommissionRuleById(
+  id: string,
+  repo: CommissionRuleRepository = new CommissionRuleRepository(prisma),
+) {
+  const rule = await repo.findById(id);
+  if (!rule) throw new NotFoundError('CommissionRule', id);
+  return rule;
 }

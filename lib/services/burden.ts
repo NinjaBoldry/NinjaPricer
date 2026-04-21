@@ -2,6 +2,8 @@ import { z } from 'zod';
 import Decimal from 'decimal.js';
 import { BurdenScope } from '@prisma/client';
 import { ValidationError } from '../utils/errors';
+import { prisma } from '@/lib/db/client';
+import { BurdenRepository } from '@/lib/db/repositories/burden';
 
 export interface IBurdenRepository {
   upsert(data: {
@@ -48,4 +50,12 @@ export class BurdenService {
   async findByDepartment(departmentId: string) {
     return this.repo.findByDepartment(departmentId);
   }
+}
+
+// --- Free-function wrappers for MCP tools ---
+
+export async function listBurdens(
+  repo: BurdenRepository = new BurdenRepository(prisma),
+) {
+  return repo.findAll();
 }
