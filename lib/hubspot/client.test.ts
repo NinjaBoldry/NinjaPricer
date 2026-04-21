@@ -95,14 +95,13 @@ describe('hubspotFetch', () => {
     );
     global.fetch = fetchMock;
 
-    const promise = hubspotFetch({
-      method: 'GET',
-      path: '/x',
-      correlationId: 'corr-4',
-    });
+    const expectation = expect(
+      hubspotFetch({ method: 'GET', path: '/x', correlationId: 'corr-4' }),
+    ).rejects.toBeInstanceOf(HubSpotApiError);
 
     await vi.advanceTimersByTimeAsync(10_000);
-    await expect(promise).rejects.toBeInstanceOf(HubSpotApiError);
+    await expectation;
+
     expect(fetchMock).toHaveBeenCalledTimes(3);
   });
 });
