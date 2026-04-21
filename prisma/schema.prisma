@@ -81,6 +81,8 @@ model User {
   commissionsAs   CommissionRule[] @relation("CommissionRecipient")
   accounts        Account[]        @relation("UserAccounts")
   sessions        Session[]        @relation("UserSessions")
+  apiTokens       ApiToken[]       @relation("TokenOwner")
+  auditEntries    ApiAuditLog[]    @relation("AuditActor")
 }
 
 model Product {
@@ -419,4 +421,43 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+model ApiToken {
+  id           String        @id @default(cuid())
+  label        String
+  tokenHash    String        @unique
+  tokenPrefix  String
+  ownerUserId  String
+  lastUsedAt   DateTime?
+  revokedAt    DateTime?
+  expiresAt    DateTime?
+  createdAt    DateTime      @default(now())
+  owner        User          @relation("TokenOwner", fields: [ownerUserId], references: [id], onDelete: Cascade)
+  auditEntries ApiAuditLog[]
+
+  @@index([ownerUserId])
+}
+
+model ApiAuditLog {
+  id               String      @id @default(cuid())
+  tokenId          String
+  userId           String
+  toolName         String
+  argsHash         String
+  targetEntityType String?
+  targetEntityId   String?
+  result           AuditResult
+  errorCode        String?
+  createdAt        DateTime    @default(now())
+  token            ApiToken    @relation(fields: [tokenId], references: [id], onDelete: Cascade)
+  user             User        @relation("AuditActor", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tokenId, createdAt])
+  @@index([userId, createdAt])
+}
+
+enum AuditResult {
+  OK
+  ERROR
 }
