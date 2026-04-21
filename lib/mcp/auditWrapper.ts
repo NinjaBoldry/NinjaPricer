@@ -47,10 +47,10 @@ export async function wrapWithAudit<I, O>(
     try {
       const p = appendAudit(audit);
       if (p && typeof (p as Promise<unknown>).catch === 'function') {
-        void (p as Promise<unknown>).catch(() => {});
+        void (p as Promise<unknown>).catch((err) => console.error('[mcp] audit append failed:', err));
       }
-    } catch {
-      // swallow
+    } catch (err) {
+      console.error('[mcp] audit append failed:', err);
     }
   }
 }
