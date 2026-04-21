@@ -2,7 +2,7 @@ import { z } from 'zod';
 import Decimal from 'decimal.js';
 import { compute } from '@/lib/engine';
 import type { ToolDefinition } from '@/lib/mcp/server';
-import type { ComputeRequest, TabInput } from '@/lib/engine/types';
+import type { ComputeRequest } from '@/lib/engine/types';
 
 // Helpers: Zod passes JSON-compatible input; engine wants Decimal. Convert at the boundary.
 const decimalFromString = z
@@ -235,7 +235,7 @@ export const getScenarioTool: ToolDefinition<{ id: string }, unknown> = {
   requiresAdmin: false,
   handler: async (ctx, { id }) => {
     const scenario = await getScenarioById(id);
-    if (ctx.user.role === 'SALES' && (scenario as any).ownerId !== ctx.user.id) {
+    if (ctx.user.role === 'SALES' && (scenario as { ownerId: string }).ownerId !== ctx.user.id) {
       throw new NotFoundError('Scenario', id);
     }
     return scenario;
@@ -255,7 +255,7 @@ export const listQuotesForScenarioTool: ToolDefinition<{ scenarioId: string }, u
     // Ownership check: if sales, reject if scenario not owned by caller.
     if (ctx.user.role === 'SALES') {
       const scenario = await getScenarioById(scenarioId);
-      if ((scenario as any).ownerId !== ctx.user.id) {
+      if ((scenario as { ownerId: string }).ownerId !== ctx.user.id) {
         throw new NotFoundError('Scenario', scenarioId);
       }
     }
@@ -278,7 +278,7 @@ export const getQuoteTool: ToolDefinition<z.infer<typeof getQuoteInputSchema>, u
     const repo = new QuoteRepository(prisma);
     const quote = await repo.findById(input.id);
     if (!quote) throw new NotFoundError('Quote', input.id);
-    if (ctx.user.role === 'SALES' && (quote as any).scenario.ownerId !== ctx.user.id) {
+    if (ctx.user.role === 'SALES' && (quote as { scenario: { ownerId: string } }).scenario.ownerId !== ctx.user.id) {
       throw new NotFoundError('Quote', input.id);
     }
 
