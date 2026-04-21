@@ -14,15 +14,8 @@ export default defineConfig({
       'tests/**/*.test.ts',
       'components/**/*.test.tsx',
     ],
-    // DB-backed HubSpot tests require DATABASE_URL — run via npm run test:integration
-    exclude: [
-      'lib/db/repositories/hubspotConfig.test.ts',
-      'lib/db/repositories/hubspotProductMap.test.ts',
-      'lib/db/repositories/hubspotReviewQueueItem.test.ts',
-      'lib/hubspot/catalog/snapshot.test.ts',
-      'lib/hubspot/catalog/orchestrator.test.ts',
-      'lib/hubspot/catalog/reviewQueue.test.ts',
-    ],
+    // DB-backed tests require DATABASE_URL — run via npm run test:integration
+    exclude: ['**/*.db.test.ts'],
     coverage: {
       reporter: ['text', 'html'],
       include: ['lib/**/*.ts'],
