@@ -14,11 +14,14 @@ vi.mock('@/lib/services/scenario', () => ({
   applyBundleToScenario: vi.fn(),
 }));
 
-import { ScenarioService, getScenarioById } from '@/lib/services/scenario';
+import { ScenarioService, getScenarioById, upsertSaasConfig, setLaborLines, applyBundleToScenario } from '@/lib/services/scenario';
 import {
   createScenarioTool,
   updateScenarioTool,
   archiveScenarioTool,
+  setScenarioSaasConfigTool,
+  setScenarioLaborLinesTool,
+  applyBundleToScenarioTool,
 } from './scenarioWrites';
 import { NotFoundError } from '@/lib/utils/errors';
 
@@ -142,3 +145,74 @@ describe('archive_scenario', () => {
     );
   });
 });
+
+// ---------------------------------------------------------------------------
+// Task 5.1-E: set_scenario_saas_config + set_scenario_labor_lines
+// ---------------------------------------------------------------------------
+
+describe('set_scenario_saas_config', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('sales caller: own scenario → delegates to upsertSaasConfig', async () => {
+    vi.mocked(getScenarioById).mockResolvedValue({ id: 's1', ownerId: 'u2' } as any);
+    vi.mocked(upsertSaasConfig).mockResolvedValue({ id: 'c1' } as any);
+    await setScenarioSaasConfigTool.handler(salesCtx, {
+      scenarioId: 's1',
+      productId: 'p1',
+      seatCount: 50,
+      personaMix: [{ personaId: 'heavy', pct: 100 }],
+    });
+    expect(upsertSaasConfig).toHaveBeenCalledWith(
+      expect.objectContaining({ scenarioId: 's1', productId: 'p1', seatCount: 50 }),
+    );
+  });
+
+  it('sales caller: other owner → NotFoundError', async () => {
+    vi.mocked(getScenarioById).mockResolvedValue({ id: 's1', ownerId: 'x' } as any);
+    await expect(
+      setScenarioSaasConfigTool.handler(salesCtx, {
+        scenarioId: 's1',
+        productId: 'p1',
+        seatCount: 50,
+        personaMix: [{ personaId: 'heavy', pct: 100 }],
+      }),
+    ).rejects.toBeInstanceOf(NotFoundError);
+  });
+
+  it('personaMix must sum to 100 (validated)', () => {
+    expect(() =>
+      setScenarioSaasConfigTool.inputSchema.parse({
+        scenarioId: 's',
+        productId: 'p',
+        seatCount: 10,
+        personaMix: [{ personaId: 'a', pct: 40 }, { personaId: 'b', pct: 50 }],
+      }),
+    ).toThrow();
+  });
+});
+
+describe('set_scenario_labor_lines', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('delegates to setLaborLines with all lines replaced', async () => {
+    vi.mocked(getScenarioById).mockResolvedValue({ id: 's1', ownerId: 'u2' } as any);
+    vi.mocked(setLaborLines).mockResolvedValue(undefined as any);
+    await setScenarioLaborLinesTool.handler(salesCtx, {
+      scenarioId: 's1',
+      productId: 'p1',
+      lines: [
+        { skuId: 'sku1', qty: '2', unit: 'PER_USER', costPerUnitUsd: '10', revenuePerUnitUsd: '20' },
+      ],
+    });
+    expect(setLaborLines).toHaveBeenCalledWith(
+      expect.objectContaining({
+        scenarioId: 's1',
+        productId: 'p1',
+        lines: expect.arrayContaining([
+          expect.objectContaining({ skuId: 'sku1', unit: 'PER_USER' }),
+        ]),
+      }),
+    );
+  });
+});
+
