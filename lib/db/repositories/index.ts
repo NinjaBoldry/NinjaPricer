@@ -30,3 +30,4 @@ export { ScenarioSaaSConfigRepository } from './scenarioSaaSConfig';
 export { ScenarioLaborLineRepository } from './scenarioLaborLine';
 export { QuoteRepository } from './quote';
 export { ApiTokenRepository } from './apiToken';
+export { ApiAuditLogRepository } from './apiAuditLog';
