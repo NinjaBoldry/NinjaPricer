@@ -85,7 +85,7 @@ export const deleteProductTool: ToolDefinition<
 > = {
   name: 'delete_product',
   description:
-    'Admin only. Hard-deletes a product and cascades its rate card, personas, etc. FAILS if any scenario references the product (Prisma onDelete: Restrict). Prefer update_product { isArchived: true } unless you are certain.',
+    'Admin only. Hard-deletes a product and cascades its rate card, personas, etc. FAILS if any scenario references the product (Prisma onDelete: Restrict). Prefer update_product { isActive: false } unless you are certain.',
   inputSchema: deleteProductSchema,
   requiresAdmin: true,
   isWrite: true,

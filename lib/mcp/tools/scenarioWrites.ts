@@ -32,12 +32,14 @@ async function assertOwnerOrAdmin(ctx: McpContext, scenarioId: string) {
 // create_scenario
 // ---------------------------------------------------------------------------
 
-const createScenarioSchema = z.object({
-  name: z.string().min(1),
-  customerName: z.string().min(1),
-  contractMonths: z.number().int().min(1),
-  notes: z.string().optional(),
-});
+const createScenarioSchema = z
+  .object({
+    name: z.string().min(1),
+    customerName: z.string().min(1),
+    contractMonths: z.number().int().min(1),
+    notes: z.string().optional(),
+  })
+  .strict();
 
 type CreateScenarioInput = z.infer<typeof createScenarioSchema>;
 
@@ -67,14 +69,16 @@ export const createScenarioTool: ToolDefinition<CreateScenarioInput, { id: strin
 // update_scenario
 // ---------------------------------------------------------------------------
 
-const updateScenarioSchema = z.object({
-  id: z.string(),
-  name: z.string().min(1).optional(),
-  customerName: z.string().min(1).optional(),
-  contractMonths: z.number().int().min(1).optional(),
-  notes: z.string().nullable().optional(),
-  status: z.enum(['DRAFT', 'QUOTED', 'ARCHIVED']).optional(),
-});
+const updateScenarioSchema = z
+  .object({
+    id: z.string(),
+    name: z.string().min(1).optional(),
+    customerName: z.string().min(1).optional(),
+    contractMonths: z.number().int().min(1).optional(),
+    notes: z.string().nullable().optional(),
+    status: z.enum(['DRAFT', 'QUOTED', 'ARCHIVED']).optional(),
+  })
+  .strict();
 
 type UpdateScenarioInput = z.infer<typeof updateScenarioSchema>;
 
@@ -103,7 +107,7 @@ export const updateScenarioTool: ToolDefinition<UpdateScenarioInput, { id: strin
 // archive_scenario
 // ---------------------------------------------------------------------------
 
-const archiveScenarioSchema = z.object({ id: z.string() });
+const archiveScenarioSchema = z.object({ id: z.string() }).strict();
 
 type ArchiveScenarioInput = z.infer<typeof archiveScenarioSchema>;
 
@@ -188,22 +192,26 @@ export const setScenarioSaasConfigTool: ToolDefinition<
 // set_scenario_labor_lines
 // ---------------------------------------------------------------------------
 
-const laborLineSchema = z.object({
-  skuId: z.string().optional(),
-  departmentId: z.string().optional(),
-  customDescription: z.string().optional(),
-  qty: z.union([z.string(), z.number()]).transform((v) => String(v)),
-  unit: z.string(),
-  costPerUnitUsd: z.union([z.string(), z.number()]).transform((v) => String(v)),
-  revenuePerUnitUsd: z.union([z.string(), z.number()]).transform((v) => String(v)),
-  sortOrder: z.number().int().optional(),
-});
+const laborLineSchema = z
+  .object({
+    skuId: z.string().optional(),
+    departmentId: z.string().optional(),
+    customDescription: z.string().optional(),
+    qty: z.union([z.string(), z.number()]).transform((v) => String(v)),
+    unit: z.string(),
+    costPerUnitUsd: z.union([z.string(), z.number()]).transform((v) => String(v)),
+    revenuePerUnitUsd: z.union([z.string(), z.number()]).transform((v) => String(v)),
+    sortOrder: z.number().int().optional(),
+  })
+  .strict();
 
-const setScenarioLaborLinesSchema = z.object({
-  scenarioId: z.string(),
-  productId: z.string(),
-  lines: z.array(laborLineSchema),
-});
+const setScenarioLaborLinesSchema = z
+  .object({
+    scenarioId: z.string(),
+    productId: z.string(),
+    lines: z.array(laborLineSchema),
+  })
+  .strict();
 
 // The post-transform output type
 type SetScenarioLaborLinesInput = {

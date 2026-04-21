@@ -51,7 +51,11 @@ const CreateSchema = z.object({
 const UpdateSchema = z.object({
   id: z.string().min(1, 'is required'),
   name: z.string().min(1, 'is required').optional(),
+  customerName: z.string().min(1, 'is required').optional(),
   contractMonths: z.number().int('must be an integer').min(1, 'must be at least 1').optional(),
+  notes: z.string().nullable().optional(),
+  appliedBundleId: z.string().nullable().optional(),
+  status: z.nativeEnum(ScenarioStatus).optional(),
 });
 
 export class ScenarioService {
@@ -223,6 +227,8 @@ export async function applyBundleToScenario(
 ) {
   const { scenarioId, bundleId } = args;
 
+  // Load the bundle outside the transaction — a NotFoundError here is a fast
+  // exit that doesn't need to start a tx.
   const bundle = await db.bundle.findUnique({
     where: { id: bundleId },
     include: {
@@ -265,84 +271,87 @@ export async function applyBundleToScenario(
   });
   if (!bundle) return;
 
-  const laborLineRepo = new ScenarioLaborLineRepository(db);
-  const saasConfigRepo = new ScenarioSaaSConfigRepository(db);
+  // All writes are atomic: either every item lands or none do.
+  await db.$transaction(async (tx) => {
+    const laborLineRepo = new ScenarioLaborLineRepository(tx as typeof prisma);
+    const saasConfigRepo = new ScenarioSaaSConfigRepository(tx as typeof prisma);
 
-  for (const item of bundle.items) {
-    const config = item.config as BundleItemConfig;
+    for (const item of bundle.items) {
+      const config = item.config as BundleItemConfig;
 
-    if (config.kind === 'SAAS_USAGE') {
-      await saasConfigRepo.upsert(scenarioId, item.productId, {
-        seatCount: config.seatCount,
-        personaMix: config.personaMix,
-      });
-    } else if (config.kind === 'PACKAGED_LABOR') {
-      const sku = item.sku;
-      await laborLineRepo.create({
-        scenarioId,
-        productId: item.productId,
-        ...(sku && { skuId: sku.id }),
-        customDescription: sku ? sku.name : item.product.name,
-        qty: String(config.qty),
-        unit: sku ? sku.unit : config.unit,
-        costPerUnitUsd: sku ? sku.costPerUnitUsd.toString() : '0',
-        revenuePerUnitUsd: sku ? sku.defaultRevenueUsd.toString() : '0',
-      });
-    } else if (config.kind === 'CUSTOM_LABOR') {
-      const dept = item.department;
-      let costPerHour = new Decimal(0);
-      let revenuePerHour = new Decimal(0);
+      if (config.kind === 'SAAS_USAGE') {
+        await saasConfigRepo.upsert(scenarioId, item.productId, {
+          seatCount: config.seatCount,
+          personaMix: config.personaMix,
+        });
+      } else if (config.kind === 'PACKAGED_LABOR') {
+        const sku = item.sku;
+        await laborLineRepo.create({
+          scenarioId,
+          productId: item.productId,
+          ...(sku && { skuId: sku.id }),
+          customDescription: sku ? sku.name : item.product.name,
+          qty: String(config.qty),
+          unit: sku ? sku.unit : config.unit,
+          costPerUnitUsd: sku ? sku.costPerUnitUsd.toString() : '0',
+          revenuePerUnitUsd: sku ? sku.defaultRevenueUsd.toString() : '0',
+        });
+      } else if (config.kind === 'CUSTOM_LABOR') {
+        const dept = item.department;
+        let costPerHour = new Decimal(0);
+        let revenuePerHour = new Decimal(0);
 
-      if (dept) {
-        const burdenInputs = dept.burdens.map((b) => ({
-          ratePct: new Decimal(b.ratePct.toString()),
-          ...(b.capUsd != null && { capUsd: new Decimal(b.capUsd.toString()) }),
-        }));
+        if (dept) {
+          const burdenInputs = dept.burdens.map((b) => ({
+            ratePct: new Decimal(b.ratePct.toString()),
+            ...(b.capUsd != null && { capUsd: new Decimal(b.capUsd.toString()) }),
+          }));
 
-        if (dept.employees.length > 0) {
-          const rates = dept.employees.map((emp) => {
-            const hours = emp.standardHoursPerYear ?? 2080;
-            if (emp.compensationType === 'ANNUAL_SALARY' && emp.annualSalaryUsd != null) {
-              return computeLoadedHourlyRate({
-                compensationType: 'ANNUAL_SALARY',
-                annualSalaryUsd: new Decimal(emp.annualSalaryUsd.toString()),
-                standardHoursPerYear: hours,
-                burdens: burdenInputs,
-              });
-            } else if (emp.compensationType === 'HOURLY' && emp.hourlyRateUsd != null) {
-              return computeLoadedHourlyRate({
-                compensationType: 'HOURLY',
-                hourlyRateUsd: new Decimal(emp.hourlyRateUsd.toString()),
-                standardHoursPerYear: hours,
-                burdens: burdenInputs,
-              });
-            }
-            return new Decimal(0);
-          });
-          costPerHour = rates.reduce((s, r) => s.add(r), new Decimal(0)).div(rates.length);
+          if (dept.employees.length > 0) {
+            const rates = dept.employees.map((emp) => {
+              const hours = emp.standardHoursPerYear ?? 2080;
+              if (emp.compensationType === 'ANNUAL_SALARY' && emp.annualSalaryUsd != null) {
+                return computeLoadedHourlyRate({
+                  compensationType: 'ANNUAL_SALARY',
+                  annualSalaryUsd: new Decimal(emp.annualSalaryUsd.toString()),
+                  standardHoursPerYear: hours,
+                  burdens: burdenInputs,
+                });
+              } else if (emp.compensationType === 'HOURLY' && emp.hourlyRateUsd != null) {
+                return computeLoadedHourlyRate({
+                  compensationType: 'HOURLY',
+                  hourlyRateUsd: new Decimal(emp.hourlyRateUsd.toString()),
+                  standardHoursPerYear: hours,
+                  burdens: burdenInputs,
+                });
+              }
+              return new Decimal(0);
+            });
+            costPerHour = rates.reduce((s, r) => s.add(r), new Decimal(0)).div(rates.length);
+          }
+
+          if (dept.billRate) {
+            revenuePerHour = new Decimal(dept.billRate.billRatePerHour.toString());
+          }
         }
 
-        if (dept.billRate) {
-          revenuePerHour = new Decimal(dept.billRate.billRatePerHour.toString());
-        }
+        await laborLineRepo.create({
+          scenarioId,
+          productId: item.productId,
+          ...(dept && { departmentId: dept.id }),
+          customDescription: dept ? dept.name : item.product.name,
+          qty: String(config.hours),
+          unit: 'hour',
+          costPerUnitUsd: costPerHour.toFixed(4),
+          revenuePerUnitUsd: revenuePerHour.toFixed(4),
+        });
       }
-
-      await laborLineRepo.create({
-        scenarioId,
-        productId: item.productId,
-        ...(dept && { departmentId: dept.id }),
-        customDescription: dept ? dept.name : item.product.name,
-        qty: String(config.hours),
-        unit: 'hour',
-        costPerUnitUsd: costPerHour.toFixed(4),
-        revenuePerUnitUsd: revenuePerHour.toFixed(4),
-      });
     }
-  }
 
-  await db.scenario.update({
-    where: { id: scenarioId },
-    data: { appliedBundleId: bundleId },
+    await tx.scenario.update({
+      where: { id: scenarioId },
+      data: { appliedBundleId: bundleId },
+    });
   });
 }
 

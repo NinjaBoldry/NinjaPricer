@@ -118,6 +118,53 @@ describe('applyBundleToScenario', () => {
   it('is exported as a function', () => {
     expect(typeof applyBundleToScenario).toBe('function');
   });
+
+  it('runs all writes inside a single $transaction call', async () => {
+    const { vi } = await import('vitest');
+
+    // Minimal bundle with one SAAS_USAGE item
+    const bundle = {
+      id: 'b1',
+      items: [
+        {
+          productId: 'p1',
+          sortOrder: 0,
+          product: { id: 'p1', name: 'Prod', kind: 'SAAS_USAGE' },
+          sku: null,
+          department: null,
+          config: { kind: 'SAAS_USAGE', seatCount: 10, personaMix: [] },
+        },
+      ],
+    };
+
+    // Track calls inside the transaction
+    const txScenarioUpdate = vi.fn().mockResolvedValue({});
+    const txSaasUpsert = vi.fn().mockResolvedValue({});
+
+    // tx object passed to $transaction callback
+    const tx = {
+      scenarioSaaSConfig: {
+        upsert: txSaasUpsert,
+      },
+      scenario: { update: txScenarioUpdate },
+    };
+
+    const mockDb = {
+      bundle: { findUnique: vi.fn().mockResolvedValue(bundle) },
+      $transaction: vi.fn(async (cb: (tx: unknown) => Promise<void>) => {
+        await cb(tx);
+      }),
+    } as unknown as typeof import('@/lib/db/client').prisma;
+
+    await applyBundleToScenario({ scenarioId: 's1', bundleId: 'b1' }, mockDb);
+
+    // $transaction must be called exactly once
+    expect(mockDb.$transaction).toHaveBeenCalledTimes(1);
+    // scenario.update (setting appliedBundleId) must be inside the tx, not on the outer db
+    expect(txScenarioUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { appliedBundleId: 'b1' } }),
+    );
+  });
 });
 
 describe('unapplyBundleFromScenario', () => {

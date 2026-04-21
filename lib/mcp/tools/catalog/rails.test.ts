@@ -26,6 +26,7 @@ import {
   deleteRailTool,
   railTools,
 } from './rails';
+import { NotFoundError } from '@/lib/utils/errors';
 
 const adminCtx: McpContext = {
   user: { id: 'u1', email: 'a@b', name: null, role: 'ADMIN' },
@@ -162,6 +163,13 @@ describe('rail catalog tools', () => {
       await expect(
         updateRailTool.handler(adminCtx, { id: 'nonexistent' }),
       ).rejects.toThrow('not found');
+    });
+
+    it('throws NotFoundError (not plain Error) when findById returns null', async () => {
+      railSvc.findById.mockResolvedValue(null);
+      await expect(
+        updateRailTool.handler(adminCtx, { id: 'missing-rail' }),
+      ).rejects.toBeInstanceOf(NotFoundError);
     });
 
     it('rejects missing id', () => {

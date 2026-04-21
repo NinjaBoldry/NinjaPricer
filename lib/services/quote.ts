@@ -1,3 +1,4 @@
+import { unlink } from 'node:fs/promises';
 import { compute } from '@/lib/engine';
 import { QuoteRepository } from '@/lib/db/repositories/quote';
 import { buildComputeRequest } from '@/lib/services/rateSnapshot';
@@ -73,41 +74,43 @@ export async function generateQuote(args: GenerateArgs, deps: Deps) {
     const version = await repo.nextVersion(scenarioId);
     const generatedAt = new Date();
 
-    const renderArgs: RenderArgs = {
-      scenario: {
-        id: scenario.id,
-        name: scenario.name,
-        customerName: scenario.customerName,
-        contractMonths: scenario.contractMonths,
-      },
-      generatedAt,
-      version,
-      result,
-    };
-
-    const [customerBuf, internalBuf] = await Promise.all([
-      deps.renderPdf.customer(renderArgs),
-      deps.renderPdf.internal(renderArgs),
-    ]);
-
     // The repository will throw on duplicate (scenarioId, version). Pre-compute stable storage
     // keys that incorporate the version so a retry doesn't collide on disk either.
     const stubId = `v${version}-${Date.now()}`;
 
-    const customerPath = await writeQuotePdf({
-      scenarioId,
-      quoteId: stubId,
-      kind: 'customer',
-      buffer: customerBuf,
-    });
-    const internalPath = await writeQuotePdf({
-      scenarioId,
-      quoteId: stubId,
-      kind: 'internal',
-      buffer: internalBuf,
-    });
-
+    let customerPath: string | undefined;
+    let internalPath: string | undefined;
     try {
+      const renderArgs: RenderArgs = {
+        scenario: {
+          id: scenario.id,
+          name: scenario.name,
+          customerName: scenario.customerName,
+          contractMonths: scenario.contractMonths,
+        },
+        generatedAt,
+        version,
+        result,
+      };
+
+      const [customerBuf, internalBuf] = await Promise.all([
+        deps.renderPdf.customer(renderArgs),
+        deps.renderPdf.internal(renderArgs),
+      ]);
+
+      customerPath = await writeQuotePdf({
+        scenarioId,
+        quoteId: stubId,
+        kind: 'customer',
+        buffer: customerBuf,
+      });
+      internalPath = await writeQuotePdf({
+        scenarioId,
+        quoteId: stubId,
+        kind: 'internal',
+        buffer: internalBuf,
+      });
+
       const row = await repo.create({
         scenarioId,
         version,
@@ -119,6 +122,11 @@ export async function generateQuote(args: GenerateArgs, deps: Deps) {
       });
       return row;
     } catch (e) {
+      // Clean up any PDFs written in this iteration to avoid orphans on retry or final failure
+      await Promise.all([
+        customerPath ? unlink(customerPath).catch(() => {}) : Promise.resolve(),
+        internalPath ? unlink(internalPath).catch(() => {}) : Promise.resolve(),
+      ]);
       if (isP2002(e) && attempt < maxRetries - 1) {
         continue;
       }

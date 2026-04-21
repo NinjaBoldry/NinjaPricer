@@ -52,9 +52,9 @@ export class ApiTokenRepository {
   }
 
   touchLastUsed(id: string): void {
-    // Fire-and-forget. Errors are swallowed because touching is non-critical.
+    // Fire-and-forget. Errors are logged but don't block the caller.
     void this.db.apiToken
       .update({ where: { id }, data: { lastUsedAt: new Date() } })
-      .catch(() => {});
+      .catch((err) => console.error('[mcp] touchLastUsed failed:', err));
   }
 }

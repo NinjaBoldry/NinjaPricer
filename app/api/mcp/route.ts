@@ -76,6 +76,9 @@ export async function POST(request: Request) {
     return rpcErr(env.id, -32601, `Method not found: ${env.method}`);
   } catch (err) {
     const mapped = toMcpError(err);
+    if (mapped.code === -32603) {
+      console.error('[mcp] unhandled error:', err);
+    }
     return rpcErr(env.id ?? null, mapped.code, mapped.message, mapped.data);
   }
 }

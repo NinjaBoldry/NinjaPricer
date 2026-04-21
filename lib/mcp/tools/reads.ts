@@ -128,17 +128,19 @@ const railSchema = z.object({
   hardThreshold: decimalFromString,
 });
 
-const computeQuoteSchema = z.object({
-  contractMonths: z.number().int().positive(),
-  tabs: z.array(tabInputSchema),
-  products: z.object({
-    saas: z.record(z.string(), saasProductSchema),
-    laborSKUs: z.record(z.string(), laborSkuSnapSchema),
-    departments: z.record(z.string(), departmentSnapSchema),
-  }),
-  commissionRules: z.array(commissionRuleSchema),
-  rails: z.array(railSchema),
-});
+const computeQuoteSchema = z
+  .object({
+    contractMonths: z.number().int().positive(),
+    tabs: z.array(tabInputSchema),
+    products: z.object({
+      saas: z.record(z.string(), saasProductSchema),
+      laborSKUs: z.record(z.string(), laborSkuSnapSchema),
+      departments: z.record(z.string(), departmentSnapSchema),
+    }),
+    commissionRules: z.array(commissionRuleSchema),
+    rails: z.array(railSchema),
+  })
+  .strict();
 
 type ComputeQuoteInput = z.infer<typeof computeQuoteSchema>;
 

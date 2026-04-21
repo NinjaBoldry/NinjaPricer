@@ -16,6 +16,9 @@ vi.mock('@/lib/utils/quoteStorage', () => ({
   writeQuotePdf: vi.fn(async ({ kind }: { kind: string }) => `/tmp/fake-${kind}.pdf`),
 }));
 vi.mock('@/lib/db/client', () => ({ prisma: {} }));
+vi.mock('node:fs/promises', () => ({
+  unlink: vi.fn(async () => {}),
+}));
 
 import { buildComputeRequest } from '@/lib/services/rateSnapshot';
 import type { ScenarioWithConfigs } from '@/lib/services/rateSnapshot';
@@ -23,6 +26,7 @@ import { compute } from '@/lib/engine';
 import type { ComputeRequest } from '@/lib/engine/types';
 import { QuoteRepository } from '@/lib/db/repositories/quote';
 import { writeQuotePdf } from '@/lib/utils/quoteStorage';
+import { unlink } from 'node:fs/promises';
 import { generateQuote } from './quote';
 
 const mockScenario = {
@@ -115,5 +119,42 @@ describe('generateQuote', () => {
     expect(nextVersion).toHaveBeenCalledTimes(2);
     expect(create).toHaveBeenCalledTimes(2);
     expect(out.version).toBe(2);
+  });
+
+  it('unlinks orphan PDFs written in a failed iteration before retrying or throwing', async () => {
+    nextVersion.mockResolvedValueOnce(1).mockResolvedValueOnce(2);
+    const uniqueErr = Object.assign(new Error('unique'), { code: 'P2002' });
+    create.mockRejectedValueOnce(uniqueErr).mockResolvedValueOnce({ id: 'q2', version: 2 });
+    const pdf = {
+      customer: vi.fn(async () => Buffer.from('C')),
+      internal: vi.fn(async () => Buffer.from('I')),
+    };
+
+    // writeQuotePdf returns deterministic paths based on kind
+    await generateQuote(
+      { scenarioId: 'scen_1', generatedById: 'u1' },
+      { renderPdf: pdf },
+    );
+
+    // On attempt 1 (P2002), both orphan paths should have been unlinked
+    expect(vi.mocked(unlink)).toHaveBeenCalledWith('/tmp/fake-customer.pdf');
+    expect(vi.mocked(unlink)).toHaveBeenCalledWith('/tmp/fake-internal.pdf');
+  });
+
+  it('unlinks orphan PDFs on non-retryable failure and rethrows', async () => {
+    nextVersion.mockResolvedValue(1);
+    const fatalErr = new Error('db down');
+    create.mockRejectedValue(fatalErr);
+    const pdf = {
+      customer: vi.fn(async () => Buffer.from('C')),
+      internal: vi.fn(async () => Buffer.from('I')),
+    };
+
+    await expect(
+      generateQuote({ scenarioId: 'scen_1', generatedById: 'u1' }, { renderPdf: pdf }),
+    ).rejects.toThrow('db down');
+
+    expect(vi.mocked(unlink)).toHaveBeenCalledWith('/tmp/fake-customer.pdf');
+    expect(vi.mocked(unlink)).toHaveBeenCalledWith('/tmp/fake-internal.pdf');
   });
 });
