@@ -239,3 +239,79 @@ describe('apply_bundle_to_scenario', () => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// Task 5.1-G: generate_quote
+// ---------------------------------------------------------------------------
+
+vi.mock('@/lib/services/quote', () => ({
+  generateQuote: vi.fn(),
+}));
+vi.mock('@/lib/pdf/customer', () => ({ renderCustomerPdf: vi.fn() }));
+vi.mock('@/lib/pdf/internal', () => ({ renderInternalPdf: vi.fn() }));
+vi.mock('node:fs/promises', () => ({
+  readFile: vi.fn(async () => Buffer.from('PDF-BYTES')),
+}));
+
+import { generateQuoteTool } from './scenarioWrites';
+import { generateQuote } from '@/lib/services/quote';
+
+describe('generate_quote', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('returns { quoteId, version, downloadUrl } by default', async () => {
+    vi.mocked(getScenarioById).mockResolvedValue({ id: 's1', ownerId: 'u1' } as any);
+    vi.mocked(generateQuote).mockResolvedValue({
+      id: 'q1',
+      version: 1,
+      pdfUrl: '/tmp/c.pdf',
+      internalPdfUrl: '/tmp/i.pdf',
+    } as any);
+    const out = await generateQuoteTool.handler(adminCtx, { scenarioId: 's1' });
+    expect(generateQuote).toHaveBeenCalled();
+    expect(out).toEqual({
+      quoteId: 'q1',
+      version: 1,
+      downloadUrl: '/api/quotes/q1/download',
+    });
+  });
+
+  it('returns customerPdfBase64 when include_pdf_bytes=true', async () => {
+    vi.mocked(getScenarioById).mockResolvedValue({ id: 's1', ownerId: 'u1' } as any);
+    vi.mocked(generateQuote).mockResolvedValue({
+      id: 'q1',
+      version: 1,
+      pdfUrl: '/tmp/c.pdf',
+      internalPdfUrl: '/tmp/i.pdf',
+    } as any);
+    const out = await generateQuoteTool.handler(adminCtx, {
+      scenarioId: 's1',
+      include_pdf_bytes: true,
+    });
+    expect((out as any).customerPdfBase64).toBe(Buffer.from('PDF-BYTES').toString('base64'));
+    expect((out as any).internalPdfBase64).toBe(Buffer.from('PDF-BYTES').toString('base64'));
+  });
+
+  it('sales caller never receives internal PDF bytes even with include_pdf_bytes=true', async () => {
+    vi.mocked(getScenarioById).mockResolvedValue({ id: 's1', ownerId: 'u2' } as any);
+    vi.mocked(generateQuote).mockResolvedValue({
+      id: 'q1',
+      version: 1,
+      pdfUrl: '/tmp/c.pdf',
+      internalPdfUrl: '/tmp/i.pdf',
+    } as any);
+    const out = await generateQuoteTool.handler(salesCtx, {
+      scenarioId: 's1',
+      include_pdf_bytes: true,
+    });
+    expect((out as any).customerPdfBase64).toBeDefined();
+    expect((out as any).internalPdfBase64).toBeUndefined();
+  });
+
+  it('sales caller: non-owner → NotFoundError', async () => {
+    vi.mocked(getScenarioById).mockResolvedValue({ id: 's1', ownerId: 'other' } as any);
+    await expect(
+      generateQuoteTool.handler(salesCtx, { scenarioId: 's1' }),
+    ).rejects.toBeInstanceOf(NotFoundError);
+  });
+});
+

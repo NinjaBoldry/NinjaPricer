@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { readFile } from 'node:fs/promises';
 import type { ToolDefinition } from '@/lib/mcp/server';
 import type { McpContext } from '@/lib/mcp/context';
 import { NotFoundError } from '@/lib/utils/errors';
@@ -11,6 +12,9 @@ import {
 } from '@/lib/services/scenario';
 import { ScenarioRepository } from '@/lib/db/repositories/scenario';
 import { prisma } from '@/lib/db/client';
+import { generateQuote } from '@/lib/services/quote';
+import { renderCustomerPdf } from '@/lib/pdf/customer';
+import { renderInternalPdf } from '@/lib/pdf/internal';
 
 // ---------------------------------------------------------------------------
 // Shared ownership guard
@@ -276,6 +280,59 @@ export const applyBundleToScenarioTool: ToolDefinition<
 };
 
 // ---------------------------------------------------------------------------
+// generate_quote
+// ---------------------------------------------------------------------------
+
+const generateQuoteSchema = z
+  .object({ scenarioId: z.string(), include_pdf_bytes: z.boolean().optional() })
+  .strict();
+
+type GenerateQuoteInput = z.infer<typeof generateQuoteSchema>;
+
+interface GenerateQuoteOutput {
+  quoteId: string;
+  version: number;
+  downloadUrl: string;
+  customerPdfBase64?: string;
+  internalPdfBase64?: string;
+}
+
+export const generateQuoteTool: ToolDefinition<GenerateQuoteInput, GenerateQuoteOutput> = {
+  name: 'generate_quote',
+  description:
+    'Re-runs the engine, renders both PDFs (customer + internal), writes a Quote row with a sequential version and frozen totals, returns metadata + download URL. Pass include_pdf_bytes=true to inline the customer PDF (admin also gets internal PDF). Sales callers can only generate quotes for scenarios they own.',
+  inputSchema: generateQuoteSchema,
+  requiresAdmin: false,
+  isWrite: true,
+  targetEntityType: 'Quote',
+  extractTargetId: (_input, output) => output?.quoteId,
+  handler: async (ctx, input) => {
+    await assertOwnerOrAdmin(ctx, input.scenarioId);
+    const quote = await generateQuote(
+      { scenarioId: input.scenarioId, generatedById: ctx.user.id },
+      { renderPdf: { customer: renderCustomerPdf, internal: renderInternalPdf } },
+    );
+    const base: GenerateQuoteOutput = {
+      quoteId: quote.id,
+      version: quote.version,
+      downloadUrl: `/api/quotes/${quote.id}/download`,
+    };
+    if (!input.include_pdf_bytes) return base;
+
+    const customerBuf = await readFile(quote.pdfUrl);
+    const withCustomer: GenerateQuoteOutput = {
+      ...base,
+      customerPdfBase64: customerBuf.toString('base64'),
+    };
+    if (ctx.user.role === 'ADMIN' && quote.internalPdfUrl) {
+      const internalBuf = await readFile(quote.internalPdfUrl);
+      return { ...withCustomer, internalPdfBase64: internalBuf.toString('base64') };
+    }
+    return withCustomer;
+  },
+};
+
+// ---------------------------------------------------------------------------
 // Exported tool list
 // ---------------------------------------------------------------------------
 
@@ -287,4 +344,5 @@ export const scenarioWriteTools: ToolDefinition<any, any>[] = [
   setScenarioSaasConfigTool,
   setScenarioLaborLinesTool,
   applyBundleToScenarioTool,
+  generateQuoteTool,
 ];
