@@ -44,11 +44,11 @@ const updateProductSchema = z
   .object({
     id: z.string(),
     name: z.string().min(1).optional(),
-    isArchived: z.boolean().optional(),
+    isActive: z.boolean().optional(),
   })
   .strict()
-  .refine((v) => v.name !== undefined || v.isArchived !== undefined, {
-    message: 'at least one of name or isArchived is required',
+  .refine((v) => v.name !== undefined || v.isActive !== undefined, {
+    message: 'at least one of name or isActive is required',
   });
 
 export const updateProductTool: ToolDefinition<
@@ -57,17 +57,17 @@ export const updateProductTool: ToolDefinition<
 > = {
   name: 'update_product',
   description:
-    'Admin only. Patch product shell fields (name, isArchived). Reversible. Use isArchived=true to hide a product from sales without deleting.',
+    'Admin only. Patch product shell fields (name, isActive). isActive: false hides the product from sales; use instead of delete_product.',
   inputSchema: updateProductSchema,
   requiresAdmin: true,
   isWrite: true,
   targetEntityType: 'Product',
   extractTargetId: (input) => input.id,
-  handler: async (_ctx, { id, name, isArchived }) => {
+  handler: async (_ctx, { id, name, isActive }) => {
     const svc = new ProductService(new ProductRepository(prisma));
     const patch: { name?: string; isActive?: boolean } = {};
     if (name !== undefined) patch.name = name;
-    if (isArchived !== undefined) patch.isActive = !isArchived;
+    if (isActive !== undefined) patch.isActive = isActive;
     await svc.updateProduct(id, patch);
     return { id };
   },
