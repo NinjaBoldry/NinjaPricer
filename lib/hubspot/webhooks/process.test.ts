@@ -1,20 +1,48 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+// Mocks must be declared before imports that transitively reference them.
+// vi.mock is hoisted to the top of the file by Vitest, so the factory runs
+// before module-level code. We return stable vi.fn() instances from the factory.
+vi.mock('@/lib/db/repositories/hubspotApprovalRequest', () => {
+  class MockHubSpotApprovalRequestRepository {
+    findByHubspotDealId = vi.fn();
+    resolve = vi.fn();
+  }
+  return { HubSpotApprovalRequestRepository: MockHubSpotApprovalRequestRepository };
+});
+
+vi.mock('../approval/resolve', () => ({
+  resolveApprovalFromWebhook: vi.fn(),
+}));
+
+vi.mock('../quote/publishService', () => ({
+  runPublishScenario: vi.fn(),
+}));
+
 import { processEvent } from './process';
+import { resolveApprovalFromWebhook } from '../approval/resolve';
+
+const mockResolveApprovalFromWebhook = vi.mocked(resolveApprovalFromWebhook);
 
 const mockQuoteRepo = {
   recordTerminalStatus: vi.fn(),
   recordDealOutcome: vi.fn(),
+  findLatestByScenario: vi.fn(),
+  updatePublishState: vi.fn(),
 };
 const mockEventRepo = {
   findById: vi.fn(),
   markProcessed: vi.fn(),
   markFailed: vi.fn(),
 };
+// A minimal fake PrismaClient — only used to trigger the approval branch (actual calls go to mocked repos)
+const fakePrisma = {} as any;
 
 describe('processEvent', () => {
   beforeEach(() => {
     Object.values(mockQuoteRepo).forEach((f) => f.mockReset());
     Object.values(mockEventRepo).forEach((f) => f.mockReset());
+    mockResolveApprovalFromWebhook.mockReset();
   });
 
   it('skips already-processed events', async () => {
@@ -115,5 +143,93 @@ describe('processEvent', () => {
     await processEvent('e3', { quoteRepo: mockQuoteRepo, eventRepo: mockEventRepo } as any);
     expect(mockEventRepo.markFailed).toHaveBeenCalledWith('e3', 'DB down');
     expect(mockEventRepo.markProcessed).not.toHaveBeenCalled();
+  });
+
+  it('deal.propertyChange pricer_approval_status=approved → calls resolveApprovalFromWebhook with correct args', async () => {
+    mockEventRepo.findById.mockResolvedValue({
+      id: 'e-approval-approved',
+      processedAt: null,
+      subscriptionType: 'deal.propertyChange',
+      objectType: 'deal',
+      objectId: 'hs-d-1',
+      payload: {
+        propertyName: 'pricer_approval_status',
+        propertyValue: 'approved',
+        changeSource: { sourceUserId: 'owner-42' },
+      },
+    });
+    mockResolveApprovalFromWebhook.mockResolvedValue(undefined);
+
+    await processEvent('e-approval-approved', {
+      quoteRepo: mockQuoteRepo,
+      eventRepo: mockEventRepo,
+      prisma: fakePrisma,
+    });
+
+    // Check for errors first to help debug
+    expect(mockEventRepo.markFailed).not.toHaveBeenCalled();
+    expect(mockResolveApprovalFromWebhook).toHaveBeenCalledWith(
+      expect.objectContaining({
+        hubspotDealId: 'hs-d-1',
+        newStatus: 'approved',
+        hubspotOwnerId: 'owner-42',
+      }),
+    );
+    expect(mockEventRepo.markProcessed).toHaveBeenCalledWith('e-approval-approved');
+  });
+
+  it('deal.propertyChange pricer_approval_status=rejected → calls resolveApprovalFromWebhook with correct args', async () => {
+    mockEventRepo.findById.mockResolvedValue({
+      id: 'e-approval-rejected',
+      processedAt: null,
+      subscriptionType: 'deal.propertyChange',
+      objectType: 'deal',
+      objectId: 'hs-d-2',
+      payload: {
+        propertyName: 'pricer_approval_status',
+        propertyValue: 'rejected',
+        changeSource: null,
+      },
+    });
+    mockResolveApprovalFromWebhook.mockResolvedValue(undefined);
+
+    await processEvent('e-approval-rejected', {
+      quoteRepo: mockQuoteRepo,
+      eventRepo: mockEventRepo,
+      prisma: fakePrisma,
+    });
+
+    expect(mockResolveApprovalFromWebhook).toHaveBeenCalledWith(
+      expect.objectContaining({
+        hubspotDealId: 'hs-d-2',
+        newStatus: 'rejected',
+        hubspotOwnerId: null,
+      }),
+    );
+    expect(mockEventRepo.markProcessed).toHaveBeenCalledWith('e-approval-rejected');
+  });
+
+  it('deal.propertyChange pricer_approval_status without prisma dep → skips approval branch (no-op)', async () => {
+    mockEventRepo.findById.mockResolvedValue({
+      id: 'e-approval-no-prisma',
+      processedAt: null,
+      subscriptionType: 'deal.propertyChange',
+      objectType: 'deal',
+      objectId: 'hs-d-3',
+      payload: {
+        propertyName: 'pricer_approval_status',
+        propertyValue: 'approved',
+      },
+    });
+
+    // No prisma in deps — branch should be skipped
+    await processEvent('e-approval-no-prisma', {
+      quoteRepo: mockQuoteRepo,
+      eventRepo: mockEventRepo,
+      // prisma intentionally omitted
+    });
+
+    expect(mockResolveApprovalFromWebhook).not.toHaveBeenCalled();
+    expect(mockEventRepo.markProcessed).toHaveBeenCalledWith('e-approval-no-prisma');
   });
 });
