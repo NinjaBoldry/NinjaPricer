@@ -1,0 +1,40 @@
+{
+  "uid": "ninja_pricer_app",
+  "type": "app",
+  "config": {
+    "description": "Ninja Pricer ↔ HubSpot integration — catalog sync, quote publish, approval workflows.",
+    "name": "Ninja Pricer",
+    "distribution": "private",
+    "auth": {
+      "type": "static",
+      "requiredScopes": [
+        "crm.objects.products.read",
+        "crm.objects.products.write",
+        "crm.objects.line_items.read",
+        "crm.objects.line_items.write",
+        "crm.objects.deals.read",
+        "crm.objects.deals.write",
+        "crm.objects.quotes.read",
+        "crm.objects.quotes.write",
+        "e-commerce",
+        "crm.schemas.deals.write",
+        "crm.schemas.quotes.write"
+      ],
+      "optionalScopes": [],
+      "conditionallyRequiredScopes": []
+    },
+    "permittedUrls": {
+      "fetch": [
+        "https://api.hubapi.com"
+      ],
+      "iframe": [],
+      "img": []
+    },
+    "support": {
+      "supportEmail": "support@example.com",
+      "documentationUrl": "https://example.com/docs",
+      "supportUrl": "https://example.com/support",
+      "supportPhone": "+18005555555"
+    }
+  }
+}
