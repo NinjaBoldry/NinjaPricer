@@ -344,9 +344,13 @@ model Scenario {
   updatedAt       DateTime             @updatedAt
   owner           User                 @relation("ScenarioOwner", fields: [ownerId], references: [id], onDelete: Restrict)
   appliedBundle   Bundle?              @relation("ScenarioAppliedBundle", fields: [appliedBundleId], references: [id], onDelete: SetNull)
-  saasConfigs     ScenarioSaaSConfig[]
-  laborLines      ScenarioLaborLine[]
-  quotes          Quote[]
+  saasConfigs              ScenarioSaaSConfig[]
+  laborLines               ScenarioLaborLine[]
+  quotes                   Quote[]
+  hubspotDealId            String?
+  hubspotCompanyId         String?
+  hubspotPrimaryContactId  String?
+  hubspotQuotes            HubSpotQuote[]
 }
 
 model ScenarioSaaSConfig {
@@ -390,8 +394,10 @@ model Quote {
   generatedById    String
   customerSnapshot Json
   totals           Json
-  scenario         Scenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
-  generatedBy      User     @relation("QuoteGenerator", fields: [generatedById], references: [id], onDelete: Restrict)
+  scenario         Scenario            @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  generatedBy      User                @relation("QuoteGenerator", fields: [generatedById], references: [id], onDelete: Restrict)
+  hubspotQuoteId   String?
+  publishState     HubSpotPublishState @default(DRAFT)
 
   @@unique([scenarioId, version])
 }
@@ -480,6 +486,16 @@ enum HubSpotReviewResolution {
   IGNORE
 }
 
+enum HubSpotPublishState {
+  DRAFT
+  PENDING_APPROVAL
+  PUBLISHING
+  PUBLISHED
+  SUPERSEDED
+  FAILED
+  APPROVAL_REJECTED
+}
+
 model HubSpotConfig {
   id                   String    @id @default(cuid())
   portalId             String    @unique
@@ -519,4 +535,43 @@ model HubSpotReviewQueueItem {
   resolvedByUserId  String?
 
   @@unique([entityType, hubspotId, changedFieldsHash])
+}
+
+model HubSpotQuote {
+  id                  String              @id @default(cuid())
+  scenarioId          String
+  revision            Int
+  hubspotQuoteId      String              @unique
+  shareableUrl        String?
+  publishState        HubSpotPublishState
+  supersedesQuoteId   String?             @unique
+  publishedAt         DateTime?
+  lastStatusAt        DateTime?
+  lastStatus          String?
+  dealOutcomeAt       DateTime?
+  dealOutcome         String?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  scenario            Scenario            @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  supersededBy        HubSpotQuote?       @relation("Supersedes", fields: [supersedesQuoteId], references: [id])
+  supersedes          HubSpotQuote?       @relation("Supersedes")
+
+  @@unique([scenarioId, revision])
+  @@index([scenarioId])
+}
+
+model HubSpotWebhookEvent {
+  id                  String    @id @default(cuid())
+  hubspotEventId      String    @unique
+  subscriptionType    String
+  objectType          String
+  objectId            String
+  payload             Json
+  receivedAt          DateTime  @default(now())
+  processedAt         DateTime?
+  processingError     String?
+  processingAttempts  Int       @default(0)
+
+  @@index([processedAt])
 }
