@@ -1,5 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { linkScenarioToHubspotDealTool, createHubspotDealForScenarioTool } from './hubspotQuote';
+import {
+  linkScenarioToHubspotDealTool,
+  createHubspotDealForScenarioTool,
+  publishScenarioToHubspotTool,
+} from './hubspotQuote';
 
 // ---------------------------------------------------------------------------
 // create_hubspot_deal_for_scenario
@@ -12,12 +16,28 @@ vi.mock('@/lib/db/client', () => ({
   prisma: {
     scenario: {
       update: vi.fn(),
+      findUnique: vi.fn(),
     },
+    hubSpotQuote: {
+      findFirst: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+    },
+  },
+}));
+vi.mock('@/lib/hubspot/quote/publish', () => ({
+  publishScenarioToHubSpot: vi.fn(),
+  MissingDealLinkError: class MissingDealLinkError extends Error {
+    constructor() { super('Missing deal link'); }
+  },
+  UnresolvedHardRailOverrideError: class UnresolvedHardRailOverrideError extends Error {
+    constructor() { super('Unresolved hard-rail override'); }
   },
 }));
 
 import * as hubspotClient from '@/lib/hubspot/client';
 import * as dbClient from '@/lib/db/client';
+import * as publishModule from '@/lib/hubspot/quote/publish';
 
 describe('create_hubspot_deal_for_scenario', () => {
   const mockFetch = vi.mocked(hubspotClient.hubspotFetch);
@@ -74,6 +94,101 @@ describe('create_hubspot_deal_for_scenario', () => {
   it('is not requiresAdmin and is a write', () => {
     expect(createHubspotDealForScenarioTool.requiresAdmin).toBe(false);
     expect(createHubspotDealForScenarioTool.isWrite).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// publish_scenario_to_hubspot
+// ---------------------------------------------------------------------------
+
+describe('publish_scenario_to_hubspot', () => {
+  const mockPublish = vi.mocked(publishModule.publishScenarioToHubSpot);
+  const mockFindUnique = vi.mocked(dbClient.prisma.scenario.findUnique);
+
+  beforeEach(() => {
+    mockPublish.mockReset();
+    mockFindUnique.mockReset();
+    vi.mocked(dbClient.prisma.hubSpotQuote.findFirst).mockReset();
+    vi.mocked(dbClient.prisma.hubSpotQuote.create).mockReset();
+    vi.mocked(dbClient.prisma.hubSpotQuote.update).mockReset();
+  });
+
+  it('validates input schema - requires scenarioId', () => {
+    expect(() => publishScenarioToHubspotTool.inputSchema.parse({})).toThrow();
+    expect(() => publishScenarioToHubspotTool.inputSchema.parse({ scenarioId: 's1' })).not.toThrow();
+  });
+
+  it('is a write tool and not requiresAdmin', () => {
+    expect(publishScenarioToHubspotTool.isWrite).toBe(true);
+    expect(publishScenarioToHubspotTool.requiresAdmin).toBe(false);
+  });
+
+  it('happy path: loads scenario, calls publishScenarioToHubSpot, returns outcome', async () => {
+    mockFindUnique.mockResolvedValue({
+      id: 's1',
+      name: 'Acme Q1',
+      customerName: 'Acme Inc',
+      hubspotDealId: 'd1',
+      contractMonths: 12,
+      saasConfigs: [],
+      laborLines: [],
+    } as never);
+    // No prior revision
+    vi.mocked(dbClient.prisma.hubSpotQuote.findFirst).mockResolvedValue(null);
+
+    mockPublish.mockResolvedValue({
+      hubspotQuoteId: 'hs-q-1',
+      shareableUrl: 'https://app.hubspot.com/q/x',
+    });
+
+    const ctx = { user: { id: 'u1', role: 'SALES', email: 'u@x.com', name: null }, token: { id: 't', ownerUserId: 'u1', label: 'tok' } };
+    const result = await publishScenarioToHubspotTool.handler(ctx as never, { scenarioId: 's1' });
+
+    expect(mockPublish).toHaveBeenCalledOnce();
+    expect(result).toMatchObject({ hubspotQuoteId: 'hs-q-1', shareableUrl: 'https://app.hubspot.com/q/x' });
+    expect((result as { correlationId: string }).correlationId).toBeDefined();
+  });
+
+  it('returns structured error when scenario is not linked to a deal', async () => {
+    mockFindUnique.mockResolvedValue({
+      id: 's1',
+      name: 'Acme Q1',
+      customerName: 'Acme Inc',
+      hubspotDealId: null,
+      contractMonths: 12,
+      saasConfigs: [],
+      laborLines: [],
+    } as never);
+    vi.mocked(dbClient.prisma.hubSpotQuote.findFirst).mockResolvedValue(null);
+
+    const { MissingDealLinkError } = await import('@/lib/hubspot/quote/publish');
+    mockPublish.mockRejectedValue(new MissingDealLinkError());
+
+    const ctx = { user: { id: 'u1', role: 'SALES', email: 'u@x.com', name: null }, token: { id: 't', ownerUserId: 'u1', label: 'tok' } };
+    const result = await publishScenarioToHubspotTool.handler(ctx as never, { scenarioId: 's1' });
+
+    expect((result as { error: string }).error).toBe('MISSING_DEAL_LINK');
+  });
+
+  it('returns structured error when scenario has unresolved hard-rail overrides', async () => {
+    mockFindUnique.mockResolvedValue({
+      id: 's1',
+      name: 'Acme Q1',
+      customerName: 'Acme Inc',
+      hubspotDealId: 'd1',
+      contractMonths: 12,
+      saasConfigs: [],
+      laborLines: [],
+    } as never);
+    vi.mocked(dbClient.prisma.hubSpotQuote.findFirst).mockResolvedValue(null);
+
+    const { UnresolvedHardRailOverrideError } = await import('@/lib/hubspot/quote/publish');
+    mockPublish.mockRejectedValue(new UnresolvedHardRailOverrideError());
+
+    const ctx = { user: { id: 'u1', role: 'SALES', email: 'u@x.com', name: null }, token: { id: 't', ownerUserId: 'u1', label: 'tok' } };
+    const result = await publishScenarioToHubspotTool.handler(ctx as never, { scenarioId: 's1' });
+
+    expect((result as { error: string }).error).toBe('UNRESOLVED_HARD_RAIL_OVERRIDE');
   });
 });
 

@@ -1,8 +1,17 @@
 import { z } from 'zod';
 import { randomUUID } from 'node:crypto';
+import Decimal from 'decimal.js';
 import type { ToolDefinition } from '@/lib/mcp/server';
 import { prisma } from '@/lib/db/client';
 import { hubspotFetch } from '@/lib/hubspot/client';
+import {
+  publishScenarioToHubSpot,
+  MissingDealLinkError,
+  UnresolvedHardRailOverrideError,
+  type PublishPersistence,
+} from '@/lib/hubspot/quote/publish';
+import { scenarioToHubSpotLineItems } from '@/lib/hubspot/quote/translator';
+import { HubSpotQuoteRepository } from '@/lib/db/repositories/hubspotQuote';
 
 // ---------------------------------------------------------------------------
 // Helper types
@@ -178,6 +187,173 @@ export const createHubspotDealForScenarioTool: ToolDefinition<
     });
 
     return { created: true, dealId: dealRes.id, contactId, companyId };
+  },
+};
+
+// ---------------------------------------------------------------------------
+// publish_scenario_to_hubspot
+// ---------------------------------------------------------------------------
+
+const publishInput = z
+  .object({
+    scenarioId: z.string().min(1),
+    quoteNameOverride: z.string().optional(),
+    expirationDays: z.number().int().min(1).default(30),
+  })
+  .strict();
+
+type PublishInput = z.infer<typeof publishInput>;
+
+interface PublishResult {
+  hubspotQuoteId: string;
+  shareableUrl: string | null;
+  correlationId: string;
+}
+
+interface PublishErrorResult {
+  error: 'MISSING_DEAL_LINK' | 'UNRESOLVED_HARD_RAIL_OVERRIDE' | 'SCENARIO_NOT_FOUND';
+  message: string;
+}
+
+export const publishScenarioToHubspotTool: ToolDefinition<
+  PublishInput,
+  PublishResult | PublishErrorResult
+> = {
+  name: 'publish_scenario_to_hubspot',
+  description:
+    'Publish a pricer scenario as a HubSpot Quote on the linked Deal. Builds line items from the scenario state. Catches MissingDealLinkError and UnresolvedHardRailOverrideError and returns structured errors.',
+  inputSchema: publishInput,
+  requiresAdmin: false,
+  isWrite: true,
+  targetEntityType: 'Scenario',
+  extractTargetId: (input) => input.scenarioId,
+  handler: async (_ctx, input) => {
+    const correlationId = `publish-${randomUUID()}`;
+
+    // Load scenario with hubspot fields + line items directly from Prisma
+    const scenario = await prisma.scenario.findUnique({
+      where: { id: input.scenarioId },
+      select: {
+        id: true,
+        name: true,
+        customerName: true,
+        hubspotDealId: true,
+        contractMonths: true,
+        saasConfigs: {
+          select: {
+            productId: true,
+            seatCount: true,
+            personaMix: true,
+            discountOverridePct: true,
+            product: {
+              select: { id: true, name: true, sku: true, description: true },
+            },
+          },
+        },
+        laborLines: {
+          select: {
+            qty: true,
+            revenuePerUnitUsd: true,
+            sku: {
+              select: { id: true, name: true, product: { select: { sku: true, description: true } } },
+            },
+            product: { select: { id: true, name: true, sku: true, description: true } },
+          },
+        },
+      },
+    });
+
+    if (!scenario) {
+      return { error: 'SCENARIO_NOT_FOUND', message: `Scenario ${input.scenarioId} not found.` };
+    }
+
+    // Determine the next revision number
+    const latestQuote = await prisma.hubSpotQuote.findFirst({
+      where: { scenarioId: input.scenarioId },
+      orderBy: { revision: 'desc' },
+    });
+    const revision = (latestQuote?.revision ?? 0) + 1;
+
+    // Build TranslatorInput from scenario state
+    // SaaS configs → SaaSLine (use revenuePerUnitUsd-equivalent: we don't have the computed
+    // effective price here, so we use listPrice where available and discountPct from override)
+    const saasLines = scenario.saasConfigs.map((cfg) => ({
+      kind: 'SAAS' as const,
+      productId: cfg.productId,
+      productName: cfg.product.name,
+      productSku: cfg.product.sku ?? '',
+      productDescription: cfg.product.description ?? '',
+      seatCount: cfg.seatCount,
+      // Without a full engine run we don't have the effective price —
+      // use discount override pct if present. Full engine pricing is a T14 TODO (Phase 2c).
+      listPriceMonthly: new Decimal(0),
+      effectiveUnitPriceMonthly: new Decimal(0),
+      discountPct: cfg.discountOverridePct ? new Decimal(cfg.discountOverridePct.toString()) : null,
+      contractMonths: scenario.contractMonths,
+      rampSchedule: null,
+    }));
+
+    const laborLines = scenario.laborLines.map((ll) => ({
+      kind: 'LABOR' as const,
+      skuId: ll.sku?.id ?? ll.product.id,
+      skuName: ll.sku?.name ?? ll.product.name,
+      skuCode: ll.product.sku ?? '',
+      skuDescription: ll.product.description ?? '',
+      qty: Number(ll.qty),
+      unitPrice: new Decimal(ll.revenuePerUnitUsd.toString()),
+    }));
+
+    const lineItems = scenarioToHubSpotLineItems({
+      scenarioId: input.scenarioId,
+      tabs: [...saasLines, ...laborLines],
+      bundles: [],
+    });
+
+    // Build PublishPersistence from HubSpotQuoteRepository
+    const quoteRepo = new HubSpotQuoteRepository(prisma);
+
+    const persistence: PublishPersistence = {
+      createHubSpotQuote: async (data) => quoteRepo.create(data),
+      updatePublishState: async (rowId, state, extras) => {
+        await quoteRepo.updatePublishState(rowId, state, extras);
+      },
+      findPriorRevision: async (scenarioId, currentRevision) => {
+        const prior = await quoteRepo.findByScenarioAndRevision(scenarioId, currentRevision - 1);
+        return prior ? { id: prior.id, hubspotQuoteId: prior.hubspotQuoteId } : null;
+      },
+      markSuperseded: async (oldRowId, newRowId) => {
+        await quoteRepo.markSuperseded(oldRowId, newRowId);
+      },
+    };
+
+    try {
+      const outcome = await publishScenarioToHubSpot({
+        scenario: {
+          id: scenario.id,
+          hubspotDealId: scenario.hubspotDealId,
+          revision,
+          hasUnresolvedHardRailOverrides: false, // TODO Phase 2c: evaluate engine rails
+        },
+        lineItems,
+        quoteConfig: {
+          name: input.quoteNameOverride ?? `${scenario.customerName} — ${scenario.name}`,
+          expirationDays: input.expirationDays,
+        },
+        persistence,
+        now: () => new Date(),
+        correlationId,
+      });
+
+      return { ...outcome, correlationId };
+    } catch (err) {
+      if (err instanceof MissingDealLinkError) {
+        return { error: 'MISSING_DEAL_LINK', message: err.message };
+      }
+      if (err instanceof UnresolvedHardRailOverrideError) {
+        return { error: 'UNRESOLVED_HARD_RAIL_OVERRIDE', message: err.message };
+      }
+      throw err;
+    }
   },
 };
 
