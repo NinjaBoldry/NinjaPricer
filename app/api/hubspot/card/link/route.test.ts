@@ -6,7 +6,7 @@ vi.mock('@/lib/hubspot/card/auth', () => ({
 }));
 
 const findScenarioFirst = vi.fn();
-const userUpsert = vi.fn();
+const userFindUnique = vi.fn();
 const scenarioCreate = vi.fn();
 
 vi.mock('@/lib/db/client', () => ({
@@ -16,7 +16,7 @@ vi.mock('@/lib/db/client', () => ({
       create: (...args: unknown[]) => scenarioCreate(...args),
     },
     user: {
-      upsert: (...args: unknown[]) => userUpsert(...args),
+      findUnique: (...args: unknown[]) => userFindUnique(...args),
     },
   },
 }));
@@ -24,9 +24,10 @@ vi.mock('@/lib/db/client', () => ({
 describe('POST /api/hubspot/card/link', () => {
   beforeEach(async () => {
     findScenarioFirst.mockReset();
-    userUpsert.mockReset();
+    userFindUnique.mockReset();
     scenarioCreate.mockReset();
     process.env.HUBSPOT_APP_FUNCTION_SHARED_SECRET = 'test-secret';
+    process.env.HUBSPOT_CARD_SERVICE_USER_EMAIL = 'hubspot-card@ninjaconcepts.com';
     const { verifyCardSecret } = await import('@/lib/hubspot/card/auth');
     (verifyCardSecret as unknown as { mockReturnValue: (v: boolean) => void }).mockReturnValue(
       true,
@@ -65,7 +66,7 @@ describe('POST /api/hubspot/card/link', () => {
 
   it('creates new scenario with reused: false when no existing scenario', async () => {
     findScenarioFirst.mockResolvedValue(null);
-    userUpsert.mockResolvedValue({ id: 'u1', email: 'hubspot-card@ninjaconcepts.com' });
+    userFindUnique.mockResolvedValue({ id: 'u1', email: 'hubspot-card@ninjaconcepts.com' });
     scenarioCreate.mockResolvedValue({ id: 's2' });
     const res = await POST(
       new Request('http://x/api/hubspot/card/link', {
@@ -87,5 +88,38 @@ describe('POST /api/hubspot/card/link', () => {
         }),
       }),
     );
+  });
+
+  it('returns 500 card_service_user_not_configured when HUBSPOT_CARD_SERVICE_USER_EMAIL is unset', async () => {
+    delete process.env.HUBSPOT_CARD_SERVICE_USER_EMAIL;
+    findScenarioFirst.mockResolvedValue(null);
+    const res = await POST(
+      new Request('http://x/api/hubspot/card/link', {
+        method: 'POST',
+        headers: { 'x-ninja-card-secret': 'test-secret' },
+        body: JSON.stringify({ dealId: 'd1', customerName: 'Acme' }),
+      }) as Request,
+    );
+    const body = await res.json();
+    expect(res.status).toBe(500);
+    expect(body.error).toBe('card_service_user_not_configured');
+    expect(scenarioCreate).not.toHaveBeenCalled();
+  });
+
+  it('returns 500 card_service_user_missing when service user does not exist in DB', async () => {
+    findScenarioFirst.mockResolvedValue(null);
+    userFindUnique.mockResolvedValue(null);
+    const res = await POST(
+      new Request('http://x/api/hubspot/card/link', {
+        method: 'POST',
+        headers: { 'x-ninja-card-secret': 'test-secret' },
+        body: JSON.stringify({ dealId: 'd1', customerName: 'Acme' }),
+      }) as Request,
+    );
+    const body = await res.json();
+    expect(res.status).toBe(500);
+    expect(body.error).toBe('card_service_user_missing');
+    expect(body.message).toContain('hubspot-card@ninjaconcepts.com');
+    expect(scenarioCreate).not.toHaveBeenCalled();
   });
 });

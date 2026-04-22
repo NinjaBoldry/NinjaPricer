@@ -32,15 +32,29 @@ export async function POST(req: Request): Promise<NextResponse> {
     });
   }
 
-  // Create a new scenario. Owner is resolved via a dedicated "HubSpot card" service user that must exist in the DB.
-  // This keeps the scenario audit trail attributed to the card's origin rather than a random admin user.
-  const ownerEmail =
-    process.env.HUBSPOT_CARD_SERVICE_USER_EMAIL ?? 'hubspot-card@ninjaconcepts.com';
-  const owner = await prisma.user.upsert({
-    where: { email: ownerEmail },
-    create: { email: ownerEmail, role: 'ADMIN' },
-    update: {},
-  });
+  // Create a new scenario. Owner is resolved via a dedicated "HubSpot card" service user that must
+  // already exist in the DB. We intentionally never auto-create it to avoid privilege escalation.
+  const ownerEmail = process.env.HUBSPOT_CARD_SERVICE_USER_EMAIL;
+  if (!ownerEmail) {
+    return NextResponse.json(
+      {
+        error: 'card_service_user_not_configured',
+        message: 'HUBSPOT_CARD_SERVICE_USER_EMAIL not set.',
+      },
+      { status: 500 },
+    );
+  }
+
+  const owner = await prisma.user.findUnique({ where: { email: ownerEmail } });
+  if (!owner) {
+    return NextResponse.json(
+      {
+        error: 'card_service_user_missing',
+        message: `User ${ownerEmail} must exist in the pricer DB before the App Card can create scenarios. Add them via the admin UI first.`,
+      },
+      { status: 500 },
+    );
+  }
 
   const scenario = await prisma.scenario.create({
     data: {

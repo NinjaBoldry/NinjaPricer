@@ -5,8 +5,24 @@
 - Phase 2b + 2c deployed.
 - HubSpot Developer Project already installed in the portal (earlier phases).
 - `HUBSPOT_ACCESS_TOKEN` / `HUBSPOT_WEBHOOK_SECRET` / `HUBSPOT_APP_ID` already set in Railway.
+- **The HubSpot card service user must exist in the pricer DB before deploying** (see step 1b below).
+  The card link endpoint will refuse to create scenarios and return `500 card_service_user_missing`
+  if the user is absent. It intentionally never auto-creates the user to prevent privilege escalation.
 
 ## Steps
+
+### 1b. Create the card service user (one-time, before first deploy)
+
+1. Log in to the pricer admin UI as an administrator.
+2. Go to **Admin → Users → Invite User**.
+3. Create the user whose email matches what you will set for `HUBSPOT_CARD_SERVICE_USER_EMAIL`
+   (e.g. `hubspot-card@ninjaconcepts.com`). Assign any role — the card only uses their ID as
+   `ownerId` on created scenarios; they do not need admin access themselves.
+4. Set `HUBSPOT_CARD_SERVICE_USER_EMAIL` in Railway to that email address.
+
+> **Why?** The endpoint uses `prisma.user.findUnique` and fails fast with a structured error if
+> the user is missing. It never auto-creates an ADMIN user from an env var, which would be a
+> privilege-escalation path.
 
 ### 1. Generate the shared secret
 
@@ -26,7 +42,10 @@ Record the output. You'll set it in TWO places:
 Optional:
 
 - **Railway** → `PRICER_APP_URL=https://ninjapricer-production.up.railway.app` (or your production URL)
-- **Railway** → `HUBSPOT_CARD_SERVICE_USER_EMAIL=hubspot-card@ninjaconcepts.com`
+
+Required (see step 1b):
+
+- **Railway** → `HUBSPOT_CARD_SERVICE_USER_EMAIL=<email of the service user created in step 1b>`
 
 ### 2. Deploy the project
 
