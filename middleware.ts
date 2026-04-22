@@ -12,6 +12,8 @@ export default NextAuth(authConfig).auth((req) => {
     pathname.startsWith('/api/auth') ||
     pathname.startsWith('/api/mcp') ||
     pathname.startsWith('/api/quotes/') ||
+    pathname.startsWith('/api/hubspot/card/') ||
+    pathname.startsWith('/api/hubspot/webhooks/') ||
     pathname.startsWith('/_next') ||
     pathname.startsWith('/favicon');
 
