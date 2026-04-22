@@ -1,18 +1,10 @@
 import { z } from 'zod';
 import { randomUUID } from 'node:crypto';
-import Decimal from 'decimal.js';
 import type { ToolDefinition } from '@/lib/mcp/server';
 import { prisma } from '@/lib/db/client';
 import { hubspotFetch } from '@/lib/hubspot/client';
-import {
-  publishScenarioToHubSpot,
-  MissingDealLinkError,
-  UnresolvedHardRailOverrideError,
-  type PublishPersistence,
-} from '@/lib/hubspot/quote/publish';
-import { scenarioToHubSpotLineItems } from '@/lib/hubspot/quote/translator';
-import { HubSpotQuoteRepository } from '@/lib/db/repositories/hubspotQuote';
-import { computeScenario } from '@/lib/services/rateSnapshot';
+import { MissingDealLinkError, UnresolvedHardRailOverrideError } from '@/lib/hubspot/quote/publish';
+import { runPublishScenario } from '@/lib/hubspot/quote/publishService';
 
 // ---------------------------------------------------------------------------
 // Helper types
@@ -232,165 +224,16 @@ export const publishScenarioToHubspotTool: ToolDefinition<
   targetEntityType: 'Scenario',
   extractTargetId: (input) => input.scenarioId,
   handler: async (_ctx, input) => {
-    const correlationId = `publish-${randomUUID()}`;
-
-    // Run the pricing engine to get real per-seat prices
-    let scenarioRow: Awaited<ReturnType<typeof computeScenario>>['scenarioRow'];
-    let computeResult: Awaited<ReturnType<typeof computeScenario>>['computeResult'];
-    try {
-      ({ scenarioRow, computeResult } = await computeScenario(input.scenarioId));
-    } catch (err: unknown) {
-      if (
-        err &&
-        typeof err === 'object' &&
-        'name' in err &&
-        (err as { name: string }).name === 'NotFoundError'
-      ) {
-        return { error: 'SCENARIO_NOT_FOUND', message: `Scenario ${input.scenarioId} not found.` };
-      }
-      throw err;
-    }
-
-    const scenario = scenarioRow;
-
-    // Determine the next revision number
-    const latestQuote = await prisma.hubSpotQuote.findFirst({
-      where: { scenarioId: input.scenarioId },
-      orderBy: { revision: 'desc' },
-    });
-    const revision = (latestQuote?.revision ?? 0) + 1;
-
-    // Build a map of productId → engine TabResult for SaaS tabs
-    const saasTabResultByProductId = new Map(
-      computeResult.perTab.filter((t) => t.kind === 'SAAS_USAGE').map((t) => [t.productId, t]),
-    );
-
-    // Build SaaS lines using engine-computed prices
-    // Load product details needed for HubSpot payload (name, sku, description)
-    const saasProductIds = scenario.saasConfigs.map((c) => c.productId);
-    const saasProductDetails =
-      saasProductIds.length > 0
-        ? await prisma.product.findMany({
-            where: { id: { in: saasProductIds } },
-            select: {
-              id: true,
-              name: true,
-              sku: true,
-              description: true,
-              listPrice: { select: { usdPerSeatPerMonth: true } },
-            },
-          })
-        : [];
-    const saasProductMap = new Map(saasProductDetails.map((p) => [p.id, p]));
-
-    const saasLines = scenario.saasConfigs.map((cfg) => {
-      const tabResult = saasTabResultByProductId.get(cfg.productId);
-      const productDetail = saasProductMap.get(cfg.productId);
-      const productName = productDetail?.name ?? cfg.productId;
-      const productSku = productDetail?.sku ?? '';
-      const productDescription = productDetail?.description ?? '';
-
-      // List price per seat from the product snapshot
-      const listPriceMonthly =
-        productDetail?.listPrice?.usdPerSeatPerMonth != null
-          ? new Decimal(productDetail.listPrice.usdPerSeatPerMonth.toString())
-          : new Decimal(0);
-
-      // Effective unit price = engine monthlyRevenueCents / 100 / seatCount
-      const seatCount = cfg.seatCount;
-      let effectiveUnitPriceMonthly = new Decimal(0);
-      if (tabResult && seatCount > 0) {
-        effectiveUnitPriceMonthly = new Decimal(tabResult.monthlyRevenueCents)
-          .div(100)
-          .div(seatCount);
-      } else if (tabResult && seatCount === 0) {
-        effectiveUnitPriceMonthly = listPriceMonthly;
-      }
-
-      // Discount pct derived from list vs effective (or from saasMeta if available)
-      let discountPct: Decimal | null = null;
-      if (tabResult?.saasMeta && !tabResult.saasMeta.effectiveDiscountPct.isZero()) {
-        discountPct = tabResult.saasMeta.effectiveDiscountPct;
-      } else if (listPriceMonthly.gt(0) && effectiveUnitPriceMonthly.lt(listPriceMonthly)) {
-        discountPct = listPriceMonthly.minus(effectiveUnitPriceMonthly).div(listPriceMonthly);
-      }
-
-      return {
-        kind: 'SAAS' as const,
-        productId: cfg.productId,
-        productName,
-        productSku,
-        productDescription,
-        seatCount,
-        listPriceMonthly,
-        effectiveUnitPriceMonthly,
-        discountPct,
-        contractMonths: scenario.contractMonths,
-        rampSchedule: null,
-      };
-    });
-
-    const laborLines = scenario.laborLines.map((ll) => ({
-      kind: 'LABOR' as const,
-      skuId: ll.skuId ?? ll.productId,
-      skuName: ll.customDescription ?? ll.productId,
-      skuCode: ll.productId,
-      skuDescription: '',
-      qty: Number(ll.qty),
-      unitPrice: new Decimal(ll.revenuePerUnitUsd.toString()),
-    }));
-
-    const lineItems = scenarioToHubSpotLineItems({
+    const result = await runPublishScenario({
       scenarioId: input.scenarioId,
-      tabs: [...saasLines, ...laborLines],
-      bundles: [],
+      quoteNameOverride: input.quoteNameOverride,
+      expirationDays: input.expirationDays,
+      correlationPrefix: 'publish',
     });
-
-    // Build PublishPersistence from HubSpotQuoteRepository
-    const quoteRepo = new HubSpotQuoteRepository(prisma);
-
-    const persistence: PublishPersistence = {
-      createHubSpotQuote: async (data) => quoteRepo.create(data),
-      updatePublishState: async (rowId, state, extras) => {
-        await quoteRepo.updatePublishState(rowId, state, extras);
-      },
-      findPriorRevision: async (scenarioId, currentRevision) => {
-        const prior = await quoteRepo.findByScenarioAndRevision(scenarioId, currentRevision - 1);
-        return prior ? { id: prior.id, hubspotQuoteId: prior.hubspotQuoteId } : null;
-      },
-      markSuperseded: async (oldRowId, newRowId) => {
-        await quoteRepo.markSuperseded(oldRowId, newRowId);
-      },
-    };
-
-    try {
-      const outcome = await publishScenarioToHubSpot({
-        scenario: {
-          id: scenario.id,
-          hubspotDealId: scenario.hubspotDealId,
-          revision,
-          hasUnresolvedHardRailOverrides: false,
-        },
-        lineItems,
-        quoteConfig: {
-          name: input.quoteNameOverride ?? `${scenario.customerName} — ${scenario.name}`,
-          expirationDays: input.expirationDays,
-        },
-        persistence,
-        now: () => new Date(),
-        correlationId,
-      });
-
-      return { ...outcome, correlationId };
-    } catch (err) {
-      if (err instanceof MissingDealLinkError) {
-        return { error: 'MISSING_DEAL_LINK', message: err.message };
-      }
-      if (err instanceof UnresolvedHardRailOverrideError) {
-        return { error: 'UNRESOLVED_HARD_RAIL_OVERRIDE', message: err.message };
-      }
-      throw err;
+    if (!result.ok) {
+      return { error: result.error, message: result.message };
     }
+    return { hubspotQuoteId: result.hubspotQuoteId, shareableUrl: result.shareableUrl, correlationId: result.correlationId };
   },
 };
 
@@ -474,166 +317,16 @@ export const supersedeHubspotQuoteTool: ToolDefinition<
   targetEntityType: 'Scenario',
   extractTargetId: (input) => input.scenarioId,
   handler: async (_ctx, input) => {
-    const correlationId = `supersede-${randomUUID()}`;
-
-    // Run the pricing engine to get real per-seat prices
-    let scenarioRow: Awaited<ReturnType<typeof computeScenario>>['scenarioRow'];
-    let computeResult: Awaited<ReturnType<typeof computeScenario>>['computeResult'];
-    try {
-      ({ scenarioRow, computeResult } = await computeScenario(input.scenarioId));
-    } catch (err: unknown) {
-      if (
-        err &&
-        typeof err === 'object' &&
-        'name' in err &&
-        (err as { name: string }).name === 'NotFoundError'
-      ) {
-        return {
-          error: 'SCENARIO_NOT_FOUND' as const,
-          message: `Scenario ${input.scenarioId} not found.`,
-        };
-      }
-      throw err;
-    }
-
-    const scenario = scenarioRow;
-
-    // Get the current latest revision and increment
-    const latestQuote = await prisma.hubSpotQuote.findFirst({
-      where: { scenarioId: input.scenarioId },
-      orderBy: { revision: 'desc' },
-    });
-    const revision = (latestQuote?.revision ?? 0) + 1;
-
-    // Build a map of productId → engine TabResult for SaaS tabs
-    const saasTabResultByProductId = new Map(
-      computeResult.perTab.filter((t) => t.kind === 'SAAS_USAGE').map((t) => [t.productId, t]),
-    );
-
-    // Load product details needed for HubSpot payload (name, sku, description)
-    const saasProductIds = scenario.saasConfigs.map((c) => c.productId);
-    const saasProductDetails =
-      saasProductIds.length > 0
-        ? await prisma.product.findMany({
-            where: { id: { in: saasProductIds } },
-            select: {
-              id: true,
-              name: true,
-              sku: true,
-              description: true,
-              listPrice: { select: { usdPerSeatPerMonth: true } },
-            },
-          })
-        : [];
-    const saasProductMap = new Map(saasProductDetails.map((p) => [p.id, p]));
-
-    // Build SaaS lines using engine-computed prices
-    const saasLines = scenario.saasConfigs.map((cfg) => {
-      const tabResult = saasTabResultByProductId.get(cfg.productId);
-      const productDetail = saasProductMap.get(cfg.productId);
-      const productName = productDetail?.name ?? cfg.productId;
-      const productSku = productDetail?.sku ?? '';
-      const productDescription = productDetail?.description ?? '';
-
-      const listPriceMonthly =
-        productDetail?.listPrice?.usdPerSeatPerMonth != null
-          ? new Decimal(productDetail.listPrice.usdPerSeatPerMonth.toString())
-          : new Decimal(0);
-
-      const seatCount = cfg.seatCount;
-      let effectiveUnitPriceMonthly = new Decimal(0);
-      if (tabResult && seatCount > 0) {
-        effectiveUnitPriceMonthly = new Decimal(tabResult.monthlyRevenueCents)
-          .div(100)
-          .div(seatCount);
-      } else if (tabResult && seatCount === 0) {
-        effectiveUnitPriceMonthly = listPriceMonthly;
-      }
-
-      let discountPct: Decimal | null = null;
-      if (tabResult?.saasMeta && !tabResult.saasMeta.effectiveDiscountPct.isZero()) {
-        discountPct = tabResult.saasMeta.effectiveDiscountPct;
-      } else if (listPriceMonthly.gt(0) && effectiveUnitPriceMonthly.lt(listPriceMonthly)) {
-        discountPct = listPriceMonthly.minus(effectiveUnitPriceMonthly).div(listPriceMonthly);
-      }
-
-      return {
-        kind: 'SAAS' as const,
-        productId: cfg.productId,
-        productName,
-        productSku,
-        productDescription,
-        seatCount,
-        listPriceMonthly,
-        effectiveUnitPriceMonthly,
-        discountPct,
-        contractMonths: scenario.contractMonths,
-        rampSchedule: null,
-      };
-    });
-
-    const laborLines = scenario.laborLines.map((ll) => ({
-      kind: 'LABOR' as const,
-      skuId: ll.skuId ?? ll.productId,
-      skuName: ll.customDescription ?? ll.productId,
-      skuCode: ll.productId,
-      skuDescription: '',
-      qty: Number(ll.qty),
-      unitPrice: new Decimal(ll.revenuePerUnitUsd.toString()),
-    }));
-
-    const lineItems = scenarioToHubSpotLineItems({
+    const result = await runPublishScenario({
       scenarioId: input.scenarioId,
-      tabs: [...saasLines, ...laborLines],
-      bundles: [],
+      quoteNameOverride: input.quoteNameOverride,
+      expirationDays: input.expirationDays,
+      correlationPrefix: 'supersede',
     });
-
-    // Build PublishPersistence from HubSpotQuoteRepository
-    const quoteRepo = new HubSpotQuoteRepository(prisma);
-
-    const persistence: PublishPersistence = {
-      createHubSpotQuote: async (data) => quoteRepo.create(data),
-      updatePublishState: async (rowId, state, extras) => {
-        await quoteRepo.updatePublishState(rowId, state, extras);
-      },
-      findPriorRevision: async (scenarioId, currentRevision) => {
-        const prior = await quoteRepo.findByScenarioAndRevision(scenarioId, currentRevision - 1);
-        return prior ? { id: prior.id, hubspotQuoteId: prior.hubspotQuoteId } : null;
-      },
-      markSuperseded: async (oldRowId, newRowId) => {
-        await quoteRepo.markSuperseded(oldRowId, newRowId);
-      },
-    };
-
-    try {
-      const outcome = await publishScenarioToHubSpot({
-        scenario: {
-          id: scenario.id,
-          hubspotDealId: scenario.hubspotDealId,
-          revision,
-          hasUnresolvedHardRailOverrides: false,
-        },
-        lineItems,
-        quoteConfig: {
-          name:
-            input.quoteNameOverride ?? `${scenario.customerName} — ${scenario.name} v${revision}`,
-          expirationDays: input.expirationDays,
-        },
-        persistence,
-        now: () => new Date(),
-        correlationId,
-      });
-
-      return { ...outcome, correlationId };
-    } catch (err) {
-      if (err instanceof MissingDealLinkError) {
-        return { error: 'MISSING_DEAL_LINK' as const, message: err.message };
-      }
-      if (err instanceof UnresolvedHardRailOverrideError) {
-        return { error: 'UNRESOLVED_HARD_RAIL_OVERRIDE' as const, message: err.message };
-      }
-      throw err;
+    if (!result.ok) {
+      return { error: result.error, message: result.message };
     }
+    return { hubspotQuoteId: result.hubspotQuoteId, shareableUrl: result.shareableUrl, correlationId: result.correlationId };
   },
 };
 
