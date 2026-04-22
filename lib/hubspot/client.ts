@@ -1,3 +1,5 @@
+import { getAccessToken } from './tokenProvider';
+
 const HUBSPOT_API_BASE = 'https://api.hubapi.com';
 const MAX_ATTEMPTS = 3;
 const BASE_BACKOFF_MS = 500;
@@ -37,15 +39,7 @@ function sleep(ms: number): Promise<void> {
 }
 
 export async function hubspotFetch<T = unknown>(options: HubSpotFetchOptions): Promise<T> {
-  const token = process.env.HUBSPOT_ACCESS_TOKEN;
-  if (!token) {
-    throw new HubSpotApiError(
-      0,
-      'HUBSPOT_ACCESS_TOKEN not configured',
-      undefined,
-      options.correlationId,
-    );
-  }
+  const token = await getAccessToken(options.correlationId);
 
   const url = buildUrl(options.path, options.query);
   const init: RequestInit = {

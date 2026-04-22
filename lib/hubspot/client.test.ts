@@ -1,11 +1,15 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { hubspotFetch, HubSpotApiError } from './client';
+import { _resetTokenCacheForTests } from './tokenProvider';
 
 describe('hubspotFetch', () => {
   const originalFetch = global.fetch;
 
   beforeEach(() => {
     vi.useFakeTimers();
+    _resetTokenCacheForTests();
+    delete process.env.HUBSPOT_CLIENT_ID;
+    delete process.env.HUBSPOT_CLIENT_SECRET;
     process.env.HUBSPOT_ACCESS_TOKEN = 'test-token';
   });
 

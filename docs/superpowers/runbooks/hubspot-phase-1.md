@@ -3,13 +3,15 @@
 ## Prerequisites
 
 1. HubSpot Developer Test Account created.
-2. Developer Project created under that account; note the private-app access token.
-3. `.env.local` populated:
+2. **Primary path (platform 2026.03+):** Developer Project app — note the Client ID and Client Secret.
+   `.env.local`:
    ```
-   HUBSPOT_ACCESS_TOKEN=<token>
+   HUBSPOT_CLIENT_ID=<client id>
+   HUBSPOT_CLIENT_SECRET=<client secret>
    HUBSPOT_PORTAL_ID=<portal id>
    RUN_HUBSPOT_INTEGRATION=true
    ```
+3. **Fallback / legacy private-app path:** set `HUBSPOT_ACCESS_TOKEN` instead of the client-credentials vars. If `HUBSPOT_ACCESS_TOKEN` is set it takes priority and no token exchange happens.
 
 ## Run setup
 
