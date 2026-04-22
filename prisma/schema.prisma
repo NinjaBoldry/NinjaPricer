@@ -351,6 +351,7 @@ model Scenario {
   hubspotCompanyId         String?
   hubspotPrimaryContactId  String?
   hubspotQuotes            HubSpotQuote[]
+  hubspotApprovalRequest   HubSpotApprovalRequest?
 }
 
 model ScenarioSaaSConfig {
@@ -496,6 +497,12 @@ enum HubSpotPublishState {
   APPROVAL_REJECTED
 }
 
+enum HubSpotApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 model HubSpotConfig {
   id                   String    @id @default(cuid())
   portalId             String    @unique
@@ -574,4 +581,18 @@ model HubSpotWebhookEvent {
   processingAttempts  Int       @default(0)
 
   @@index([processedAt])
+}
+
+model HubSpotApprovalRequest {
+  id                       String                @id @default(cuid())
+  scenarioId               String                @unique
+  hubspotDealId            String
+  railViolations           Json
+  submittedAt              DateTime              @default(now())
+  status                   HubSpotApprovalStatus @default(PENDING)
+  resolvedAt               DateTime?
+  resolvedByUserId         String?
+  resolvedByHubspotOwnerId String?
+
+  scenario                 Scenario              @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
 }
