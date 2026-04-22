@@ -25,7 +25,7 @@
       "conditionallyRequiredScopes": []
     },
     "permittedUrls": {
-      "fetch": ["https://api.hubapi.com"],
+      "fetch": ["https://api.hubapi.com", "https://ninjapricer-production.up.railway.app"],
       "iframe": [],
       "img": []
     },
