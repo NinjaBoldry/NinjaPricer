@@ -78,6 +78,30 @@ describe('processEvent', () => {
     expect(mockQuoteRepo.recordDealOutcome).toHaveBeenCalledWith('s1', 'WON', expect.any(Date));
   });
 
+  it('broadened match: future subscriptionType quote.* prefix still routes to terminal-status handler', async () => {
+    // Defense-in-depth: HubSpot may introduce e.g. "quote.creation" or sub-types.
+    // Using startsWith('quote.') ensures those still route correctly if propertyName matches.
+    mockEventRepo.findById.mockResolvedValue({
+      id: 'e-broad',
+      processedAt: null,
+      subscriptionType: 'quote.statusChange', // hypothetical future sub-type
+      objectType: 'quote',
+      objectId: 'hs-q-broad',
+      payload: {
+        propertyName: 'hs_status',
+        propertyValue: 'DECLINED',
+        occurredAt: '2026-04-23T00:00:00Z',
+      },
+    });
+    await processEvent('e-broad', { quoteRepo: mockQuoteRepo, eventRepo: mockEventRepo } as any);
+    expect(mockQuoteRepo.recordTerminalStatus).toHaveBeenCalledWith(
+      'hs-q-broad',
+      'DECLINED',
+      expect.any(Date),
+    );
+    expect(mockEventRepo.markProcessed).toHaveBeenCalledWith('e-broad');
+  });
+
   it('markFailed on error, leaves processedAt null', async () => {
     mockEventRepo.findById.mockResolvedValue({
       id: 'e3',

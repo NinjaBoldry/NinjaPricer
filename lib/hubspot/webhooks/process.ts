@@ -18,16 +18,13 @@ export async function processEvent(eventId: string, deps: ProcessDeps): Promise<
   try {
     const payload = event.payload as Record<string, unknown>;
 
-    if (event.subscriptionType === 'quote.propertyChange' && payload.propertyName === 'hs_status') {
+    if (event.subscriptionType.startsWith('quote.') && payload.propertyName === 'hs_status') {
       const status = String(payload.propertyValue ?? '').toUpperCase();
       if (TERMINAL_QUOTE_STATUSES.has(status)) {
         const at = payload.occurredAt ? new Date(String(payload.occurredAt)) : new Date();
         await deps.quoteRepo.recordTerminalStatus(event.objectId, status, at);
       }
-    } else if (
-      event.subscriptionType === 'deal.propertyChange' &&
-      payload.propertyName === 'dealstage'
-    ) {
+    } else if (event.subscriptionType.startsWith('deal.') && payload.propertyName === 'dealstage') {
       const stage = String(payload.propertyValue ?? '').toLowerCase();
       let outcome: 'WON' | 'LOST' | null = null;
       if (WON_STAGES.has(stage)) outcome = 'WON';
