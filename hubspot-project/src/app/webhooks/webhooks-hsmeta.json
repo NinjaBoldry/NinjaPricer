@@ -19,6 +19,12 @@
           "objectType": "deal",
           "propertyName": "dealstage",
           "active": true
+        },
+        {
+          "subscriptionType": "object.propertyChange",
+          "objectType": "deal",
+          "propertyName": "pricer_approval_status",
+          "active": true
         }
       ],
       "legacyCrmObjects": [],

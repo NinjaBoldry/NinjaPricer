@@ -18,7 +18,8 @@
         "crm.objects.quotes.write",
         "e-commerce",
         "crm.schemas.deals.write",
-        "crm.schemas.quotes.write"
+        "crm.schemas.quotes.write",
+        "crm.objects.owners.read"
       ],
       "optionalScopes": [],
       "conditionallyRequiredScopes": []
