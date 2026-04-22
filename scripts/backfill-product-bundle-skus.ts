@@ -70,25 +70,31 @@ async function main() {
       process.exit(2);
     }
 
-    // No collisions — apply
+    // No collisions — apply (wrapped in a single transaction for atomicity)
     let updatedProducts = 0;
     let updatedBundles = 0;
     let skippedEmpty = 0;
 
-    for (const pr of proposals) {
+    // Pre-compute which rows need updating (outside the transaction; read-only)
+    const toUpdate = proposals.filter((pr) => {
       if (!pr.proposedSku) {
         skippedEmpty++;
-        continue;
+        return false;
       }
-      if (pr.currentSku === pr.proposedSku) continue; // already correct
-      if (pr.kind === 'PRODUCT') {
-        await prisma.product.update({ where: { id: pr.id }, data: { sku: pr.proposedSku } });
-        updatedProducts++;
-      } else {
-        await prisma.bundle.update({ where: { id: pr.id }, data: { sku: pr.proposedSku } });
-        updatedBundles++;
+      return pr.currentSku !== pr.proposedSku;
+    });
+
+    await prisma.$transaction(async (tx) => {
+      for (const pr of toUpdate) {
+        if (pr.kind === 'PRODUCT') {
+          await tx.product.update({ where: { id: pr.id }, data: { sku: pr.proposedSku } });
+          updatedProducts++;
+        } else {
+          await tx.bundle.update({ where: { id: pr.id }, data: { sku: pr.proposedSku } });
+          updatedBundles++;
+        }
       }
-    }
+    });
 
     console.log(
       `Done. Products updated: ${updatedProducts}. Bundles updated: ${updatedBundles}. Skipped (empty SKU): ${skippedEmpty}.`,
