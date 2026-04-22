@@ -29,16 +29,16 @@ Admin UI for Phase 2 is intentionally minimal — a "Publish" action + basic Dea
 
 ## Decisions Specific to Phase 2
 
-| # | Decision | Chosen |
-|---|----------|--------|
-| P2-1 | Bundle rolled-up price | Compute via engine (`computeBundlePrice(bundleId)`, pure function extracted from `lib/engine/compute.ts`) |
-| P2-2 | Product / Bundle metadata for quotes | Add `description` + `sku @unique` columns; backfill SKUs from slugified names; collision flag for admin resolution |
-| P2-3 | Approval rejection UX | Minimal: scenario status + rep sees it next time they open the scenario. No rejection reason capture, no rep notification beyond status. |
+| #    | Decision                               | Chosen                                                                                                                                                                |
+| ---- | -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| P2-1 | Bundle rolled-up price                 | Compute via engine (`computeBundlePrice(bundleId)`, pure function extracted from `lib/engine/compute.ts`)                                                             |
+| P2-2 | Product / Bundle metadata for quotes   | Add `description` + `sku @unique` columns; backfill SKUs from slugified names; collision flag for admin resolution                                                    |
+| P2-3 | Approval rejection UX                  | Minimal: scenario status + rep sees it next time they open the scenario. No rejection reason capture, no rep notification beyond status.                              |
 | P2-4 | Publish trigger surface (Phase 2 only) | MCP tool + basic admin button + basic Deal-link form on the scenario admin page. Polished rep-facing UX lives in Phase 3 (App Card) and Phase 4 (pricer-first modal). |
-| P2-5 | Webhook URL host | `https://ninjapricer-production.up.railway.app/api/hubspot/webhooks/*` |
-| P2-6 | Webhook signature algorithm | HubSpot's v3 signature (`X-HubSpot-Signature-V3`), verified against `HUBSPOT_WEBHOOK_SECRET` |
-| P2-7 | Echo-loop guard order | Signature → `sourceId == our app` drop → persist to `HubSpotWebhookEvent` (idempotent on `hubspotEventId`) → background processing |
-| P2-8 | Approval-approved re-entry | Webhook handler enqueues a resume job (in-process `setImmediate` for now — no separate queue service); resume idempotent on `(scenarioId, revision)` |
+| P2-5 | Webhook URL host                       | `https://ninjapricer-production.up.railway.app/api/hubspot/webhooks/*`                                                                                                |
+| P2-6 | Webhook signature algorithm            | HubSpot's v3 signature (`X-HubSpot-Signature-V3`), verified against `HUBSPOT_WEBHOOK_SECRET`                                                                          |
+| P2-7 | Echo-loop guard order                  | Signature → `sourceId == our app` drop → persist to `HubSpotWebhookEvent` (idempotent on `hubspotEventId`) → background processing                                    |
+| P2-8 | Approval-approved re-entry             | Webhook handler enqueues a resume job (in-process `setImmediate` for now — no separate queue service); resume idempotent on `(scenarioId, revision)`                  |
 
 ## Catalog Enrichment (Phase 2 Pre-Work)
 
@@ -156,7 +156,7 @@ Additive fields on existing models:
 Single function `publishScenarioToHubSpot(scenarioId)` in `lib/hubspot/quote/publish.ts`. State machine on `HubSpotPublishState`:
 
 1. **Precheck.** Load scenario. Error if no `hubspotDealId` (returns a structured error the admin UI surfaces as "Link to HubSpot Deal first"). Error if scenario has no lines.
-2. **Threshold check.** Run the engine's rail evaluation. Filter to hard-rail violations *with a rep override recorded*. If any → branch to approval flow below. Else continue.
+2. **Threshold check.** Run the engine's rail evaluation. Filter to hard-rail violations _with a rep override recorded_. If any → branch to approval flow below. Else continue.
 3. **Compose line items** via new pure function `scenarioToHubSpotLineItems(scenario, catalogSnapshot, bundlePrices)`:
    - Each bundle → one line, `pricer_reason: bundle_rollup`, unit price from `computeBundlePrice`, `pricer_original_list_price` = sum of bundle items' list prices.
    - Each SaaS line with a negotiated discount → `pricer_reason: negotiated`, native `hs_discount_percentage` populated, `price` = list.
@@ -166,7 +166,7 @@ Single function `publishScenarioToHubSpot(scenarioId)` in `lib/hubspot/quote/pub
 5. **Create line items.** One POST per line to `/crm/v3/objects/line_items` carrying HubSpot-standard + our custom properties.
 6. **Associate line items → quote.** PUT through the associations API.
 7. **Publish.** Set required HubSpot fields (signer, terms, links) from scenario config with fallbacks in `HubSpotConfig`; transition the HubSpot quote to publishable state; fetch the shareable URL.
-8. **Supersede prior revision.** If a prior `HubSpotQuote` exists for this `scenarioId`, mark it `SUPERSEDED`, stamp `supersedesQuoteId` on the new row, PATCH `pricer_supersedes` on the old HubSpot quote. Do *not* void the old quote.
+8. **Supersede prior revision.** If a prior `HubSpotQuote` exists for this `scenarioId`, mark it `SUPERSEDED`, stamp `supersedesQuoteId` on the new row, PATCH `pricer_supersedes` on the old HubSpot quote. Do _not_ void the old quote.
 9. **Record.** Update local rows to `PUBLISHED` with the quote ID, URL, timestamp.
 10. **Return** `{hubspotQuoteId, shareableUrl, correlationId}`.
 
@@ -188,6 +188,7 @@ Triggered when publish Step 2 detects hard-rail overrides.
 6. Approver identity (matched from HubSpot owner ID → pricer user email) is best-effort. If mapping fails, `resolvedByUserId` stays null — not a blocker.
 
 The HubSpot Workflow itself is not built by this spec. Its contract:
+
 - Triggers on `Deal.pricer_approval_status` transitioning to `pending`
 - Writes `approved` or `rejected` back to the same property on manager decision
 - May use any `pricer_*` Deal property in its task/notification template
@@ -229,13 +230,13 @@ Old HubSpot quote stays visible to the customer at its shareable URL (decision #
 
 Extend the existing `lib/mcp/tools/hubspot.ts` (Phase 1 registered `hubspotCatalogTools`). Phase 2 adds `hubspotQuoteTools` array:
 
-| Tool | Scope | Purpose |
-|------|-------|---------|
-| `link_scenario_to_hubspot_deal` | sales + admin | Link scenario to existing Deal (validates dealId exists) |
+| Tool                               | Scope         | Purpose                                                                                                                                                                                                   |
+| ---------------------------------- | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `link_scenario_to_hubspot_deal`    | sales + admin | Link scenario to existing Deal (validates dealId exists)                                                                                                                                                  |
 | `create_hubspot_deal_for_scenario` | sales + admin | Create new Deal + associate Contact/Company. Phase 2 version performs basic duplicate detection by email/domain and returns matches; caller decides create-anyway. Phase 4 will wrap this in a richer UI. |
-| `publish_scenario_to_hubspot` | sales + admin | Publish a scenario; may return `pending_approval` |
-| `check_publish_status` | sales + admin | Current publish state, HubSpot quote URL, approval status |
-| `supersede_hubspot_quote` | sales + admin | Convenience wrapper: snapshot scenario into a new revision + publish |
+| `publish_scenario_to_hubspot`      | sales + admin | Publish a scenario; may return `pending_approval`                                                                                                                                                         |
+| `check_publish_status`             | sales + admin | Current publish state, HubSpot quote URL, approval status                                                                                                                                                 |
+| `supersede_hubspot_quote`          | sales + admin | Convenience wrapper: snapshot scenario into a new revision + publish                                                                                                                                      |
 
 All are admin-UI-callable via server actions (same pattern as Phase 1).
 
@@ -255,6 +256,7 @@ All under `app/admin/hubspot/`:
 The scenario page enhancements are intentionally basic — no live search, no dedupe modal. Phase 4 polishes this.
 
 Catalog admin also gains:
+
 - **`/admin/catalog/sku-collisions/page.tsx`** — one-time tool, empty when backfill has no unresolved collisions.
 
 ## HubSpot Project Updates
@@ -262,6 +264,7 @@ Catalog admin also gains:
 The Developer Project at `hubspot-project/` needs webhook subscriptions added to `src/app/app-hsmeta.json`. Webhook features require the `webhooks` feature block in the manifest (the `hs project add` flow supports this, or we hand-edit). Redeploy + reinstall in the portal (same Reinstall URL flow Phase 1 used).
 
 New scopes likely needed:
+
 - `crm.objects.owners.read` — for matching approver identity
 - Additional webhook subscription scopes depending on event type (the `hs project upload` validator will tell us if any are missing)
 

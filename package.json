@@ -13,7 +13,7 @@
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage --passWithNoTests",
-    "test:integration": "DATABASE_URL=postgresql://ninja:ninja_dev@localhost:5433/ninja_pricer?schema=public vitest run --passWithNoTests --fileParallelism=false",
+    "test:integration": "DATABASE_URL=postgresql://ninja:ninja_dev@localhost:5433/ninja_pricer?schema=public vitest run --config vitest.integration.config.ts --passWithNoTests",
     "hubspot:setup": "tsx scripts/hubspot-setup.ts",
     "catalog:backfill-skus": "tsx scripts/backfill-product-bundle-skus.ts"
   },

@@ -56,7 +56,11 @@ describe('ProductService — description + sku validation', () => {
   it('trims description and passes through non-empty value', async () => {
     const repo = mockProductRepo();
     const service = new ProductService(repo);
-    await service.createProduct({ name: 'Test', kind: 'SAAS_USAGE', description: '  A description  ' });
+    await service.createProduct({
+      name: 'Test',
+      kind: 'SAAS_USAGE',
+      description: '  A description  ',
+    });
     expect(repo.create).toHaveBeenCalledWith(
       expect.objectContaining({ description: 'A description' }),
     );
@@ -66,27 +70,21 @@ describe('ProductService — description + sku validation', () => {
     const repo = mockProductRepo();
     const service = new ProductService(repo);
     await service.createProduct({ name: 'Test', kind: 'SAAS_USAGE', description: '   ' });
-    expect(repo.create).toHaveBeenCalledWith(
-      expect.objectContaining({ description: null }),
-    );
+    expect(repo.create).toHaveBeenCalledWith(expect.objectContaining({ description: null }));
   });
 
   it('uppercases and trims sku', async () => {
     const repo = mockProductRepo();
     const service = new ProductService(repo);
     await service.createProduct({ name: 'Test', kind: 'SAAS_USAGE', sku: '  nn-01  ' });
-    expect(repo.create).toHaveBeenCalledWith(
-      expect.objectContaining({ sku: 'NN-01' }),
-    );
+    expect(repo.create).toHaveBeenCalledWith(expect.objectContaining({ sku: 'NN-01' }));
   });
 
   it('coerces empty sku to null', async () => {
     const repo = mockProductRepo();
     const service = new ProductService(repo);
     await service.createProduct({ name: 'Test', kind: 'SAAS_USAGE', sku: '' });
-    expect(repo.create).toHaveBeenCalledWith(
-      expect.objectContaining({ sku: null }),
-    );
+    expect(repo.create).toHaveBeenCalledWith(expect.objectContaining({ sku: null }));
   });
 
   it('throws ValidationError for sku with invalid characters', async () => {

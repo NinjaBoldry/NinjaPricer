@@ -7,7 +7,12 @@ export const dynamic = 'force-dynamic';
 
 interface Collision {
   sku: string;
-  owners: Array<{ kind: 'PRODUCT' | 'BUNDLE'; id: string; name: string; currentSku: string | null }>;
+  owners: Array<{
+    kind: 'PRODUCT' | 'BUNDLE';
+    id: string;
+    name: string;
+    currentSku: string | null;
+  }>;
 }
 
 export default async function SkuCollisionsPage() {
@@ -18,7 +23,12 @@ export default async function SkuCollisionsPage() {
 
   const bySku = new Map<string, Collision['owners']>();
 
-  const track = (kind: 'PRODUCT' | 'BUNDLE', id: string, name: string, currentSku: string | null) => {
+  const track = (
+    kind: 'PRODUCT' | 'BUNDLE',
+    id: string,
+    name: string,
+    currentSku: string | null,
+  ) => {
     const proposed = currentSku ?? slugifyUpper(name);
     if (!proposed) return;
     const list = bySku.get(proposed) ?? [];
@@ -38,12 +48,16 @@ export default async function SkuCollisionsPage() {
       <h1 className="text-2xl font-semibold">SKU Collisions</h1>
 
       {collisions.length === 0 && (
-        <p className="text-muted-foreground">No SKU collisions. Safe to tighten the unique constraint.</p>
+        <p className="text-muted-foreground">
+          No SKU collisions. Safe to tighten the unique constraint.
+        </p>
       )}
 
       {collisions.map((c) => (
         <section key={c.sku} className="border rounded-md p-4">
-          <h2 className="font-medium mb-2">Collision on SKU: <code>{c.sku}</code></h2>
+          <h2 className="font-medium mb-2">
+            Collision on SKU: <code>{c.sku}</code>
+          </h2>
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left border-b">
@@ -58,7 +72,9 @@ export default async function SkuCollisionsPage() {
                 <tr key={`${o.kind}:${o.id}`} className="border-b">
                   <td className="py-2">{o.kind}</td>
                   <td>{o.name}</td>
-                  <td><code className="text-xs">{o.currentSku ?? '(unset)'}</code></td>
+                  <td>
+                    <code className="text-xs">{o.currentSku ?? '(unset)'}</code>
+                  </td>
                   <td>
                     <SetSkuForm kind={o.kind} id={o.id} currentSku={o.currentSku ?? c.sku} />
                   </td>
@@ -70,8 +86,9 @@ export default async function SkuCollisionsPage() {
       ))}
 
       <p className="text-xs text-muted-foreground pt-4">
-        After all collisions are resolved and <code>npm run catalog:backfill-skus</code> reports zero collisions,
-        run the second migration: <code>npx prisma migrate dev --name product_bundle_sku_unique</code>.
+        After all collisions are resolved and <code>npm run catalog:backfill-skus</code> reports
+        zero collisions, run the second migration:{' '}
+        <code>npx prisma migrate dev --name product_bundle_sku_unique</code>.
       </p>
     </main>
   );

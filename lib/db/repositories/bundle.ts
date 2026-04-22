@@ -3,7 +3,11 @@ import type { PrismaClient, Bundle, BundleItem } from '@prisma/client';
 export class BundleRepository {
   constructor(private db: PrismaClient) {}
 
-  async create(data: { name: string; description?: string | undefined; sku?: string | null | undefined }): Promise<Bundle> {
+  async create(data: {
+    name: string;
+    description?: string | undefined;
+    sku?: string | null | undefined;
+  }): Promise<Bundle> {
     return this.db.bundle.create({
       data: {
         name: data.name,

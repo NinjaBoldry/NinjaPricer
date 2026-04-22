@@ -10,7 +10,9 @@ async function main() {
   const hasOverride = !!process.env.HUBSPOT_ACCESS_TOKEN;
   const hasCreds = !!(process.env.HUBSPOT_CLIENT_ID && process.env.HUBSPOT_CLIENT_SECRET);
   if (!hasOverride && !hasCreds) {
-    console.error('HubSpot credentials not configured. Set HUBSPOT_CLIENT_ID + HUBSPOT_CLIENT_SECRET (preferred) or HUBSPOT_ACCESS_TOKEN.');
+    console.error(
+      'HubSpot credentials not configured. Set HUBSPOT_CLIENT_ID + HUBSPOT_CLIENT_SECRET (preferred) or HUBSPOT_ACCESS_TOKEN.',
+    );
     process.exit(1);
   }
 

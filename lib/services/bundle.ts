@@ -4,7 +4,11 @@ import { prisma } from '@/lib/db/client';
 import { BundleRepository } from '@/lib/db/repositories/bundle';
 
 export interface IBundleRepository {
-  create(data: { name: string; description?: string | undefined; sku?: string | null | undefined }): Promise<unknown>;
+  create(data: {
+    name: string;
+    description?: string | undefined;
+    sku?: string | null | undefined;
+  }): Promise<unknown>;
   findAll(): Promise<unknown[]>;
   findById(id: string): Promise<unknown>;
   update(
@@ -29,10 +33,9 @@ const skuSchema = z
     if (v === null || v === '') return null;
     return v.toUpperCase();
   })
-  .refine(
-    (v) => v === undefined || v == null || SKU_REGEX.test(v),
-    { message: 'must contain only uppercase letters, digits, and dashes (A-Z, 0-9, -)' },
-  );
+  .refine((v) => v === undefined || v == null || SKU_REGEX.test(v), {
+    message: 'must contain only uppercase letters, digits, and dashes (A-Z, 0-9, -)',
+  });
 
 const descriptionSchema = z
   .union([z.string().trim(), z.null()])
@@ -65,10 +68,15 @@ export class BundleService {
       const issue = parsed.error.issues[0]!;
       throw new ValidationError(issue.path.join('.') || 'bundle', issue.message);
     }
-    const createData: { name: string; description?: string | undefined; sku?: string | null | undefined } = {
+    const createData: {
+      name: string;
+      description?: string | undefined;
+      sku?: string | null | undefined;
+    } = {
       name: parsed.data.name,
     };
-    if (parsed.data.description !== undefined) createData.description = parsed.data.description ?? undefined;
+    if (parsed.data.description !== undefined)
+      createData.description = parsed.data.description ?? undefined;
     if (parsed.data.sku !== undefined) createData.sku = parsed.data.sku;
     return this.repo.create(createData);
   }
@@ -86,7 +94,8 @@ export class BundleService {
       sku?: string | null | undefined;
     } = {};
     if (parsed.data.name !== undefined) updateData.name = parsed.data.name;
-    if (parsed.data.description !== undefined) updateData.description = parsed.data.description ?? undefined;
+    if (parsed.data.description !== undefined)
+      updateData.description = parsed.data.description ?? undefined;
     if (parsed.data.isActive !== undefined) updateData.isActive = parsed.data.isActive;
     if (parsed.data.sku !== undefined) updateData.sku = parsed.data.sku;
     return this.repo.update(id, updateData);

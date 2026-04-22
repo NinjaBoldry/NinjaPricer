@@ -14,7 +14,13 @@ async function main() {
     const products = await prisma.product.findMany({ select: { id: true, name: true, sku: true } });
     const bundles = await prisma.bundle.findMany({ select: { id: true, name: true, sku: true } });
 
-    const proposals: Array<{ kind: 'PRODUCT' | 'BUNDLE'; id: string; name: string; proposedSku: string; currentSku: string | null }> = [];
+    const proposals: Array<{
+      kind: 'PRODUCT' | 'BUNDLE';
+      id: string;
+      name: string;
+      proposedSku: string;
+      currentSku: string | null;
+    }> = [];
 
     for (const p of products) {
       proposals.push({
@@ -58,7 +64,9 @@ async function main() {
         console.error(`\n  SKU "${c.sku}":`);
         for (const o of c.owners) console.error(`    - ${o.kind} ${o.id}  "${o.name}"`);
       }
-      console.error('\nResolve collisions in /admin/sku-collisions (rename one side) and re-run this script.');
+      console.error(
+        '\nResolve collisions in /admin/sku-collisions (rename one side) and re-run this script.',
+      );
       process.exit(2);
     }
 
@@ -82,7 +90,9 @@ async function main() {
       }
     }
 
-    console.log(`Done. Products updated: ${updatedProducts}. Bundles updated: ${updatedBundles}. Skipped (empty SKU): ${skippedEmpty}.`);
+    console.log(
+      `Done. Products updated: ${updatedProducts}. Bundles updated: ${updatedBundles}. Skipped (empty SKU): ${skippedEmpty}.`,
+    );
   } finally {
     await prisma.$disconnect();
   }

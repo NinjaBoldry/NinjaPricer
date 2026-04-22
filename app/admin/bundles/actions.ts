@@ -23,4 +23,3 @@ export async function createBundle(formData: FormData) {
   if (errorMsg) redirect(`/admin/bundles?error=${encodeURIComponent(errorMsg)}`);
   redirect('/admin/bundles');
 }
-

@@ -3,7 +3,13 @@ import type { PrismaClient, Product, ProductKind } from '@prisma/client';
 export class ProductRepository {
   constructor(private db: PrismaClient) {}
 
-  async create(data: { name: string; kind: ProductKind; isActive: boolean; description?: string | null; sku?: string | null }): Promise<Product> {
+  async create(data: {
+    name: string;
+    kind: ProductKind;
+    isActive: boolean;
+    description?: string | null;
+    sku?: string | null;
+  }): Promise<Product> {
     return this.db.product.create({ data });
   }
 
@@ -21,7 +27,12 @@ export class ProductRepository {
 
   async update(
     id: string,
-    data: Partial<{ name: string; isActive: boolean; description: string | null; sku: string | null }>,
+    data: Partial<{
+      name: string;
+      isActive: boolean;
+      description: string | null;
+      sku: string | null;
+    }>,
   ): Promise<Product> {
     return this.db.product.update({ where: { id }, data });
   }

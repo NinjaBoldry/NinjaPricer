@@ -74,7 +74,12 @@ export const updateProductTool: ToolDefinition<
   extractTargetId: (input) => input.id,
   handler: async (_ctx, { id, name, isActive, description, sku }) => {
     const svc = new ProductService(new ProductRepository(prisma));
-    const patch: { name?: string; isActive?: boolean; description?: string | null; sku?: string | null } = {};
+    const patch: {
+      name?: string;
+      isActive?: boolean;
+      description?: string | null;
+      sku?: string | null;
+    } = {};
     if (name !== undefined) patch.name = name;
     if (isActive !== undefined) patch.isActive = isActive;
     if (description !== undefined) patch.description = description;

@@ -48,18 +48,14 @@ describe('BundleService — sku validation', () => {
     const repo = mockBundleRepo();
     const service = new BundleService(repo);
     await service.create({ name: 'Test Bundle', sku: '  eb-01  ' });
-    expect(repo.create).toHaveBeenCalledWith(
-      expect.objectContaining({ sku: 'EB-01' }),
-    );
+    expect(repo.create).toHaveBeenCalledWith(expect.objectContaining({ sku: 'EB-01' }));
   });
 
   it('coerces empty sku to null on create', async () => {
     const repo = mockBundleRepo();
     const service = new BundleService(repo);
     await service.create({ name: 'Test Bundle', sku: '' });
-    expect(repo.create).toHaveBeenCalledWith(
-      expect.objectContaining({ sku: null }),
-    );
+    expect(repo.create).toHaveBeenCalledWith(expect.objectContaining({ sku: null }));
   });
 
   it('throws ValidationError for sku with invalid characters on create', async () => {
@@ -82,10 +78,7 @@ describe('BundleService — sku validation', () => {
     const repo = mockBundleRepo();
     const service = new BundleService(repo);
     await service.update('b1', { sku: 'ES-02' });
-    expect(repo.update).toHaveBeenCalledWith(
-      'b1',
-      expect.objectContaining({ sku: 'ES-02' }),
-    );
+    expect(repo.update).toHaveBeenCalledWith('b1', expect.objectContaining({ sku: 'ES-02' }));
   });
 
   it('throws ValidationError for invalid sku on update', async () => {

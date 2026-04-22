@@ -6,11 +6,25 @@ import { prisma } from '@/lib/db/client';
 import { ProductRepository } from '@/lib/db/repositories/product';
 
 export interface IProductRepository {
-  create(data: { name: string; kind: ProductKind; isActive: boolean; description?: string | null; sku?: string | null }): Promise<Product>;
+  create(data: {
+    name: string;
+    kind: ProductKind;
+    isActive: boolean;
+    description?: string | null;
+    sku?: string | null;
+  }): Promise<Product>;
   findById(id: string): Promise<Product | null>;
   listActive(): Promise<Product[]>;
   listAll(): Promise<Product[]>;
-  update(id: string, data: Partial<{ name: string; isActive: boolean; description: string | null; sku: string | null }>): Promise<Product>;
+  update(
+    id: string,
+    data: Partial<{
+      name: string;
+      isActive: boolean;
+      description: string | null;
+      sku: string | null;
+    }>,
+  ): Promise<Product>;
   delete(id: string): Promise<Product>;
 }
 
@@ -26,10 +40,9 @@ const skuSchema = z
     if (v === null || v === '') return null;
     return v.toUpperCase();
   })
-  .refine(
-    (v) => v === undefined || v == null || SKU_REGEX.test(v),
-    { message: 'must contain only uppercase letters, digits, and dashes (A-Z, 0-9, -)' },
-  );
+  .refine((v) => v === undefined || v == null || SKU_REGEX.test(v), {
+    message: 'must contain only uppercase letters, digits, and dashes (A-Z, 0-9, -)',
+  });
 
 const descriptionSchema = z
   .union([z.string().trim(), z.null()])
@@ -63,7 +76,13 @@ export class ProductService {
       const issue = parsed.error.issues[0]!;
       throw new ValidationError(issue.path.join('.') || 'product', issue.message);
     }
-    const createData: { name: string; kind: ProductKind; isActive: boolean; description?: string | null; sku?: string | null } = {
+    const createData: {
+      name: string;
+      kind: ProductKind;
+      isActive: boolean;
+      description?: string | null;
+      sku?: string | null;
+    } = {
       name: parsed.data.name,
       kind: parsed.data.kind,
       isActive: true,
@@ -79,10 +98,16 @@ export class ProductService {
       const issue = parsed.error.issues[0]!;
       throw new ValidationError(issue.path.join('.') || 'product', issue.message);
     }
-    const updateData: Partial<{ name: string; isActive: boolean; description: string | null; sku: string | null }> = {};
+    const updateData: Partial<{
+      name: string;
+      isActive: boolean;
+      description: string | null;
+      sku: string | null;
+    }> = {};
     if (parsed.data.name !== undefined) updateData.name = parsed.data.name;
     if (parsed.data.isActive !== undefined) updateData.isActive = parsed.data.isActive;
-    if (parsed.data.description !== undefined) updateData.description = parsed.data.description as string | null;
+    if (parsed.data.description !== undefined)
+      updateData.description = parsed.data.description as string | null;
     if (parsed.data.sku !== undefined) updateData.sku = parsed.data.sku as string | null;
     return this.repo.update(id, updateData);
   }

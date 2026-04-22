@@ -80,9 +80,9 @@ describe('getAccessToken', () => {
   it('throws on non-2xx token-exchange response', async () => {
     process.env.HUBSPOT_CLIENT_ID = 'cid';
     process.env.HUBSPOT_CLIENT_SECRET = 'bad';
-    global.fetch = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify({ message: 'invalid' }), { status: 401 }),
-    );
+    global.fetch = vi
+      .fn()
+      .mockResolvedValue(new Response(JSON.stringify({ message: 'invalid' }), { status: 401 }));
     await expect(getAccessToken('c')).rejects.toBeInstanceOf(HubSpotApiError);
   });
 });

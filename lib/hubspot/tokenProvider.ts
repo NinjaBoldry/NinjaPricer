@@ -68,7 +68,11 @@ export async function getAccessToken(correlationId: string): Promise<string> {
     );
   }
 
-  const data = (await res.json()) as { access_token: string; expires_in: number; token_type?: string };
+  const data = (await res.json()) as {
+    access_token: string;
+    expires_in: number;
+    token_type?: string;
+  };
   cache = {
     token: data.access_token,
     expiresAt: Date.now() + data.expires_in * 1000,

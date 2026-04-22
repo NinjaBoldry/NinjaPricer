@@ -11,6 +11,7 @@
 **Spec reference:** [docs/superpowers/specs/2026-04-22-hubspot-phase-2-publish-approval-webhooks-design.md — "Catalog Enrichment (Phase 2 Pre-Work)"](../specs/2026-04-22-hubspot-phase-2-publish-approval-webhooks-design.md)
 
 **Out of scope for 2a (moves to 2b):**
+
 - `computeBundlePrice` extraction — only consumed at quote publish time; catalog sync doesn't need real bundle prices.
 - All publish/approval/webhook code.
 
@@ -19,6 +20,7 @@
 ## File Structure
 
 **Created:**
+
 ```
 lib/utils/slugify.ts                                 — reusable slugifier
 lib/utils/slugify.test.ts
@@ -29,6 +31,7 @@ app/admin/sku-collisions/RenameForm.tsx              — client form per-row
 ```
 
 **Modified:**
+
 ```
 prisma/schema.prisma                                 — description on Product; sku on both (nullable then @unique)
 prisma/migrations/<ts>_product_description_sku_nullable/migration.sql
@@ -59,6 +62,7 @@ package.json                                         — add "catalog:backfill-s
 ## Task 1: Nullable columns migration
 
 **Files:**
+
 - Modify: `prisma/schema.prisma`
 
 - [ ] **Step 1.1: Add `description` and `sku` to Product model**
@@ -83,6 +87,7 @@ In `prisma/schema.prisma`, find the `Bundle` block (around line 292). Bundle alr
 Run: `npx prisma migrate dev --name product_description_sku_nullable --create-only`
 
 Expected: new migration file appears under `prisma/migrations/<timestamp>_product_description_sku_nullable/migration.sql`. Open it and confirm it contains:
+
 - `ALTER TABLE "Product" ADD COLUMN "description" TEXT, ADD COLUMN "sku" TEXT;`
 - `ALTER TABLE "Bundle" ADD COLUMN "sku" TEXT;`
 
@@ -104,6 +109,7 @@ git commit -m "feat(catalog): add nullable description + sku columns to Product 
 ## Task 2: Slugify helper
 
 **Files:**
+
 - Create: `lib/utils/slugify.ts`
 - Create: `lib/utils/slugify.test.ts`
 
@@ -183,6 +189,7 @@ git commit -m "feat(utils): slugifyUpper helper for SKU generation"
 ## Task 3: SKU backfill script
 
 **Files:**
+
 - Create: `scripts/backfill-product-bundle-skus.ts`
 - Modify: `package.json` (add npm script)
 
@@ -207,7 +214,13 @@ async function main() {
     const products = await prisma.product.findMany({ select: { id: true, name: true, sku: true } });
     const bundles = await prisma.bundle.findMany({ select: { id: true, name: true, sku: true } });
 
-    const proposals: Array<{ kind: 'PRODUCT' | 'BUNDLE'; id: string; name: string; proposedSku: string; currentSku: string | null }> = [];
+    const proposals: Array<{
+      kind: 'PRODUCT' | 'BUNDLE';
+      id: string;
+      name: string;
+      proposedSku: string;
+      currentSku: string | null;
+    }> = [];
 
     for (const p of products) {
       proposals.push({
@@ -251,7 +264,9 @@ async function main() {
         console.error(`\n  SKU "${c.sku}":`);
         for (const o of c.owners) console.error(`    - ${o.kind} ${o.id}  "${o.name}"`);
       }
-      console.error('\nResolve collisions in /admin/sku-collisions (rename one side) and re-run this script.');
+      console.error(
+        '\nResolve collisions in /admin/sku-collisions (rename one side) and re-run this script.',
+      );
       process.exit(2);
     }
 
@@ -275,7 +290,9 @@ async function main() {
       }
     }
 
-    console.log(`Done. Products updated: ${updatedProducts}. Bundles updated: ${updatedBundles}. Skipped (empty SKU): ${skippedEmpty}.`);
+    console.log(
+      `Done. Products updated: ${updatedProducts}. Bundles updated: ${updatedBundles}. Skipped (empty SKU): ${skippedEmpty}.`,
+    );
   } finally {
     await prisma.$disconnect();
   }
@@ -313,6 +330,7 @@ git commit -m "feat(catalog): backfill script populates Product/Bundle SKUs from
 ## Task 4: SKU collisions admin UI
 
 **Files:**
+
 - Create: `app/admin/sku-collisions/page.tsx`
 - Create: `app/admin/sku-collisions/RenameForm.tsx`
 - Create: `app/admin/sku-collisions/actions.ts`
@@ -371,7 +389,15 @@ Create `app/admin/sku-collisions/RenameForm.tsx`:
 import { useState, useTransition } from 'react';
 import { setProductSkuAction, setBundleSkuAction } from './actions';
 
-export function SetSkuForm({ kind, id, currentSku }: { kind: 'PRODUCT' | 'BUNDLE'; id: string; currentSku: string }) {
+export function SetSkuForm({
+  kind,
+  id,
+  currentSku,
+}: {
+  kind: 'PRODUCT' | 'BUNDLE';
+  id: string;
+  currentSku: string;
+}) {
   const [pending, startTransition] = useTransition();
   const [value, setValue] = useState(currentSku);
 
@@ -391,7 +417,11 @@ export function SetSkuForm({ kind, id, currentSku }: { kind: 'PRODUCT' | 'BUNDLE
         onChange={(e) => setValue(e.target.value)}
         className="border rounded px-2 py-1 text-sm"
       />
-      <button type="submit" disabled={pending} className="text-xs px-2 py-1 border rounded disabled:opacity-50">
+      <button
+        type="submit"
+        disabled={pending}
+        className="text-xs px-2 py-1 border rounded disabled:opacity-50"
+      >
         {pending ? '…' : 'Save SKU'}
       </button>
     </form>
@@ -413,7 +443,12 @@ export const dynamic = 'force-dynamic';
 
 interface Collision {
   sku: string;
-  owners: Array<{ kind: 'PRODUCT' | 'BUNDLE'; id: string; name: string; currentSku: string | null }>;
+  owners: Array<{
+    kind: 'PRODUCT' | 'BUNDLE';
+    id: string;
+    name: string;
+    currentSku: string | null;
+  }>;
 }
 
 export default async function SkuCollisionsPage() {
@@ -424,7 +459,12 @@ export default async function SkuCollisionsPage() {
 
   const bySku = new Map<string, Collision['owners']>();
 
-  const track = (kind: 'PRODUCT' | 'BUNDLE', id: string, name: string, currentSku: string | null) => {
+  const track = (
+    kind: 'PRODUCT' | 'BUNDLE',
+    id: string,
+    name: string,
+    currentSku: string | null,
+  ) => {
     const proposed = currentSku ?? slugifyUpper(name);
     if (!proposed) return;
     const list = bySku.get(proposed) ?? [];
@@ -445,12 +485,16 @@ export default async function SkuCollisionsPage() {
       <h1 className="text-2xl font-semibold">SKU Collisions</h1>
 
       {collisions.length === 0 && (
-        <p className="text-muted-foreground">No SKU collisions. Safe to tighten the unique constraint.</p>
+        <p className="text-muted-foreground">
+          No SKU collisions. Safe to tighten the unique constraint.
+        </p>
       )}
 
       {collisions.map((c) => (
         <section key={c.sku} className="border rounded-md p-4">
-          <h2 className="font-medium mb-2">Collision on SKU: <code>{c.sku}</code></h2>
+          <h2 className="font-medium mb-2">
+            Collision on SKU: <code>{c.sku}</code>
+          </h2>
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left border-b">
@@ -465,7 +509,9 @@ export default async function SkuCollisionsPage() {
                 <tr key={`${o.kind}:${o.id}`} className="border-b">
                   <td className="py-2">{o.kind}</td>
                   <td>{o.name}</td>
-                  <td><code className="text-xs">{o.currentSku ?? '(unset)'}</code></td>
+                  <td>
+                    <code className="text-xs">{o.currentSku ?? '(unset)'}</code>
+                  </td>
                   <td>
                     <SetSkuForm kind={o.kind} id={o.id} currentSku={o.currentSku ?? c.sku} />
                   </td>
@@ -477,8 +523,9 @@ export default async function SkuCollisionsPage() {
       ))}
 
       <p className="text-xs text-muted-foreground pt-4">
-        After all collisions are resolved and <code>npm run catalog:backfill-skus</code> reports zero collisions,
-        run the second migration: <code>npx prisma migrate dev --name product_bundle_sku_unique</code>.
+        After all collisions are resolved and <code>npm run catalog:backfill-skus</code> reports
+        zero collisions, run the second migration:{' '}
+        <code>npx prisma migrate dev --name product_bundle_sku_unique</code>.
       </p>
     </main>
   );
@@ -501,6 +548,7 @@ git commit -m "feat(catalog): admin SKU collisions resolver page"
 ## Task 5: Extend Product + Bundle repositories with description + sku
 
 **Files:**
+
 - Modify: `lib/db/repositories/product.ts`
 - Modify: `lib/db/repositories/product.test.ts`
 - Modify: `lib/db/repositories/bundle.ts`
@@ -528,17 +576,17 @@ async update(
 Open `lib/db/repositories/product.test.ts`. At the bottom of the describe block, add:
 
 ```ts
-  it('create persists description and sku when provided', async () => {
-    const created = await repo.create({
-      name: 'Descriptive Product',
-      kind: ProductKind.SAAS_USAGE,
-      isActive: true,
-      description: 'A lovely product',
-      sku: 'DP-001',
-    });
-    expect(created.description).toBe('A lovely product');
-    expect(created.sku).toBe('DP-001');
+it('create persists description and sku when provided', async () => {
+  const created = await repo.create({
+    name: 'Descriptive Product',
+    kind: ProductKind.SAAS_USAGE,
+    isActive: true,
+    description: 'A lovely product',
+    sku: 'DP-001',
   });
+  expect(created.description).toBe('A lovely product');
+  expect(created.sku).toBe('DP-001');
+});
 ```
 
 (Adjust the import + imports list if `ProductKind` isn't already in scope; it is in the existing file.)
@@ -573,6 +621,7 @@ git commit -m "feat(catalog): product + bundle repositories accept description +
 ## Task 6: Services + MCP tool + admin forms
 
 **Files:**
+
 - Modify: `lib/services/product.ts` + `.test.ts`
 - Modify: `lib/services/bundle.ts` + `.test.ts`
 - Modify: `lib/mcp/tools/catalog/product.ts` + `.test.ts`
@@ -669,6 +718,7 @@ This is a prereq for Task 8. No commit in this task — it's data setup.
 ## Task 8: Unique-constraint migration
 
 **Files:**
+
 - Modify: `prisma/schema.prisma`
 
 - [ ] **Step 8.1: Tighten sku constraint**
@@ -703,6 +753,7 @@ git commit -m "feat(catalog): tighten Product.sku and Bundle.sku to @unique"
 ## Task 9: Wire catalog snapshot to real description + sku
 
 **Files:**
+
 - Modify: `lib/hubspot/catalog/snapshot.ts`
 - Modify: `lib/hubspot/catalog/snapshot.db.test.ts`
 
