@@ -141,7 +141,7 @@ describe('publish_scenario_to_hubspot', () => {
 
   it('happy path: calls runPublishScenario and returns outcome', async () => {
     mockRunPublish.mockResolvedValue({
-      ok: true,
+      status: 'published',
       hubspotQuoteId: 'hs-q-1',
       shareableUrl: 'https://app.hubspot.com/q/x',
       correlationId: 'publish-abc123',
@@ -173,7 +173,7 @@ describe('publish_scenario_to_hubspot', () => {
 
   it('returns structured error when scenario is not linked to a deal', async () => {
     mockRunPublish.mockResolvedValue({
-      ok: false,
+      status: 'error',
       error: 'MISSING_DEAL_LINK',
       message: 'Missing deal link',
     });
@@ -190,11 +190,11 @@ describe('publish_scenario_to_hubspot', () => {
     expect((result as { error: string }).error).toBe('MISSING_DEAL_LINK');
   });
 
-  it('returns structured error when scenario has unresolved hard-rail overrides', async () => {
+  it('returns pending_approval payload when hard-rail overrides trigger approval flow', async () => {
     mockRunPublish.mockResolvedValue({
-      ok: false,
-      error: 'UNRESOLVED_HARD_RAIL_OVERRIDE',
-      message: 'Unresolved hard-rail override',
+      status: 'pending_approval',
+      approvalRequestId: 'req-1',
+      correlationId: 'publish-xyz',
     });
 
     const ctx = {
@@ -206,16 +206,32 @@ describe('publish_scenario_to_hubspot', () => {
       expirationDays: 30,
     });
 
-    expect((result as { error: string }).error).toBe('UNRESOLVED_HARD_RAIL_OVERRIDE');
+    expect(result).toMatchObject({
+      status: 'pending_approval',
+      approvalRequestId: 'req-1',
+    });
   });
 
-  it('hard-rail guard is enforced: runPublishScenario is the single source of truth', () => {
-    // This test documents that the handler no longer hardcodes hasUnresolvedHardRailOverrides.
-    // The guard lives in runPublishScenario (and ultimately publishScenarioToHubSpot).
-    // We verify the handler delegates to runPublishScenario unconditionally.
-    expect(typeof publishScenarioToHubspotTool.handler).toBe('function');
-    // The mock is already set up: any call to the handler will call runPublishScenario,
-    // which is the enforcing layer. No internal bypass is possible from this handler.
+  it('returns rejected payload when approval was rejected', async () => {
+    mockRunPublish.mockResolvedValue({
+      status: 'rejected',
+      approvalRequestId: 'req-2',
+      correlationId: 'publish-xyz',
+    });
+
+    const ctx = {
+      user: { id: 'u1', role: 'SALES', email: 'u@x.com', name: null },
+      token: { id: 't', ownerUserId: 'u1', label: 'tok' },
+    };
+    const result = await publishScenarioToHubspotTool.handler(ctx as never, {
+      scenarioId: 's1',
+      expirationDays: 30,
+    });
+
+    expect(result).toMatchObject({
+      status: 'rejected',
+      approvalRequestId: 'req-2',
+    });
   });
 });
 
@@ -303,7 +319,7 @@ describe('supersede_hubspot_quote', () => {
 
   it('calls runPublishScenario with supersede correlationPrefix and returns outcome', async () => {
     mockRunPublish.mockResolvedValue({
-      ok: true,
+      status: 'published',
       hubspotQuoteId: 'hs-q-2',
       shareableUrl: 'https://app.hubspot.com/q/y',
       correlationId: 'supersede-abc123',
@@ -327,7 +343,7 @@ describe('supersede_hubspot_quote', () => {
 
   it('returns structured error from runPublishScenario', async () => {
     mockRunPublish.mockResolvedValue({
-      ok: false,
+      status: 'error',
       error: 'MISSING_DEAL_LINK',
       message: 'Scenario must be linked to a HubSpot Deal before publishing.',
     });
@@ -342,6 +358,25 @@ describe('supersede_hubspot_quote', () => {
     });
 
     expect((result as { error: string }).error).toBe('MISSING_DEAL_LINK');
+  });
+
+  it('returns pending_approval payload from runPublishScenario', async () => {
+    mockRunPublish.mockResolvedValue({
+      status: 'pending_approval',
+      approvalRequestId: 'req-3',
+      correlationId: 'supersede-xyz',
+    });
+
+    const ctx = {
+      user: { id: 'u1', role: 'SALES', email: 'u@x.com', name: null },
+      token: { id: 't', ownerUserId: 'u1', label: 'tok' },
+    };
+    const result = await supersedeHubspotQuoteTool.handler(ctx as never, {
+      scenarioId: 's1',
+      expirationDays: 30,
+    });
+
+    expect(result).toMatchObject({ status: 'pending_approval', approvalRequestId: 'req-3' });
   });
 });
 

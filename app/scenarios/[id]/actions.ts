@@ -53,30 +53,46 @@ export async function publishScenarioAction(input: {
   scenarioId: string;
 }): Promise<
   | { ok: true; hubspotQuoteId: string; shareableUrl: string | null }
+  | { ok: true; status: 'pending_approval'; approvalRequestId: string }
+  | { ok: true; status: 'rejected'; approvalRequestId: string }
   | { ok: false; error: string; message: string }
 > {
   await requireAuth();
   const { scenarioId } = input;
   const result = await runPublishScenario({ scenarioId, correlationPrefix: 'ui-publish' });
-  if (!result.ok) {
-    return { ok: false, error: result.error, message: result.message };
+  switch (result.status) {
+    case 'published':
+      revalidatePath(`/scenarios/${scenarioId}/hubspot`);
+      return { ok: true, hubspotQuoteId: result.hubspotQuoteId, shareableUrl: result.shareableUrl };
+    case 'pending_approval':
+      return { ok: true, status: 'pending_approval', approvalRequestId: result.approvalRequestId };
+    case 'rejected':
+      return { ok: true, status: 'rejected', approvalRequestId: result.approvalRequestId };
+    case 'error':
+      return { ok: false, error: result.error, message: result.message };
   }
-  revalidatePath(`/scenarios/${scenarioId}/hubspot`);
-  return { ok: true, hubspotQuoteId: result.hubspotQuoteId, shareableUrl: result.shareableUrl };
 }
 
 export async function supersedeScenarioQuoteAction(input: {
   scenarioId: string;
 }): Promise<
   | { ok: true; hubspotQuoteId: string; shareableUrl: string | null }
+  | { ok: true; status: 'pending_approval'; approvalRequestId: string }
+  | { ok: true; status: 'rejected'; approvalRequestId: string }
   | { ok: false; error: string; message: string }
 > {
   await requireAuth();
   const { scenarioId } = input;
   const result = await runPublishScenario({ scenarioId, correlationPrefix: 'ui-supersede' });
-  if (!result.ok) {
-    return { ok: false, error: result.error, message: result.message };
+  switch (result.status) {
+    case 'published':
+      revalidatePath(`/scenarios/${scenarioId}/hubspot`);
+      return { ok: true, hubspotQuoteId: result.hubspotQuoteId, shareableUrl: result.shareableUrl };
+    case 'pending_approval':
+      return { ok: true, status: 'pending_approval', approvalRequestId: result.approvalRequestId };
+    case 'rejected':
+      return { ok: true, status: 'rejected', approvalRequestId: result.approvalRequestId };
+    case 'error':
+      return { ok: false, error: result.error, message: result.message };
   }
-  revalidatePath(`/scenarios/${scenarioId}/hubspot`);
-  return { ok: true, hubspotQuoteId: result.hubspotQuoteId, shareableUrl: result.shareableUrl };
 }

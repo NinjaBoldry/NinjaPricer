@@ -5,23 +5,26 @@
 import { randomUUID } from 'node:crypto';
 import Decimal from 'decimal.js';
 import { prisma } from '@/lib/db/client';
+import { HubSpotApprovalStatus, HubSpotPublishState } from '@prisma/client';
 import { computeScenario } from '@/lib/services/rateSnapshot';
 import { scenarioToHubSpotLineItems } from './translator';
 import {
   publishScenarioToHubSpot,
   MissingDealLinkError,
-  UnresolvedHardRailOverrideError,
   type PublishPersistence,
 } from './publish';
 import { HubSpotQuoteRepository } from '@/lib/db/repositories/hubspotQuote';
+import { HubSpotApprovalRequestRepository } from '@/lib/db/repositories/hubspotApprovalRequest';
+import {
+  submitApprovalRequest,
+  type ApprovalPersistence,
+} from '@/lib/hubspot/approval/request';
 
 export type PublishServiceResult =
-  | { ok: true; hubspotQuoteId: string; shareableUrl: string | null; correlationId: string }
-  | {
-      ok: false;
-      error: 'MISSING_DEAL_LINK' | 'UNRESOLVED_HARD_RAIL_OVERRIDE' | 'SCENARIO_NOT_FOUND';
-      message: string;
-    };
+  | { status: 'published'; hubspotQuoteId: string; shareableUrl: string | null; correlationId: string }
+  | { status: 'pending_approval'; approvalRequestId: string; correlationId: string }
+  | { status: 'rejected'; approvalRequestId: string; correlationId: string }
+  | { status: 'error'; error: 'MISSING_DEAL_LINK' | 'SCENARIO_NOT_FOUND'; message: string };
 
 export interface PublishServiceOptions {
   scenarioId: string;
@@ -36,6 +39,12 @@ export interface PublishServiceOptions {
 /**
  * Build line items from the pricing engine, then call publishScenarioToHubSpot.
  * Shared by the MCP tools and the Next.js server actions.
+ *
+ * Phase 2c: if the engine reports hard-rail violations, this function branches
+ * into the approval flow instead of throwing UnresolvedHardRailOverrideError:
+ *   - APPROVED  → skip threshold check, proceed to publish
+ *   - REJECTED  → return { status: 'rejected', approvalRequestId }
+ *   - No request / PENDING → call submitApprovalRequest, return { status: 'pending_approval' }
  */
 export async function runPublishScenario(
   opts: PublishServiceOptions,
@@ -60,7 +69,7 @@ export async function runPublishScenario(
       (err as { name: string }).name === 'NotFoundError'
     ) {
       return {
-        ok: false,
+        status: 'error',
         error: 'SCENARIO_NOT_FOUND',
         message: `Scenario ${scenarioId} not found.`,
       };
@@ -74,11 +83,80 @@ export async function runPublishScenario(
   const hasUnresolvedHardRailOverrides = computeResult.warnings.some((w) => w.severity === 'hard');
 
   // Determine the next revision number
+  const quoteRepo = new HubSpotQuoteRepository(prisma);
   const latestQuote = await prisma.hubSpotQuote.findFirst({
     where: { scenarioId },
     orderBy: { revision: 'desc' },
   });
   const revision = (latestQuote?.revision ?? 0) + 1;
+
+  // ---------------------------------------------------------------------------
+  // Phase 2c: approval-flow branching on hard-rail overrides
+  // ---------------------------------------------------------------------------
+  if (hasUnresolvedHardRailOverrides) {
+    const approvalRepo = new HubSpotApprovalRequestRepository(prisma);
+    const existing = await approvalRepo.findByScenarioId(scenario.id);
+
+    if (existing?.status === HubSpotApprovalStatus.REJECTED) {
+      return {
+        status: 'rejected',
+        approvalRequestId: existing.id,
+        correlationId,
+      };
+    }
+
+    if (existing?.status !== HubSpotApprovalStatus.APPROVED) {
+      // No request or still PENDING — submit (or re-submit) approval request.
+      const approvalPersistence: ApprovalPersistence = {
+        upsertApprovalRequest: async (d) =>
+          approvalRepo.upsert(d as Parameters<typeof approvalRepo.upsert>[0]),
+        findOrCreateQuoteRow: async ({ scenarioId: sid, revision: rev }) => {
+          const existingRow = await quoteRepo.findByScenarioAndRevision(sid, rev);
+          if (existingRow) return { id: existingRow.id };
+          // Create a DRAFT placeholder row. The synthetic hubspotQuoteId is replaced
+          // when publish resumes after approval. HubSpotQuote.hubspotQuoteId is @unique,
+          // so we use a deterministic placeholder rather than leaving it null (which
+          // would require a schema migration to make the column nullable).
+          const created = await quoteRepo.create({
+            scenarioId: sid,
+            revision: rev,
+            hubspotQuoteId: `pending-${sid}-${rev}`,
+            publishState: HubSpotPublishState.DRAFT,
+          });
+          return { id: created.id };
+        },
+        updateQuotePublishState: async (id, state) => {
+          await quoteRepo.updatePublishState(id, state);
+        },
+      };
+
+      const marginPct = Number(computeResult.totals.marginPctNet ?? 0);
+      const result = await submitApprovalRequest({
+        scenarioId: scenario.id,
+        hubspotDealId: scenario.hubspotDealId!,
+        revision,
+        railViolations: computeResult.warnings
+          .filter((w) => w.severity === 'hard')
+          .map((w) => w as unknown as Record<string, unknown>),
+        marginPct,
+        persistence: approvalPersistence,
+        correlationId,
+      });
+
+      return {
+        status: 'pending_approval',
+        approvalRequestId: result.approvalRequestId,
+        correlationId,
+      };
+    }
+
+    // existing.status === APPROVED → fall through to normal publish path
+    // (no threshold check — approval was granted)
+  }
+
+  // ---------------------------------------------------------------------------
+  // Normal publish path (no hard overrides, or override is APPROVED)
+  // ---------------------------------------------------------------------------
 
   // Build a map of productId → engine TabResult for SaaS tabs
   const saasTabResultByProductId = new Map(
@@ -162,7 +240,6 @@ export async function runPublishScenario(
     bundles: [],
   });
 
-  const quoteRepo = new HubSpotQuoteRepository(prisma);
   const persistence: PublishPersistence = {
     createHubSpotQuote: async (data) => quoteRepo.create(data),
     updatePublishState: async (rowId, state, extras) => {
@@ -189,7 +266,7 @@ export async function runPublishScenario(
         id: scenario.id,
         hubspotDealId: scenario.hubspotDealId,
         revision,
-        hasUnresolvedHardRailOverrides,
+        hasUnresolvedHardRailOverrides: false, // approved or no overrides — skip threshold check
       },
       lineItems,
       quoteConfig: { name: quoteName, expirationDays },
@@ -197,13 +274,10 @@ export async function runPublishScenario(
       now: () => new Date(),
       correlationId,
     });
-    return { ok: true, ...outcome, correlationId };
+    return { status: 'published', ...outcome, correlationId };
   } catch (err) {
     if (err instanceof MissingDealLinkError) {
-      return { ok: false, error: 'MISSING_DEAL_LINK', message: err.message };
-    }
-    if (err instanceof UnresolvedHardRailOverrideError) {
-      return { ok: false, error: 'UNRESOLVED_HARD_RAIL_OVERRIDE', message: err.message };
+      return { status: 'error', error: 'MISSING_DEAL_LINK', message: err.message };
     }
     throw err;
   }

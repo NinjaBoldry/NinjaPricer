@@ -85,6 +85,11 @@ function LinkDealForm({ scenarioId }: { scenarioId: string }) {
 // Publish sub-section (linked, no quote yet)
 // ---------------------------------------------------------------------------
 
+type PublishActionResult =
+  | { ok: true; hubspotQuoteId: string; shareableUrl: string | null }
+  | { ok: true; status: 'pending_approval'; approvalRequestId: string }
+  | { ok: true; status: 'rejected'; approvalRequestId: string };
+
 function PublishButton({
   scenarioId,
   hasHardRailOverrides,
@@ -92,11 +97,7 @@ function PublishButton({
   scenarioId: string;
   hasHardRailOverrides: boolean;
 }) {
-  const [result, setResult] = useState<{
-    ok: true;
-    hubspotQuoteId: string;
-    shareableUrl: string | null;
-  } | null>(null);
+  const [result, setResult] = useState<PublishActionResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -113,12 +114,36 @@ function PublishButton({
   }
 
   if (result) {
+    if ('status' in result && result.status === 'pending_approval') {
+      return (
+        <div className="space-y-1">
+          <p className="text-sm text-amber-700 font-medium">Approval request submitted.</p>
+          <p className="text-xs text-slate-500">
+            A manager has been notified via HubSpot Workflow. You will be able to publish once
+            approved. (Request ID: {result.approvalRequestId})
+          </p>
+        </div>
+      );
+    }
+    if ('status' in result && result.status === 'rejected') {
+      return (
+        <div className="space-y-1">
+          <p className="text-sm text-red-700 font-medium">Approval rejected.</p>
+          <p className="text-xs text-slate-500">
+            The approval request was rejected. Please review the pricing and resubmit.
+            (Request ID: {result.approvalRequestId})
+          </p>
+        </div>
+      );
+    }
+    // status: published
+    const published = result as { ok: true; hubspotQuoteId: string; shareableUrl: string | null };
     return (
       <div className="space-y-1">
         <p className="text-sm text-green-700 font-medium">Published successfully.</p>
-        {result.shareableUrl && (
+        {published.shareableUrl && (
           <a
-            href={result.shareableUrl}
+            href={published.shareableUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="text-sm underline text-blue-600"
@@ -126,21 +151,7 @@ function PublishButton({
             Open quote in HubSpot
           </a>
         )}
-        <p className="text-xs text-slate-500">Quote ID: {result.hubspotQuoteId}</p>
-      </div>
-    );
-  }
-
-  if (hasHardRailOverrides) {
-    return (
-      <div className="space-y-2">
-        <Button disabled variant="outline">
-          Publish to HubSpot
-        </Button>
-        <p className="text-sm text-amber-700">
-          Approval flow required — configure HubSpot Workflow (Phase 2c) before publishing scenarios
-          with rail overrides.
-        </p>
+        <p className="text-xs text-slate-500">Quote ID: {published.hubspotQuoteId}</p>
       </div>
     );
   }
@@ -150,6 +161,11 @@ function PublishButton({
       <Button onClick={handlePublish} disabled={isPending}>
         {isPending ? 'Publishing…' : 'Publish to HubSpot'}
       </Button>
+      {hasHardRailOverrides && !isPending && (
+        <p className="text-sm text-amber-700">
+          This scenario has hard-rail overrides — publishing will route through the approval flow.
+        </p>
+      )}
       {error && <p className="text-sm text-red-600">{error}</p>}
     </div>
   );
@@ -169,13 +185,21 @@ function QuoteStatus({
   hasHardRailOverrides: boolean;
 }) {
   const [reviseError, setReviseError] = useState<string | null>(null);
+  const [reviseNotice, setReviseNotice] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   function handleRevise() {
     setReviseError(null);
+    setReviseNotice(null);
     startTransition(async () => {
       const res = await supersedeScenarioQuoteAction({ scenarioId });
-      if (!res.ok) setReviseError(res.message);
+      if (!res.ok) {
+        setReviseError(res.message);
+      } else if ('status' in res && res.status === 'pending_approval') {
+        setReviseNotice(`Approval request submitted (ID: ${res.approvalRequestId}).`);
+      } else if ('status' in res && res.status === 'rejected') {
+        setReviseError(`Approval rejected (ID: ${res.approvalRequestId}). Review pricing and retry.`);
+      }
     });
   }
 
@@ -218,21 +242,15 @@ function QuoteStatus({
       )}
 
       <div className="pt-1 space-y-1">
-        {hasHardRailOverrides ? (
-          <>
-            <Button disabled variant="outline" size="sm">
-              Revise (new revision)
-            </Button>
-            <p className="text-sm text-amber-700">
-              Approval flow required — configure HubSpot Workflow (Phase 2c) before publishing
-              scenarios with rail overrides.
-            </p>
-          </>
-        ) : (
-          <Button onClick={handleRevise} disabled={isPending} variant="outline" size="sm">
-            {isPending ? 'Publishing revision…' : 'Revise (new revision)'}
-          </Button>
+        <Button onClick={handleRevise} disabled={isPending} variant="outline" size="sm">
+          {isPending ? 'Publishing revision…' : 'Revise (new revision)'}
+        </Button>
+        {hasHardRailOverrides && !isPending && !reviseNotice && (
+          <p className="text-sm text-amber-700">
+            This scenario has hard-rail overrides — revising will route through the approval flow.
+          </p>
         )}
+        {reviseNotice && <p className="text-sm text-amber-700">{reviseNotice}</p>}
         {reviseError && <p className="text-sm text-red-600">{reviseError}</p>}
       </div>
     </div>

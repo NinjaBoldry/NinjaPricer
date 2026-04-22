@@ -205,18 +205,30 @@ interface PublishResult {
   correlationId: string;
 }
 
+interface PendingApprovalResult {
+  status: 'pending_approval';
+  approvalRequestId: string;
+  correlationId: string;
+}
+
+interface RejectedResult {
+  status: 'rejected';
+  approvalRequestId: string;
+  correlationId: string;
+}
+
 interface PublishErrorResult {
-  error: 'MISSING_DEAL_LINK' | 'UNRESOLVED_HARD_RAIL_OVERRIDE' | 'SCENARIO_NOT_FOUND';
+  error: 'MISSING_DEAL_LINK' | 'SCENARIO_NOT_FOUND';
   message: string;
 }
 
 export const publishScenarioToHubspotTool: ToolDefinition<
   PublishInput,
-  PublishResult | PublishErrorResult
+  PublishResult | PendingApprovalResult | RejectedResult | PublishErrorResult
 > = {
   name: 'publish_scenario_to_hubspot',
   description:
-    'Publish a pricer scenario as a HubSpot Quote on the linked Deal. Builds line items from the scenario state. Catches MissingDealLinkError and UnresolvedHardRailOverrideError and returns structured errors.',
+    'Publish a pricer scenario as a HubSpot Quote on the linked Deal. Builds line items from the scenario state. If hard-rail overrides are present, routes into the approval flow and returns pending_approval or rejected instead of publishing immediately.',
   inputSchema: publishInput as z.ZodType<PublishInput>,
   requiresAdmin: false,
   isWrite: true,
@@ -229,14 +241,28 @@ export const publishScenarioToHubspotTool: ToolDefinition<
       expirationDays: input.expirationDays,
       correlationPrefix: 'publish',
     });
-    if (!result.ok) {
-      return { error: result.error, message: result.message };
+    switch (result.status) {
+      case 'published':
+        return {
+          hubspotQuoteId: result.hubspotQuoteId,
+          shareableUrl: result.shareableUrl,
+          correlationId: result.correlationId,
+        };
+      case 'pending_approval':
+        return {
+          status: 'pending_approval',
+          approvalRequestId: result.approvalRequestId,
+          correlationId: result.correlationId,
+        };
+      case 'rejected':
+        return {
+          status: 'rejected',
+          approvalRequestId: result.approvalRequestId,
+          correlationId: result.correlationId,
+        };
+      case 'error':
+        return { error: result.error, message: result.message };
     }
-    return {
-      hubspotQuoteId: result.hubspotQuoteId,
-      shareableUrl: result.shareableUrl,
-      correlationId: result.correlationId,
-    };
   },
 };
 
@@ -309,11 +335,11 @@ type SupersedeInput = z.infer<typeof supersedeInput>;
 
 export const supersedeHubspotQuoteTool: ToolDefinition<
   SupersedeInput,
-  PublishResult | PublishErrorResult
+  PublishResult | PendingApprovalResult | RejectedResult | PublishErrorResult
 > = {
   name: 'supersede_hubspot_quote',
   description:
-    'Publish a new revision of the HubSpot Quote for a scenario, superseding the prior revision. Reads the latest revision number and increments by 1. Output is the same shape as publish_scenario_to_hubspot.',
+    'Publish a new revision of the HubSpot Quote for a scenario, superseding the prior revision. Reads the latest revision number and increments by 1. Output is the same shape as publish_scenario_to_hubspot (including pending_approval / rejected variants).',
   inputSchema: supersedeInput as z.ZodType<SupersedeInput>,
   requiresAdmin: false,
   isWrite: true,
@@ -326,14 +352,28 @@ export const supersedeHubspotQuoteTool: ToolDefinition<
       expirationDays: input.expirationDays,
       correlationPrefix: 'supersede',
     });
-    if (!result.ok) {
-      return { error: result.error, message: result.message };
+    switch (result.status) {
+      case 'published':
+        return {
+          hubspotQuoteId: result.hubspotQuoteId,
+          shareableUrl: result.shareableUrl,
+          correlationId: result.correlationId,
+        };
+      case 'pending_approval':
+        return {
+          status: 'pending_approval',
+          approvalRequestId: result.approvalRequestId,
+          correlationId: result.correlationId,
+        };
+      case 'rejected':
+        return {
+          status: 'rejected',
+          approvalRequestId: result.approvalRequestId,
+          correlationId: result.correlationId,
+        };
+      case 'error':
+        return { error: result.error, message: result.message };
     }
-    return {
-      hubspotQuoteId: result.hubspotQuoteId,
-      shareableUrl: result.shareableUrl,
-      correlationId: result.correlationId,
-    };
   },
 };
 
