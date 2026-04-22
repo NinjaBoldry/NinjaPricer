@@ -1,12 +1,15 @@
-import { randomUUID } from 'node:crypto';
 import { HubSpotApprovalStatus, HubSpotPublishState } from '@prisma/client';
+import { logger } from '@/lib/utils/logger';
 import type { HubSpotApprovalRequestRepository } from '@/lib/db/repositories/hubspotApprovalRequest';
 import type { HubSpotQuoteRepository } from '@/lib/db/repositories/hubspotQuote';
 
 export interface ResolveDeps {
   approvalRepo: Pick<HubSpotApprovalRequestRepository, 'findByHubspotDealId' | 'resolve'>;
   quoteRepo: Pick<HubSpotQuoteRepository, 'findLatestByScenario' | 'updatePublishState'>;
-  runPublishScenario: (input: { scenarioId: string; correlationId: string }) => Promise<unknown>;
+  runPublishScenario: (input: {
+    scenarioId: string;
+    correlationPrefix: string;
+  }) => Promise<unknown>;
 }
 
 export async function resolveApprovalFromWebhook(input: {
@@ -22,6 +25,13 @@ export async function resolveApprovalFromWebhook(input: {
   const status = input.newStatus.toLowerCase();
 
   if (status === 'approved') {
+    if (input.hubspotOwnerId === null) {
+      logger.warn('Approval resolved without hubspotOwnerId — resolver identity unknown', {
+        approvalRequestId: existing.id,
+        scenarioId: existing.scenarioId,
+        hubspotDealId: input.hubspotDealId,
+      });
+    }
     await input.deps.approvalRepo.resolve(existing.id, {
       status: HubSpotApprovalStatus.APPROVED,
       ...(input.hubspotOwnerId !== null && {
@@ -30,9 +40,16 @@ export async function resolveApprovalFromWebhook(input: {
     });
     await input.deps.runPublishScenario({
       scenarioId: existing.scenarioId,
-      correlationId: `approval-resume-${randomUUID()}`,
+      correlationPrefix: 'approval-resume',
     });
   } else if (status === 'rejected') {
+    if (input.hubspotOwnerId === null) {
+      logger.warn('Rejection resolved without hubspotOwnerId — resolver identity unknown', {
+        approvalRequestId: existing.id,
+        scenarioId: existing.scenarioId,
+        hubspotDealId: input.hubspotDealId,
+      });
+    }
     await input.deps.approvalRepo.resolve(existing.id, {
       status: HubSpotApprovalStatus.REJECTED,
       ...(input.hubspotOwnerId !== null && {

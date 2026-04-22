@@ -48,7 +48,7 @@ One of:
 Use any of the pricer-stamped properties for context:
 
 - `{{ deal.pricer_scenario_id }}` — links manager back to the pricer scenario (build a link to `https://ninjapricer-production.up.railway.app/scenarios/{id}` in the task description)
-- `{{ deal.pricer_margin_pct }}` — margin for context
+- `{{ deal.pricer_margin_pct }}` — margin for context (stored as a percentage, e.g. `22.00` means 22 %)
 
 ### 6. Activate
 

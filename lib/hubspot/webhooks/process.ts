@@ -65,7 +65,7 @@ export async function processEvent(eventId: string, deps: ProcessDeps): Promise<
             runPublishScenario: (i) =>
               runPublishScenario({
                 scenarioId: i.scenarioId,
-                correlationPrefix: i.correlationId,
+                correlationPrefix: i.correlationPrefix,
               }) as Promise<unknown>,
           },
         });

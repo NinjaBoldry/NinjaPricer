@@ -42,7 +42,7 @@ describe('resolveApprovalFromWebhook', () => {
     );
     expect(runPublishScenario).toHaveBeenCalledWith({
       scenarioId: 's1',
-      correlationId: expect.any(String),
+      correlationPrefix: 'approval-resume',
     });
   });
 

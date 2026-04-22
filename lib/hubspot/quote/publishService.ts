@@ -143,7 +143,7 @@ export async function runPublishScenario(
         revision,
         railViolations: computeResult.warnings
           .filter((w) => w.severity === 'hard')
-          .map((w) => w as unknown as Record<string, unknown>),
+          .map((w) => ({ ...w }) as Record<string, unknown>),
         marginPct,
         persistence: approvalPersistence,
         correlationId,

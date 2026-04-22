@@ -47,7 +47,7 @@ describe('submitApprovalRequest', () => {
     expect(patchCall![0].body).toEqual({
       properties: {
         pricer_approval_status: 'pending',
-        pricer_margin_pct: '0.22',
+        pricer_margin_pct: '22.00',
         pricer_scenario_id: 's1',
       },
     });

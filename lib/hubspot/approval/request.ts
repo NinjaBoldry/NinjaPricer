@@ -45,7 +45,7 @@ export async function submitApprovalRequest(
     body: {
       properties: {
         pricer_approval_status: 'pending',
-        pricer_margin_pct: input.marginPct.toFixed(2),
+        pricer_margin_pct: (input.marginPct * 100).toFixed(2),
         pricer_scenario_id: input.scenarioId,
       },
     },
