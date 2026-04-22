@@ -1,0 +1,7 @@
+{
+  "uid": "link-deal",
+  "type": "app-function",
+  "config": {
+    "entrypoint": "link-deal.ts"
+  }
+}

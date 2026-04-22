@@ -1,0 +1,7 @@
+{
+  "uid": "get-card-state",
+  "type": "app-function",
+  "config": {
+    "entrypoint": "get-card-state.ts"
+  }
+}
