@@ -12,6 +12,22 @@ import { commissionTools } from '@/lib/mcp/tools/catalog/commissions';
 import { bundleTools } from '@/lib/mcp/tools/catalog/bundles';
 import { railTools } from '@/lib/mcp/tools/catalog/rails';
 import { hubspotCatalogTools } from '@/lib/mcp/tools/hubspot';
+import type { ToolDefinition } from '@/lib/mcp/server';
+import {
+  linkScenarioToHubspotDealTool,
+  createHubspotDealForScenarioTool,
+  publishScenarioToHubspotTool,
+  checkPublishStatusTool,
+  supersedeHubspotQuoteTool,
+} from '@/lib/mcp/tools/hubspotQuote';
+
+const hubspotQuoteTools = [
+  linkScenarioToHubspotDealTool,
+  createHubspotDealForScenarioTool,
+  publishScenarioToHubspotTool,
+  checkPublishStatusTool,
+  supersedeHubspotQuoteTool,
+] as ToolDefinition<unknown, unknown>[];
 
 const tools: Parameters<typeof createMcpServer>[0] = [
   ...readTools,
@@ -24,6 +40,7 @@ const tools: Parameters<typeof createMcpServer>[0] = [
   ...bundleTools,
   ...railTools,
   ...hubspotCatalogTools,
+  ...hubspotQuoteTools,
 ];
 
 const server = createMcpServer(tools);
