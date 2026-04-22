@@ -165,6 +165,13 @@ export async function provisionCustomProperties(opts: {
       summary.alreadyPresent.push({ objectType: def.objectType, name: def.name });
     } catch (err) {
       if (err instanceof HubSpotApiError && err.status === 404) {
+        const options =
+          def.type === 'bool'
+            ? [
+                { label: 'True', value: 'true', displayOrder: 0, hidden: false },
+                { label: 'False', value: 'false', displayOrder: 1, hidden: false },
+              ]
+            : def.options;
         await hubspotFetch({
           method: 'POST',
           path: `/crm/v3/properties/${def.objectType}`,
@@ -174,7 +181,7 @@ export async function provisionCustomProperties(opts: {
             type: def.type,
             fieldType: def.fieldType,
             groupName: def.groupName,
-            options: def.options,
+            options,
           },
           correlationId: opts.correlationId,
         });
