@@ -25,7 +25,7 @@ export const createBundleTool: ToolDefinition<
 > = {
   name: 'create_bundle',
   description:
-    'Admin only. Creates a new bundle (name, description?, isActive?). Bundle names must be unique. Returns the new row id.',
+    'Admin only. Creates a new bundle (name, description?, sku?, isActive?). Bundle names must be unique. Returns the new row id.',
   inputSchema: createBundleSchema,
   requiresAdmin: true,
   isWrite: true,
@@ -50,7 +50,15 @@ const updateBundleSchema = z
     sku: z.string().trim().nullable().optional(),
     isActive: z.boolean().optional(),
   })
-  .strict();
+  .strict()
+  .refine(
+    (v) =>
+      v.name !== undefined ||
+      v.isActive !== undefined ||
+      v.description !== undefined ||
+      v.sku !== undefined,
+    { message: 'at least one of name, isActive, description, or sku is required' },
+  );
 
 export const updateBundleTool: ToolDefinition<
   z.infer<typeof updateBundleSchema>,

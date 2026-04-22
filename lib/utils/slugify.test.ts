@@ -27,7 +27,7 @@ describe('slugifyUpper', () => {
     expect(slugifyUpper('   ')).toBe('');
   });
 
-  it('handles unicode by stripping non-ASCII alphanumerics', () => {
-    expect(slugifyUpper('Niñja Nötes')).toBe('NI-JA-N-TES');
+  it('handles unicode by folding accents before slugifying', () => {
+    expect(slugifyUpper('Niñja Nötes')).toBe('NINJA-NOTES');
   });
 });
