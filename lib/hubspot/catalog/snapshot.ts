@@ -25,11 +25,8 @@ export async function loadCatalogSnapshot(prisma: PrismaClient): Promise<Catalog
       id: p.id,
       name: p.name,
       kind: p.kind, // ProductKind: SAAS_USAGE | PACKAGED_LABOR | CUSTOM_LABOR
-      // Product schema has no sku or description columns; pass empty strings so the
-      // translator's ProductInput contract is satisfied. These can be enriched in a
-      // later phase if the Product model gains those fields.
-      sku: '',
-      description: '',
+      sku: p.sku ?? '',
+      description: p.description ?? '',
       headlineMonthlyPrice,
     };
   });
@@ -43,8 +40,7 @@ export async function loadCatalogSnapshot(prisma: PrismaClient): Promise<Catalog
   const bundles: BundleInput[] = activeBundles.map((b) => ({
     id: b.id,
     name: b.name,
-    // Bundle schema has no sku column; pass empty string.
-    sku: '',
+    sku: b.sku ?? '',
     description: b.description ?? '',
     // TODO: compute true rolled-up price from bundle items in Phase 2.
     // The engine's bundle pricing logic lives in lib/engine/compute.ts.

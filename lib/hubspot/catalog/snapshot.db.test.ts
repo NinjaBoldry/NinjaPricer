@@ -20,7 +20,13 @@ describe('loadCatalogSnapshot', () => {
 
   it('returns only active products', async () => {
     const active = await prisma.product.create({
-      data: { name: 'Active Product', kind: ProductKind.SAAS_USAGE, isActive: true },
+      data: {
+        name: 'Active Product',
+        kind: ProductKind.SAAS_USAGE,
+        isActive: true,
+        description: 'Note capture',
+        sku: 'NN-01',
+      },
     });
     await prisma.listPrice.create({
       data: { productId: active.id, usdPerSeatPerMonth: new Decimal('500') },
@@ -34,6 +40,19 @@ describe('loadCatalogSnapshot', () => {
     expect(snap.products.length).toBe(1);
     expect(snap.products[0]!.name).toBe('Active Product');
     expect(snap.products[0]!.headlineMonthlyPrice.toString()).toBe('500');
+    expect(snap.products[0]!.description).toBe('Note capture');
+    expect(snap.products[0]!.sku).toBe('NN-01');
+  });
+
+  it('returns empty strings for description and sku when product has null values', async () => {
+    await prisma.product.create({
+      data: { name: 'No Meta Product', kind: ProductKind.SAAS_USAGE, isActive: true },
+    });
+
+    const snap = await loadCatalogSnapshot(prisma);
+    expect(snap.products.length).toBe(1);
+    expect(snap.products[0]!.description).toBe('');
+    expect(snap.products[0]!.sku).toBe('');
   });
 
   it('returns headlineMonthlyPrice of 0 when no listPrice row exists', async () => {
