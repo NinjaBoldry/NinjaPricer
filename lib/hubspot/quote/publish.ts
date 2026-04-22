@@ -107,7 +107,7 @@ export async function publishScenarioToHubSpot(input: PublishInput): Promise<Pub
   const shareableUrl = publishedRes.properties.hs_quote_link ?? null;
 
   await input.persistence.updatePublishState(row.id, HubSpotPublishState.PUBLISHED, {
-    shareableUrl: shareableUrl ?? undefined,
+    ...(shareableUrl != null && { shareableUrl }),
     publishedAt: input.now(),
   });
 

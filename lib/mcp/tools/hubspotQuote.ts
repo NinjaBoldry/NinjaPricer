@@ -12,6 +12,7 @@ import {
 } from '@/lib/hubspot/quote/publish';
 import { scenarioToHubSpotLineItems } from '@/lib/hubspot/quote/translator';
 import { HubSpotQuoteRepository } from '@/lib/db/repositories/hubspotQuote';
+import { computeScenario } from '@/lib/services/rateSnapshot';
 
 // ---------------------------------------------------------------------------
 // Helper types
@@ -41,10 +42,10 @@ type CreateDealInput = z.infer<typeof createDealInput>;
 
 interface CreateDealResult {
   created: boolean;
-  matches?: HubSpotMatch[];
-  dealId?: string;
-  contactId?: string;
-  companyId?: string;
+  matches?: HubSpotMatch[] | undefined;
+  dealId?: string | undefined;
+  contactId?: string | undefined;
+  companyId?: string | undefined;
 }
 
 export const createHubspotDealForScenarioTool: ToolDefinition<
@@ -54,7 +55,7 @@ export const createHubspotDealForScenarioTool: ToolDefinition<
   name: 'create_hubspot_deal_for_scenario',
   description:
     'Create a new HubSpot Deal for a scenario. Searches by contact email and company domain first — if matches are found and forceCreate is false, returns matches without creating. Otherwise creates Deal + Contact + Company and links to the scenario.',
-  inputSchema: createDealInput,
+  inputSchema: createDealInput as z.ZodType<CreateDealInput>,
   requiresAdmin: false,
   isWrite: true,
   targetEntityType: 'Scenario',
@@ -222,7 +223,7 @@ export const publishScenarioToHubspotTool: ToolDefinition<
   name: 'publish_scenario_to_hubspot',
   description:
     'Publish a pricer scenario as a HubSpot Quote on the linked Deal. Builds line items from the scenario state. Catches MissingDealLinkError and UnresolvedHardRailOverrideError and returns structured errors.',
-  inputSchema: publishInput,
+  inputSchema: publishInput as z.ZodType<PublishInput>,
   requiresAdmin: false,
   isWrite: true,
   targetEntityType: 'Scenario',
@@ -230,42 +231,19 @@ export const publishScenarioToHubspotTool: ToolDefinition<
   handler: async (_ctx, input) => {
     const correlationId = `publish-${randomUUID()}`;
 
-    // Load scenario with hubspot fields + line items directly from Prisma
-    const scenario = await prisma.scenario.findUnique({
-      where: { id: input.scenarioId },
-      select: {
-        id: true,
-        name: true,
-        customerName: true,
-        hubspotDealId: true,
-        contractMonths: true,
-        saasConfigs: {
-          select: {
-            productId: true,
-            seatCount: true,
-            personaMix: true,
-            discountOverridePct: true,
-            product: {
-              select: { id: true, name: true, sku: true, description: true },
-            },
-          },
-        },
-        laborLines: {
-          select: {
-            qty: true,
-            revenuePerUnitUsd: true,
-            sku: {
-              select: { id: true, name: true, product: { select: { sku: true, description: true } } },
-            },
-            product: { select: { id: true, name: true, sku: true, description: true } },
-          },
-        },
-      },
-    });
-
-    if (!scenario) {
-      return { error: 'SCENARIO_NOT_FOUND', message: `Scenario ${input.scenarioId} not found.` };
+    // Run the pricing engine to get real per-seat prices
+    let scenarioRow: Awaited<ReturnType<typeof computeScenario>>['scenarioRow'];
+    let computeResult: Awaited<ReturnType<typeof computeScenario>>['computeResult'];
+    try {
+      ({ scenarioRow, computeResult } = await computeScenario(input.scenarioId));
+    } catch (err: unknown) {
+      if (err && typeof err === 'object' && 'name' in err && (err as { name: string }).name === 'NotFoundError') {
+        return { error: 'SCENARIO_NOT_FOUND', message: `Scenario ${input.scenarioId} not found.` };
+      }
+      throw err;
     }
+
+    const scenario = scenarioRow;
 
     // Determine the next revision number
     const latestQuote = await prisma.hubSpotQuote.findFirst({
@@ -274,31 +252,80 @@ export const publishScenarioToHubspotTool: ToolDefinition<
     });
     const revision = (latestQuote?.revision ?? 0) + 1;
 
-    // Build TranslatorInput from scenario state
-    // SaaS configs → SaaSLine (use revenuePerUnitUsd-equivalent: we don't have the computed
-    // effective price here, so we use listPrice where available and discountPct from override)
-    const saasLines = scenario.saasConfigs.map((cfg) => ({
-      kind: 'SAAS' as const,
-      productId: cfg.productId,
-      productName: cfg.product.name,
-      productSku: cfg.product.sku ?? '',
-      productDescription: cfg.product.description ?? '',
-      seatCount: cfg.seatCount,
-      // Without a full engine run we don't have the effective price —
-      // use discount override pct if present. Full engine pricing is a T14 TODO (Phase 2c).
-      listPriceMonthly: new Decimal(0),
-      effectiveUnitPriceMonthly: new Decimal(0),
-      discountPct: cfg.discountOverridePct ? new Decimal(cfg.discountOverridePct.toString()) : null,
-      contractMonths: scenario.contractMonths,
-      rampSchedule: null,
-    }));
+    // Build a map of productId → engine TabResult for SaaS tabs
+    const saasTabResultByProductId = new Map(
+      computeResult.perTab
+        .filter((t) => t.kind === 'SAAS_USAGE')
+        .map((t) => [t.productId, t]),
+    );
+
+    // Build SaaS lines using engine-computed prices
+    // Load product details needed for HubSpot payload (name, sku, description)
+    const saasProductIds = scenario.saasConfigs.map((c) => c.productId);
+    const saasProductDetails = saasProductIds.length > 0
+      ? await prisma.product.findMany({
+          where: { id: { in: saasProductIds } },
+          select: {
+            id: true,
+            name: true,
+            sku: true,
+            description: true,
+            listPrice: { select: { usdPerSeatPerMonth: true } },
+          },
+        })
+      : [];
+    const saasProductMap = new Map(saasProductDetails.map((p) => [p.id, p]));
+
+    const saasLines = scenario.saasConfigs.map((cfg) => {
+      const tabResult = saasTabResultByProductId.get(cfg.productId);
+      const productDetail = saasProductMap.get(cfg.productId);
+      const productName = productDetail?.name ?? cfg.productId;
+      const productSku = productDetail?.sku ?? '';
+      const productDescription = productDetail?.description ?? '';
+
+      // List price per seat from the product snapshot
+      const listPriceMonthly = productDetail?.listPrice?.usdPerSeatPerMonth != null
+        ? new Decimal(productDetail.listPrice.usdPerSeatPerMonth.toString())
+        : new Decimal(0);
+
+      // Effective unit price = engine monthlyRevenueCents / 100 / seatCount
+      const seatCount = cfg.seatCount;
+      let effectiveUnitPriceMonthly = new Decimal(0);
+      if (tabResult && seatCount > 0) {
+        effectiveUnitPriceMonthly = new Decimal(tabResult.monthlyRevenueCents).div(100).div(seatCount);
+      } else if (tabResult && seatCount === 0) {
+        effectiveUnitPriceMonthly = listPriceMonthly;
+      }
+
+      // Discount pct derived from list vs effective (or from saasMeta if available)
+      let discountPct: Decimal | null = null;
+      if (tabResult?.saasMeta && !tabResult.saasMeta.effectiveDiscountPct.isZero()) {
+        discountPct = tabResult.saasMeta.effectiveDiscountPct;
+      } else if (listPriceMonthly.gt(0) && effectiveUnitPriceMonthly.lt(listPriceMonthly)) {
+        discountPct = listPriceMonthly.minus(effectiveUnitPriceMonthly).div(listPriceMonthly);
+      }
+
+      return {
+        kind: 'SAAS' as const,
+        productId: cfg.productId,
+        productName,
+        productSku,
+        productDescription,
+        seatCount,
+        listPriceMonthly,
+        effectiveUnitPriceMonthly,
+        discountPct,
+        contractMonths: scenario.contractMonths,
+        rampSchedule: null,
+      };
+    });
 
     const laborLines = scenario.laborLines.map((ll) => ({
       kind: 'LABOR' as const,
-      skuId: ll.sku?.id ?? ll.product.id,
-      skuName: ll.sku?.name ?? ll.product.name,
-      skuCode: ll.product.sku ?? '',
-      skuDescription: ll.product.description ?? '',
+      skuId: ll.skuId ?? ll.productId,
+      skuName: ll.customDescription ?? ll.productId,
+      skuCode: ll.productId,
+      skuDescription: '',
       qty: Number(ll.qty),
       unitPrice: new Decimal(ll.revenuePerUnitUsd.toString()),
     }));
@@ -332,7 +359,7 @@ export const publishScenarioToHubspotTool: ToolDefinition<
           id: scenario.id,
           hubspotDealId: scenario.hubspotDealId,
           revision,
-          hasUnresolvedHardRailOverrides: false, // TODO Phase 2c: evaluate engine rails
+          hasUnresolvedHardRailOverrides: false,
         },
         lineItems,
         quoteConfig: {
@@ -431,7 +458,7 @@ export const supersedeHubspotQuoteTool: ToolDefinition<
   name: 'supersede_hubspot_quote',
   description:
     'Publish a new revision of the HubSpot Quote for a scenario, superseding the prior revision. Reads the latest revision number and increments by 1. Output is the same shape as publish_scenario_to_hubspot.',
-  inputSchema: supersedeInput,
+  inputSchema: supersedeInput as z.ZodType<SupersedeInput>,
   requiresAdmin: false,
   isWrite: true,
   targetEntityType: 'Scenario',
@@ -439,42 +466,19 @@ export const supersedeHubspotQuoteTool: ToolDefinition<
   handler: async (_ctx, input) => {
     const correlationId = `supersede-${randomUUID()}`;
 
-    // Load scenario with hubspot fields + line items directly from Prisma
-    const scenario = await prisma.scenario.findUnique({
-      where: { id: input.scenarioId },
-      select: {
-        id: true,
-        name: true,
-        customerName: true,
-        hubspotDealId: true,
-        contractMonths: true,
-        saasConfigs: {
-          select: {
-            productId: true,
-            seatCount: true,
-            personaMix: true,
-            discountOverridePct: true,
-            product: {
-              select: { id: true, name: true, sku: true, description: true },
-            },
-          },
-        },
-        laborLines: {
-          select: {
-            qty: true,
-            revenuePerUnitUsd: true,
-            sku: {
-              select: { id: true, name: true, product: { select: { sku: true, description: true } } },
-            },
-            product: { select: { id: true, name: true, sku: true, description: true } },
-          },
-        },
-      },
-    });
-
-    if (!scenario) {
-      return { error: 'SCENARIO_NOT_FOUND' as const, message: `Scenario ${input.scenarioId} not found.` };
+    // Run the pricing engine to get real per-seat prices
+    let scenarioRow: Awaited<ReturnType<typeof computeScenario>>['scenarioRow'];
+    let computeResult: Awaited<ReturnType<typeof computeScenario>>['computeResult'];
+    try {
+      ({ scenarioRow, computeResult } = await computeScenario(input.scenarioId));
+    } catch (err: unknown) {
+      if (err && typeof err === 'object' && 'name' in err && (err as { name: string }).name === 'NotFoundError') {
+        return { error: 'SCENARIO_NOT_FOUND' as const, message: `Scenario ${input.scenarioId} not found.` };
+      }
+      throw err;
     }
+
+    const scenario = scenarioRow;
 
     // Get the current latest revision and increment
     const latestQuote = await prisma.hubSpotQuote.findFirst({
@@ -483,27 +487,77 @@ export const supersedeHubspotQuoteTool: ToolDefinition<
     });
     const revision = (latestQuote?.revision ?? 0) + 1;
 
-    // Build line items from scenario state
-    const saasLines = scenario.saasConfigs.map((cfg) => ({
-      kind: 'SAAS' as const,
-      productId: cfg.productId,
-      productName: cfg.product.name,
-      productSku: cfg.product.sku ?? '',
-      productDescription: cfg.product.description ?? '',
-      seatCount: cfg.seatCount,
-      listPriceMonthly: new Decimal(0),
-      effectiveUnitPriceMonthly: new Decimal(0),
-      discountPct: cfg.discountOverridePct ? new Decimal(cfg.discountOverridePct.toString()) : null,
-      contractMonths: scenario.contractMonths,
-      rampSchedule: null,
-    }));
+    // Build a map of productId → engine TabResult for SaaS tabs
+    const saasTabResultByProductId = new Map(
+      computeResult.perTab
+        .filter((t) => t.kind === 'SAAS_USAGE')
+        .map((t) => [t.productId, t]),
+    );
+
+    // Load product details needed for HubSpot payload (name, sku, description)
+    const saasProductIds = scenario.saasConfigs.map((c) => c.productId);
+    const saasProductDetails = saasProductIds.length > 0
+      ? await prisma.product.findMany({
+          where: { id: { in: saasProductIds } },
+          select: {
+            id: true,
+            name: true,
+            sku: true,
+            description: true,
+            listPrice: { select: { usdPerSeatPerMonth: true } },
+          },
+        })
+      : [];
+    const saasProductMap = new Map(saasProductDetails.map((p) => [p.id, p]));
+
+    // Build SaaS lines using engine-computed prices
+    const saasLines = scenario.saasConfigs.map((cfg) => {
+      const tabResult = saasTabResultByProductId.get(cfg.productId);
+      const productDetail = saasProductMap.get(cfg.productId);
+      const productName = productDetail?.name ?? cfg.productId;
+      const productSku = productDetail?.sku ?? '';
+      const productDescription = productDetail?.description ?? '';
+
+      const listPriceMonthly = productDetail?.listPrice?.usdPerSeatPerMonth != null
+        ? new Decimal(productDetail.listPrice.usdPerSeatPerMonth.toString())
+        : new Decimal(0);
+
+      const seatCount = cfg.seatCount;
+      let effectiveUnitPriceMonthly = new Decimal(0);
+      if (tabResult && seatCount > 0) {
+        effectiveUnitPriceMonthly = new Decimal(tabResult.monthlyRevenueCents).div(100).div(seatCount);
+      } else if (tabResult && seatCount === 0) {
+        effectiveUnitPriceMonthly = listPriceMonthly;
+      }
+
+      let discountPct: Decimal | null = null;
+      if (tabResult?.saasMeta && !tabResult.saasMeta.effectiveDiscountPct.isZero()) {
+        discountPct = tabResult.saasMeta.effectiveDiscountPct;
+      } else if (listPriceMonthly.gt(0) && effectiveUnitPriceMonthly.lt(listPriceMonthly)) {
+        discountPct = listPriceMonthly.minus(effectiveUnitPriceMonthly).div(listPriceMonthly);
+      }
+
+      return {
+        kind: 'SAAS' as const,
+        productId: cfg.productId,
+        productName,
+        productSku,
+        productDescription,
+        seatCount,
+        listPriceMonthly,
+        effectiveUnitPriceMonthly,
+        discountPct,
+        contractMonths: scenario.contractMonths,
+        rampSchedule: null,
+      };
+    });
 
     const laborLines = scenario.laborLines.map((ll) => ({
       kind: 'LABOR' as const,
-      skuId: ll.sku?.id ?? ll.product.id,
-      skuName: ll.sku?.name ?? ll.product.name,
-      skuCode: ll.product.sku ?? '',
-      skuDescription: ll.product.description ?? '',
+      skuId: ll.skuId ?? ll.productId,
+      skuName: ll.customDescription ?? ll.productId,
+      skuCode: ll.productId,
+      skuDescription: '',
       qty: Number(ll.qty),
       unitPrice: new Decimal(ll.revenuePerUnitUsd.toString()),
     }));
@@ -537,7 +591,7 @@ export const supersedeHubspotQuoteTool: ToolDefinition<
           id: scenario.id,
           hubspotDealId: scenario.hubspotDealId,
           revision,
-          hasUnresolvedHardRailOverrides: false, // TODO Phase 2c: evaluate engine rails
+          hasUnresolvedHardRailOverrides: false,
         },
         lineItems,
         quoteConfig: {

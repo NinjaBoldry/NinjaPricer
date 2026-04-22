@@ -3,8 +3,10 @@ import Decimal from 'decimal.js';
 import { NotFoundError } from '@/lib/utils/errors';
 import { computeLoadedHourlyRate } from '@/lib/services/labor';
 import { d } from '@/lib/utils/money';
+import { compute } from '@/lib/engine';
 import type {
   ComputeRequest,
+  ComputeResult,
   SaaSProductSnap,
   LaborSKUSnap,
   DepartmentSnap,
@@ -266,4 +268,20 @@ export async function buildComputeRequest(scenarioId: string): Promise<{
   };
 
   return { scenario, request };
+}
+
+/**
+ * Load a scenario from the DB, build a ComputeRequest, run the pricing engine,
+ * and return both the scenario row and the ComputeResult.
+ *
+ * Used by the MCP publish tools so they can produce real per-seat prices rather
+ * than hard-coded $0 placeholders.
+ */
+export async function computeScenario(scenarioId: string): Promise<{
+  scenarioRow: ScenarioWithConfigs;
+  computeResult: ComputeResult;
+}> {
+  const { scenario, request } = await buildComputeRequest(scenarioId);
+  const computeResult = compute(request);
+  return { scenarioRow: scenario, computeResult };
 }
