@@ -103,6 +103,14 @@ export async function runPublishScenario(
       };
     }
 
+    if (!scenario.hubspotDealId) {
+      return {
+        status: 'error',
+        error: 'MISSING_DEAL_LINK',
+        message: 'Scenario must be linked to a HubSpot Deal before publishing.',
+      };
+    }
+
     if (existing?.status !== HubSpotApprovalStatus.APPROVED) {
       // No request or still PENDING — submit (or re-submit) approval request.
       const approvalPersistence: ApprovalPersistence = {
@@ -131,7 +139,7 @@ export async function runPublishScenario(
       const marginPct = Number(computeResult.totals.marginPctNet ?? 0);
       const result = await submitApprovalRequest({
         scenarioId: scenario.id,
-        hubspotDealId: scenario.hubspotDealId!,
+        hubspotDealId: scenario.hubspotDealId,
         revision,
         railViolations: computeResult.warnings
           .filter((w) => w.severity === 'hard')

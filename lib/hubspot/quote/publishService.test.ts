@@ -257,6 +257,29 @@ describe('runPublishScenario — Phase 2c approval-flow branching', () => {
   });
 
   // -------------------------------------------------------------------------
+  // Branch 4: hard-rail overrides + no hubspotDealId → structured error
+  // -------------------------------------------------------------------------
+
+  it('missing deal guard: hard-rail override but scenario has no hubspotDealId → returns structured error, does not call submitApprovalRequest, does not throw', async () => {
+    const scenarioWithoutDeal = { ...SCENARIO_ROW, hubspotDealId: null };
+    mockComputeScenario.mockResolvedValue({
+      scenarioRow: scenarioWithoutDeal as never,
+      computeResult: makeComputeResult(true) as never,
+    });
+    // approvalRepo.findByScenarioId returns null (no prior request) — beforeEach default
+
+    const result = await runPublishScenario({ scenarioId: 'sc-1' });
+
+    expect(result).toEqual({
+      status: 'error',
+      error: 'MISSING_DEAL_LINK',
+      message: 'Scenario must be linked to a HubSpot Deal before publishing.',
+    });
+    expect(mockSubmitApprovalRequest).not.toHaveBeenCalled();
+    expect(mockPublishToHubSpot).not.toHaveBeenCalled();
+  });
+
+  // -------------------------------------------------------------------------
   // No hard overrides → normal publish path (unchanged)
   // -------------------------------------------------------------------------
 
