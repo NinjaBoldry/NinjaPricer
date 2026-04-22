@@ -3,7 +3,6 @@ import { randomUUID } from 'node:crypto';
 import type { ToolDefinition } from '@/lib/mcp/server';
 import { prisma } from '@/lib/db/client';
 import { hubspotFetch } from '@/lib/hubspot/client';
-import { MissingDealLinkError, UnresolvedHardRailOverrideError } from '@/lib/hubspot/quote/publish';
 import { runPublishScenario } from '@/lib/hubspot/quote/publishService';
 
 // ---------------------------------------------------------------------------
@@ -226,14 +225,18 @@ export const publishScenarioToHubspotTool: ToolDefinition<
   handler: async (_ctx, input) => {
     const result = await runPublishScenario({
       scenarioId: input.scenarioId,
-      quoteNameOverride: input.quoteNameOverride,
+      ...(input.quoteNameOverride !== undefined && { quoteNameOverride: input.quoteNameOverride }),
       expirationDays: input.expirationDays,
       correlationPrefix: 'publish',
     });
     if (!result.ok) {
       return { error: result.error, message: result.message };
     }
-    return { hubspotQuoteId: result.hubspotQuoteId, shareableUrl: result.shareableUrl, correlationId: result.correlationId };
+    return {
+      hubspotQuoteId: result.hubspotQuoteId,
+      shareableUrl: result.shareableUrl,
+      correlationId: result.correlationId,
+    };
   },
 };
 
@@ -319,14 +322,18 @@ export const supersedeHubspotQuoteTool: ToolDefinition<
   handler: async (_ctx, input) => {
     const result = await runPublishScenario({
       scenarioId: input.scenarioId,
-      quoteNameOverride: input.quoteNameOverride,
+      ...(input.quoteNameOverride !== undefined && { quoteNameOverride: input.quoteNameOverride }),
       expirationDays: input.expirationDays,
       correlationPrefix: 'supersede',
     });
     if (!result.ok) {
       return { error: result.error, message: result.message };
     }
-    return { hubspotQuoteId: result.hubspotQuoteId, shareableUrl: result.shareableUrl, correlationId: result.correlationId };
+    return {
+      hubspotQuoteId: result.hubspotQuoteId,
+      shareableUrl: result.shareableUrl,
+      correlationId: result.correlationId,
+    };
   },
 };
 

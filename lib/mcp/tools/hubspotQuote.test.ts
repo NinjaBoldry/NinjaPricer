@@ -158,7 +158,11 @@ describe('publish_scenario_to_hubspot', () => {
 
     expect(mockRunPublish).toHaveBeenCalledOnce();
     expect(mockRunPublish).toHaveBeenCalledWith(
-      expect.objectContaining({ scenarioId: 's1', expirationDays: 30, correlationPrefix: 'publish' }),
+      expect.objectContaining({
+        scenarioId: 's1',
+        expirationDays: 30,
+        correlationPrefix: 'publish',
+      }),
     );
     expect(result).toMatchObject({
       hubspotQuoteId: 'hs-q-1',
