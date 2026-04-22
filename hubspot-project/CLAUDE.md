@@ -5,6 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working on HubS
 IMPORTANT: IF THE 'HubSpotDev' MCP SERVER IS INSTALLED USE THE TOOLS BEFORE TRYING TO MANUALLY USE CLI COMMANDS OR BEFORE TRYING TO DO ANYTHING WITH HUBSPOT ASSETS
 
 ## HubSpot Project Information
+
 - The project configuration is in the `hsproject.json` file
 - A directory is considered a part of the project if it or a directory above it contains a `hsproject.json` file
 - The project src directory is defined in the `srcDir` field in the `hsproject.json`
@@ -12,13 +13,16 @@ IMPORTANT: IF THE 'HubSpotDev' MCP SERVER IS INSTALLED USE THE TOOLS BEFORE TRYI
 - The `platformVersion` determines what features the project has access to as well as the shape of the configuration files
 
 ## Local Development
+
 ### Local Development Server (`hs project dev`)
+
 - Start a local development server with `hs project dev` to view extension changes without refreshing
 - The server runs on your local machine and syncs changes to HubSpot in real-time
 - When the server is running, UI extensions (cards, settings pages) display a "Developing locally" tag
 - Saving changes to JSX files automatically refreshes the page
 
 ### Local Proxy Configuration (`local.json`)
+
 - During local development, you can proxy `hubspot.fetch()` requests to a locally running backend
 - Create a `local.json` file in the same directory as your app's `*-hsmeta.json` file
 - The proxy configuration maps HTTPS URLs to local URLs:
@@ -35,6 +39,7 @@ IMPORTANT: IF THE 'HubSpotDev' MCP SERVER IS INSTALLED USE THE TOOLS BEFORE TRYI
 - To disable the proxy, rename the file to `local.json.bak` and restart the dev server
 
 ### Request Signing with CLIENT_SECRET
+
 - You can inject the `CLIENT_SECRET` environment variable when starting the local dev server:
   ```shell
   CLIENT_SECRET="abc123" hs project dev
@@ -42,10 +47,13 @@ IMPORTANT: IF THE 'HubSpotDev' MCP SERVER IS INSTALLED USE THE TOOLS BEFORE TRYI
 - This enables request signing during local development for testing secure backend communications
 
 ## npm packages
+
 ### `@hubspot/ui-extensions`
-- In the `@hubspot/ui-extensions` npm package, only the component properties defined by the component are valid.  `style` properties are not valid
+
+- In the `@hubspot/ui-extensions` npm package, only the component properties defined by the component are valid. `style` properties are not valid
 
 ### `hubspot.fetch` API
+
 - `hubspot.fetch` is a function provided by `@hubspot/ui-extensions` for making HTTP requests from UI components
 - **Critical**: `hubspot.fetch` requires fully qualified domain names (FQDN) with HTTPS - relative paths are NOT supported
 - All URLs must be added to the `permittedUrls.fetch` array in the app's `*-hsmeta.json` configuration file
@@ -61,7 +69,9 @@ IMPORTANT: IF THE 'HubSpotDev' MCP SERVER IS INSTALLED USE THE TOOLS BEFORE TRYI
 - To call a local backend during development, use the `local.json` proxy configuration (see Local Development section)
 
 ## Component Information
+
 ### General
+
 - Component configuration files must end with `-hsmeta.json`
 - The `uid` field in the `-hsmeta.json` files must be unique with the project
 - The `type` field in the `-hsmeta.json` files defines the type of the component
@@ -70,48 +80,58 @@ IMPORTANT: IF THE 'HubSpotDev' MCP SERVER IS INSTALLED USE THE TOOLS BEFORE TRYI
 - All component subdirectories must be in the project source directory
 
 ### app component
+
 - There can only be one `app` component
 - `app` component must be in the `app` directory
 - If the `config.distribution` field is set to `marketplace`, the only valid `config.auth.type` value is `oauth`
 
 ### card
+
 - `card` components must be in the `app/cards` directory
 - The global `window` object is not available in the `card` component
-- Cannot use `window.fetch`, and instead must use the `hubspot.fetch` function provided by the `@hubspot/ui-extensions` npm package.  Any urls called with the `hubspot.fetch` function must be added to the `config.permittedUrls.fetch` array in the `app` component's hsmeta.json file
+- Cannot use `window.fetch`, and instead must use the `hubspot.fetch` function provided by the `@hubspot/ui-extensions` npm package. Any urls called with the `hubspot.fetch` function must be added to the `config.permittedUrls.fetch` array in the `app` component's hsmeta.json file
 - `hubspot.fetch` requires fully qualified HTTPS URLs (e.g., `https://api.example.com/endpoint`) - relative paths like `/api/endpoint` are NOT supported
 - Only components exported from the `@hubspot/ui-extensions` npm package can be used in `card` components
 
 ### app-event
+
 - `app-event` components must be in the `app/app-events` directory
 
 ### app-object
+
 - `app-object` components must be in the `app/app-object` directory
 
 ### app-function
+
 - `app-function` components must be in the `app/functions` directory
 - `app-function` components are not available when `config.distribution` is set to `marketplace` in the `app` component `-hsmeta.son` file
 
 # settings
+
 - There can only be one `settings` component
 - `settings` components must be in the `app/settings` directory
 - The global `window` object is not available in the `settings` component
-- Cannot use `window.fetch`, and instead must use the `hubspot.fetch` function provided by the `@hubspot/ui-extensions` npm package.  Any urls called with the `hubspot.fetch` function must be added to the `config.permittedUrls.fetch` array in the `app` component's `hsmeta.json` file
+- Cannot use `window.fetch`, and instead must use the `hubspot.fetch` function provided by the `@hubspot/ui-extensions` npm package. Any urls called with the `hubspot.fetch` function must be added to the `config.permittedUrls.fetch` array in the `app` component's `hsmeta.json` file
 - `hubspot.fetch` requires fully qualified HTTPS URLs - relative paths are NOT supported
 - Only components exported from the `@hubspot/ui-extensions` npm package can be used in `settings` components
 - React Components from `@hubspot/ui-extensions/crm` cannot be used in `settings` components
 
 # scim
+
 - There can only be one `scim` component
 - `scim` components must be in the `app/scim` directory
 
 # webhooks
+
 - There can only be one `webhooks` component.
 - `webhooks` components must be in the `app/webhooks` directory
 
 ### workflow-actions
+
 - `workflow-action` components must be in the `app/workflow-actions` directory
 
 ## HubSpot CLI commands
+
 - All the commands and subcommands have a `--help` argument that provides details on the command and it's arguments
 - The help output is standard yargs output
 - The commands for working with projects in HubSpot are subcommands of `hs project`
@@ -119,6 +139,7 @@ IMPORTANT: IF THE 'HubSpotDev' MCP SERVER IS INSTALLED USE THE TOOLS BEFORE TRYI
 - Debugging problems with CLI installation: `hs doctor`
 
 ### Project Commands
+
 - `hs project create` - Create a new HubSpot project interactively
 - `hs project upload` - Upload the project to HubSpot (build is created automatically)
 - `hs project deploy` - Deploy a specific build of the project to make it live
@@ -135,6 +156,7 @@ IMPORTANT: IF THE 'HubSpotDev' MCP SERVER IS INSTALLED USE THE TOOLS BEFORE TRYI
 - `hs project clone-app` - Clone an existing app configuration
 
 ### Account Management
+
 - `hs init` - Initial setup of the hubspot configuration file
 - `hs account auth` - Authenticate a new account (requires browser interaction)
 - `hs account list` - List all configured accounts
@@ -147,6 +169,7 @@ IMPORTANT: IF THE 'HubSpotDev' MCP SERVER IS INSTALLED USE THE TOOLS BEFORE TRYI
 - `hs account remove-override` - Remove a project-specific account override
 
 ### CMS Commands
+
 - `hs cms upload <src> <dest>` - Upload files to HubSpot
 - `hs cms fetch <src> <dest>` - Download files from HubSpot
 - `hs cms watch <src> <dest>` - Watch for changes and automatically upload
@@ -161,21 +184,25 @@ IMPORTANT: IF THE 'HubSpotDev' MCP SERVER IS INSTALLED USE THE TOOLS BEFORE TRYI
 - `hs theme preview` - Preview a theme locally at https://hslocal.net:3000/
 
 ### Sandbox Management
+
 - `hs sandbox create` - Create a development sandbox account
 - `hs sandbox delete` - Delete a sandbox account
 
 ### Secrets Management
+
 - `hs secret list` - List secrets for serverless functions
 - `hs secret add <name> <value>` - Add a secret
 - `hs secret update <name> <value>` - Update a secret
 - `hs secret delete <name>` - Delete a secret
 
 ### Test Account Management
+
 - `hs test-account create` - Create a configurable test account
 - `hs test-account delete` - Delete a test account
 - `hs test-account import-data` - Import test data
 
 ## General
+
 - Follow existing patterns in the codebase
 - Use proper component structure based on component `type` in the `-hsmeta.json` file
 - Ensure configuration files follow HubSpot naming conventions

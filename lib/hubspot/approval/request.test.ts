@@ -25,7 +25,9 @@ describe('submitApprovalRequest', () => {
       scenarioId: 's1',
       hubspotDealId: 'd1',
       revision: 1,
-      railViolations: [{ productId: 'p1', kind: 'MIN_MARGIN_PCT', measuredValue: '0.15', threshold: '0.25' }],
+      railViolations: [
+        { productId: 'p1', kind: 'MIN_MARGIN_PCT', measuredValue: '0.15', threshold: '0.25' },
+      ],
       marginPct: 0.22,
       persistence,
       correlationId: 'c1',
@@ -38,7 +40,9 @@ describe('submitApprovalRequest', () => {
     });
     expect(persistence.updateQuotePublishState).toHaveBeenCalledWith('q-row-1', 'PENDING_APPROVAL');
 
-    const patchCall = fetchSpy.mock.calls.find(([a]) => a.method === 'PATCH' && a.path.includes('/deals/d1'));
+    const patchCall = fetchSpy.mock.calls.find(
+      ([a]) => a.method === 'PATCH' && a.path.includes('/deals/d1'),
+    );
     expect(patchCall).toBeTruthy();
     expect(patchCall![0].body).toEqual({
       properties: {

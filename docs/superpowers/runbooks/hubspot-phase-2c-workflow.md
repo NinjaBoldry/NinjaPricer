@@ -30,6 +30,7 @@ HubSpot UI → **Automation → Workflows → Create workflow → From scratch**
 ### 3. Manager lookup
 
 One of:
+
 - **Per-Deal-owner routing:** in the workflow, fetch the Deal owner's manager via the owner hierarchy. HubSpot supports this natively via "User's manager" attribution.
 - **Approver group:** assign to a static list of approver User IDs.
 
@@ -45,6 +46,7 @@ One of:
 ### 5. Task template
 
 Use any of the pricer-stamped properties for context:
+
 - `{{ deal.pricer_scenario_id }}` — links manager back to the pricer scenario (build a link to `https://ninjapricer-production.up.railway.app/scenarios/{id}` in the task description)
 - `{{ deal.pricer_margin_pct }}` — margin for context
 

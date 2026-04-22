@@ -41,7 +41,10 @@ export async function resolveApprovalFromWebhook(input: {
     });
     const quote = await input.deps.quoteRepo.findLatestByScenario(existing.scenarioId);
     if (quote) {
-      await input.deps.quoteRepo.updatePublishState(quote.id, HubSpotPublishState.APPROVAL_REJECTED);
+      await input.deps.quoteRepo.updatePublishState(
+        quote.id,
+        HubSpotPublishState.APPROVAL_REJECTED,
+      );
     }
   }
   // other status values (pending, not_required) → no-op

@@ -75,9 +75,7 @@ export default async function ApprovalRequestsPage({
         {filter === 'pending' ? 'Showing PENDING requests only.' : 'Showing all statuses.'}
       </p>
 
-      {rows.length === 0 && (
-        <p className="text-muted-foreground">No approval requests found.</p>
-      )}
+      {rows.length === 0 && <p className="text-muted-foreground">No approval requests found.</p>}
 
       {rows.length > 0 && (
         <div className="overflow-x-auto">

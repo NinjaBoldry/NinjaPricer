@@ -7,10 +7,7 @@ export interface ApprovalPersistence {
     hubspotDealId: string;
     railViolations: unknown;
   }): Promise<{ id: string }>;
-  findOrCreateQuoteRow(data: {
-    scenarioId: string;
-    revision: number;
-  }): Promise<{ id: string }>;
+  findOrCreateQuoteRow(data: { scenarioId: string; revision: number }): Promise<{ id: string }>;
   updateQuotePublishState(quoteRowId: string, state: HubSpotPublishState): Promise<void>;
 }
 
@@ -24,7 +21,9 @@ export interface SubmitApprovalInput {
   correlationId: string;
 }
 
-export async function submitApprovalRequest(input: SubmitApprovalInput): Promise<{ approvalRequestId: string }> {
+export async function submitApprovalRequest(
+  input: SubmitApprovalInput,
+): Promise<{ approvalRequestId: string }> {
   const req = await input.persistence.upsertApprovalRequest({
     scenarioId: input.scenarioId,
     hubspotDealId: input.hubspotDealId,
@@ -35,7 +34,10 @@ export async function submitApprovalRequest(input: SubmitApprovalInput): Promise
     scenarioId: input.scenarioId,
     revision: input.revision,
   });
-  await input.persistence.updateQuotePublishState(quoteRow.id, HubSpotPublishState.PENDING_APPROVAL);
+  await input.persistence.updateQuotePublishState(
+    quoteRow.id,
+    HubSpotPublishState.PENDING_APPROVAL,
+  );
 
   await hubspotFetch({
     method: 'PATCH',

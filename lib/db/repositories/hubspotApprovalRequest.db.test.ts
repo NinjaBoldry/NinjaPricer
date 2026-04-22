@@ -39,7 +39,9 @@ describe('HubSpotApprovalRequestRepository', () => {
     const row = await repo.create({
       scenarioId,
       hubspotDealId: 'hs-d-1',
-      railViolations: [{ productId: 'p1', kind: 'MIN_MARGIN_PCT', measuredValue: '0.15', threshold: '0.25' }],
+      railViolations: [
+        { productId: 'p1', kind: 'MIN_MARGIN_PCT', measuredValue: '0.15', threshold: '0.25' },
+      ],
     });
     expect(row.status).toBe('PENDING');
     expect(row.hubspotDealId).toBe('hs-d-1');

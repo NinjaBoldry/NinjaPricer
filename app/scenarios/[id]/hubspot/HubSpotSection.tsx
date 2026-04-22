@@ -141,8 +141,8 @@ function PublishButton({
         <div className="space-y-1">
           <p className="text-sm text-red-700 font-medium">Approval rejected.</p>
           <p className="text-xs text-slate-500">
-            The approval request was rejected. Please review the pricing and resubmit.
-            (Request ID: {result.approvalRequestId})
+            The approval request was rejected. Please review the pricing and resubmit. (Request ID:{' '}
+            {result.approvalRequestId})
           </p>
         </div>
       );
@@ -294,9 +294,7 @@ function QuoteStatus({
             hubspotDealId: quote.hubspotQuoteId, // fallback
           }
         }
-        hubspotDealId={
-          approvalRequest?.hubspotDealId ?? quote.hubspotQuoteId
-        }
+        hubspotDealId={approvalRequest?.hubspotDealId ?? quote.hubspotQuoteId}
       />
     );
   }
@@ -315,7 +313,9 @@ function QuoteStatus({
       } else if ('status' in res && res.status === 'pending_approval') {
         setReviseNotice(`Approval request submitted (ID: ${res.approvalRequestId}).`);
       } else if ('status' in res && res.status === 'rejected') {
-        setReviseError(`Approval rejected (ID: ${res.approvalRequestId}). Review pricing and retry.`);
+        setReviseError(
+          `Approval rejected (ID: ${res.approvalRequestId}). Review pricing and retry.`,
+        );
       }
     });
   }

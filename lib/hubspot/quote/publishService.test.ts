@@ -105,7 +105,15 @@ const SCENARIO_ROW = {
 
 const makeComputeResult = (hardWarnings: boolean) => ({
   warnings: hardWarnings
-    ? [{ severity: 'hard', productId: 'p1', kind: 'MIN_MARGIN_PCT', measuredValue: '0.15', threshold: '0.25' }]
+    ? [
+        {
+          severity: 'hard',
+          productId: 'p1',
+          kind: 'MIN_MARGIN_PCT',
+          measuredValue: '0.15',
+          threshold: '0.25',
+        },
+      ]
     : [],
   perTab: [],
   totals: { marginPctNet: 0.32 },

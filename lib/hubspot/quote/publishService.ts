@@ -8,20 +8,18 @@ import { prisma } from '@/lib/db/client';
 import { HubSpotApprovalStatus, HubSpotPublishState } from '@prisma/client';
 import { computeScenario } from '@/lib/services/rateSnapshot';
 import { scenarioToHubSpotLineItems } from './translator';
-import {
-  publishScenarioToHubSpot,
-  MissingDealLinkError,
-  type PublishPersistence,
-} from './publish';
+import { publishScenarioToHubSpot, MissingDealLinkError, type PublishPersistence } from './publish';
 import { HubSpotQuoteRepository } from '@/lib/db/repositories/hubspotQuote';
 import { HubSpotApprovalRequestRepository } from '@/lib/db/repositories/hubspotApprovalRequest';
-import {
-  submitApprovalRequest,
-  type ApprovalPersistence,
-} from '@/lib/hubspot/approval/request';
+import { submitApprovalRequest, type ApprovalPersistence } from '@/lib/hubspot/approval/request';
 
 export type PublishServiceResult =
-  | { status: 'published'; hubspotQuoteId: string; shareableUrl: string | null; correlationId: string }
+  | {
+      status: 'published';
+      hubspotQuoteId: string;
+      shareableUrl: string | null;
+      correlationId: string;
+    }
   | { status: 'pending_approval'; approvalRequestId: string; correlationId: string }
   | { status: 'rejected'; approvalRequestId: string; correlationId: string }
   | { status: 'error'; error: 'MISSING_DEAL_LINK' | 'SCENARIO_NOT_FOUND'; message: string };

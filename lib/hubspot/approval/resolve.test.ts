@@ -36,8 +36,14 @@ describe('resolveApprovalFromWebhook', () => {
       deps: { approvalRepo, quoteRepo, runPublishScenario } as any,
     });
 
-    expect(approvalRepo.resolve).toHaveBeenCalledWith('req-1', expect.objectContaining({ status: 'APPROVED' }));
-    expect(runPublishScenario).toHaveBeenCalledWith({ scenarioId: 's1', correlationId: expect.any(String) });
+    expect(approvalRepo.resolve).toHaveBeenCalledWith(
+      'req-1',
+      expect.objectContaining({ status: 'APPROVED' }),
+    );
+    expect(runPublishScenario).toHaveBeenCalledWith({
+      scenarioId: 's1',
+      correlationId: expect.any(String),
+    });
   });
 
   it('rejected → resolves request + updates quote row to APPROVAL_REJECTED, does NOT call publish', async () => {
@@ -55,7 +61,10 @@ describe('resolveApprovalFromWebhook', () => {
       deps: { approvalRepo, quoteRepo, runPublishScenario } as any,
     });
 
-    expect(approvalRepo.resolve).toHaveBeenCalledWith('req-1', expect.objectContaining({ status: 'REJECTED' }));
+    expect(approvalRepo.resolve).toHaveBeenCalledWith(
+      'req-1',
+      expect.objectContaining({ status: 'REJECTED' }),
+    );
     expect(quoteRepo.updatePublishState).toHaveBeenCalledWith('q-row-1', 'APPROVAL_REJECTED');
     expect(runPublishScenario).not.toHaveBeenCalled();
   });

@@ -15,6 +15,7 @@
 ## File Structure
 
 **Created:**
+
 ```
 lib/db/repositories/hubspotApprovalRequest.ts
 lib/db/repositories/hubspotApprovalRequest.db.test.ts
@@ -30,6 +31,7 @@ docs/superpowers/runbooks/hubspot-phase-2c-workflow.md   — HubSpot Workflow co
 ```
 
 **Modified:**
+
 ```
 prisma/schema.prisma                                — HubSpotApprovalRequest model + HubSpotApprovalStatus enum
 prisma/migrations/<ts>_hubspot_approval_request/migration.sql
@@ -54,6 +56,7 @@ docs/superpowers/runbooks/hubspot-phase-2b.md       — add pointer to the new w
 ## Task 1: Prisma schema — `HubSpotApprovalRequest` + enum
 
 **Files:**
+
 - Modify: `prisma/schema.prisma`
 
 - [ ] **Step 1.1: Add `HubSpotApprovalStatus` enum**
@@ -116,6 +119,7 @@ git commit -m "feat(hubspot): add HubSpotApprovalRequest model + HubSpotApproval
 ## Task 2: `HubSpotApprovalRequest` repository
 
 **Files:**
+
 - Create: `lib/db/repositories/hubspotApprovalRequest.ts`
 - Create: `lib/db/repositories/hubspotApprovalRequest.db.test.ts`
 
@@ -163,7 +167,9 @@ describe('HubSpotApprovalRequestRepository', () => {
     const row = await repo.create({
       scenarioId,
       hubspotDealId: 'hs-d-1',
-      railViolations: [{ productId: 'p1', kind: 'MIN_MARGIN_PCT', measuredValue: '0.15', threshold: '0.25' }],
+      railViolations: [
+        { productId: 'p1', kind: 'MIN_MARGIN_PCT', measuredValue: '0.15', threshold: '0.25' },
+      ],
     });
     expect(row.status).toBe('PENDING');
     expect(row.hubspotDealId).toBe('hs-d-1');
@@ -284,7 +290,11 @@ export class HubSpotApprovalRequestRepository {
 
   async resolve(
     id: string,
-    data: { status: HubSpotApprovalStatus; resolvedByUserId?: string; resolvedByHubspotOwnerId?: string },
+    data: {
+      status: HubSpotApprovalStatus;
+      resolvedByUserId?: string;
+      resolvedByHubspotOwnerId?: string;
+    },
   ): Promise<HubSpotApprovalRequest> {
     return this.db.hubSpotApprovalRequest.update({
       where: { id },
@@ -312,6 +322,7 @@ git commit -m "feat(hubspot): HubSpotApprovalRequest repository"
 ## Task 3: Approval-request submission service
 
 **Files:**
+
 - Create: `lib/hubspot/approval/request.ts`
 - Create: `lib/hubspot/approval/request.test.ts`
 
@@ -345,7 +356,9 @@ describe('submitApprovalRequest', () => {
       scenarioId: 's1',
       hubspotDealId: 'd1',
       revision: 1,
-      railViolations: [{ productId: 'p1', kind: 'MIN_MARGIN_PCT', measuredValue: '0.15', threshold: '0.25' }],
+      railViolations: [
+        { productId: 'p1', kind: 'MIN_MARGIN_PCT', measuredValue: '0.15', threshold: '0.25' },
+      ],
       marginPct: 0.22,
       persistence,
       correlationId: 'c1',
@@ -358,7 +371,9 @@ describe('submitApprovalRequest', () => {
     });
     expect(persistence.updateQuotePublishState).toHaveBeenCalledWith('q-row-1', 'PENDING_APPROVAL');
 
-    const patchCall = fetchSpy.mock.calls.find(([a]) => a.method === 'PATCH' && a.path.includes('/deals/d1'));
+    const patchCall = fetchSpy.mock.calls.find(
+      ([a]) => a.method === 'PATCH' && a.path.includes('/deals/d1'),
+    );
     expect(patchCall).toBeTruthy();
     expect(patchCall![0].body).toEqual({
       properties: {
@@ -383,10 +398,7 @@ export interface ApprovalPersistence {
     hubspotDealId: string;
     railViolations: unknown;
   }): Promise<{ id: string }>;
-  findOrCreateQuoteRow(data: {
-    scenarioId: string;
-    revision: number;
-  }): Promise<{ id: string }>;
+  findOrCreateQuoteRow(data: { scenarioId: string; revision: number }): Promise<{ id: string }>;
   updateQuotePublishState(quoteRowId: string, state: HubSpotPublishState): Promise<void>;
 }
 
@@ -400,7 +412,9 @@ export interface SubmitApprovalInput {
   correlationId: string;
 }
 
-export async function submitApprovalRequest(input: SubmitApprovalInput): Promise<{ approvalRequestId: string }> {
+export async function submitApprovalRequest(
+  input: SubmitApprovalInput,
+): Promise<{ approvalRequestId: string }> {
   const req = await input.persistence.upsertApprovalRequest({
     scenarioId: input.scenarioId,
     hubspotDealId: input.hubspotDealId,
@@ -411,7 +425,10 @@ export async function submitApprovalRequest(input: SubmitApprovalInput): Promise
     scenarioId: input.scenarioId,
     revision: input.revision,
   });
-  await input.persistence.updateQuotePublishState(quoteRow.id, HubSpotPublishState.PENDING_APPROVAL);
+  await input.persistence.updateQuotePublishState(
+    quoteRow.id,
+    HubSpotPublishState.PENDING_APPROVAL,
+  );
 
   await hubspotFetch({
     method: 'PATCH',
@@ -443,6 +460,7 @@ git commit -m "feat(hubspot): submitApprovalRequest writes approval intent + PAT
 ## Task 4: Extend `runPublishScenario` to branch on hard-rail overrides
 
 **Files:**
+
 - Modify: `lib/hubspot/quote/publishService.ts`
 - Modify: `lib/hubspot/quote/publishService.test.ts`
 
@@ -545,7 +563,12 @@ Return type of `runPublishScenario` expands to a discriminated union:
 
 ```ts
 export type PublishServiceResult =
-  | { status: 'published'; hubspotQuoteId: string; shareableUrl: string | null; correlationId: string }
+  | {
+      status: 'published';
+      hubspotQuoteId: string;
+      shareableUrl: string | null;
+      correlationId: string;
+    }
   | { status: 'pending_approval'; approvalRequestId: string; correlationId: string }
   | { status: 'rejected'; approvalRequestId: string; correlationId: string };
 ```
@@ -568,6 +591,7 @@ git commit -m "feat(hubspot): runPublishScenario branches on hard-rail overrides
 ## Task 5: Webhook-driven approval resolution
 
 **Files:**
+
 - Create: `lib/hubspot/approval/resolve.ts`
 - Create: `lib/hubspot/approval/resolve.test.ts`
 - Modify: `lib/hubspot/webhooks/process.ts`
@@ -614,8 +638,14 @@ describe('resolveApprovalFromWebhook', () => {
       deps: { approvalRepo, quoteRepo, runPublishScenario } as any,
     });
 
-    expect(approvalRepo.resolve).toHaveBeenCalledWith('req-1', expect.objectContaining({ status: 'APPROVED' }));
-    expect(runPublishScenario).toHaveBeenCalledWith({ scenarioId: 's1', correlationId: expect.any(String) });
+    expect(approvalRepo.resolve).toHaveBeenCalledWith(
+      'req-1',
+      expect.objectContaining({ status: 'APPROVED' }),
+    );
+    expect(runPublishScenario).toHaveBeenCalledWith({
+      scenarioId: 's1',
+      correlationId: expect.any(String),
+    });
   });
 
   it('rejected → resolves request + updates quote row to APPROVAL_REJECTED, does NOT call publish', async () => {
@@ -633,7 +663,10 @@ describe('resolveApprovalFromWebhook', () => {
       deps: { approvalRepo, quoteRepo, runPublishScenario } as any,
     });
 
-    expect(approvalRepo.resolve).toHaveBeenCalledWith('req-1', expect.objectContaining({ status: 'REJECTED' }));
+    expect(approvalRepo.resolve).toHaveBeenCalledWith(
+      'req-1',
+      expect.objectContaining({ status: 'REJECTED' }),
+    );
     expect(quoteRepo.updatePublishState).toHaveBeenCalledWith('q-row-1', 'APPROVAL_REJECTED');
     expect(runPublishScenario).not.toHaveBeenCalled();
   });
@@ -710,7 +743,10 @@ export async function resolveApprovalFromWebhook(input: {
     });
     const quote = await input.deps.quoteRepo.findLatestByScenario(existing.scenarioId);
     if (quote) {
-      await input.deps.quoteRepo.updatePublishState(quote.id, HubSpotPublishState.APPROVAL_REJECTED);
+      await input.deps.quoteRepo.updatePublishState(
+        quote.id,
+        HubSpotPublishState.APPROVAL_REJECTED,
+      );
     }
   }
   // other status values (pending, not_required) → no-op
@@ -729,10 +765,12 @@ if (event.subscriptionType.startsWith('deal.')) {
     // existing Won/Lost handling...
   } else if (propertyName === 'pricer_approval_status') {
     const newStatus = String(payload.propertyValue ?? '');
-    const hubspotOwnerId = typeof payload.changeSource === 'object' && payload.changeSource
-      ? String((payload.changeSource as { sourceUserId?: unknown }).sourceUserId ?? '') || null
-      : null;
-    const { HubSpotApprovalRequestRepository } = await import('@/lib/db/repositories/hubspotApprovalRequest');
+    const hubspotOwnerId =
+      typeof payload.changeSource === 'object' && payload.changeSource
+        ? String((payload.changeSource as { sourceUserId?: unknown }).sourceUserId ?? '') || null
+        : null;
+    const { HubSpotApprovalRequestRepository } =
+      await import('@/lib/db/repositories/hubspotApprovalRequest');
     const { resolveApprovalFromWebhook } = await import('../approval/resolve');
     const { runPublishScenario } = await import('../quote/publishService');
     await resolveApprovalFromWebhook({
@@ -768,6 +806,7 @@ git commit -m "feat(hubspot): webhook-driven approval resolution (approved resum
 ## Task 6: Webhook route dependency update
 
 **Files:**
+
 - Modify: `app/api/hubspot/webhooks/deal/route.ts`
 - Modify: `app/api/hubspot/webhooks/deal/route.test.ts`
 
@@ -799,6 +838,7 @@ git commit -m "feat(hubspot): pass prisma through webhook route → processEvent
 ## Task 7: Admin UI — approval requests page + scenario section updates
 
 **Files:**
+
 - Create: `app/admin/hubspot/approval-requests/page.tsx`
 - Modify: `app/scenarios/[id]/hubspot/page.tsx`
 - Modify: `app/scenarios/[id]/hubspot/HubSpotSection.tsx`
@@ -819,7 +859,9 @@ In `HubSpotSection.tsx`, extend the state machine:
 Load the approval request in `page.tsx` alongside the latest quote row:
 
 ```ts
-const approvalRequest = await new HubSpotApprovalRequestRepository(prisma).findByScenarioId(scenario.id);
+const approvalRequest = await new HubSpotApprovalRequestRepository(prisma).findByScenarioId(
+  scenario.id,
+);
 ```
 
 Pass as a prop.
@@ -836,6 +878,7 @@ git commit -m "feat(hubspot): admin approval-requests page + scenario section pe
 ## Task 8: HubSpot Developer Project — add owners scope + approval webhook subscription
 
 **Files:**
+
 - Modify: `hubspot-project/src/app/app-hsmeta.json`
 - Modify: `hubspot-project/src/app/webhooks/webhooks-hsmeta.json`
 
@@ -881,6 +924,7 @@ git commit -m "feat(hubspot): add owners.read scope + approval-status webhook su
 ## Task 9: HubSpot Workflow configuration runbook
 
 **Files:**
+
 - Create: `docs/superpowers/runbooks/hubspot-phase-2c-workflow.md`
 - Modify: `docs/superpowers/runbooks/hubspot-phase-2b.md`
 
@@ -921,6 +965,7 @@ HubSpot UI → **Automation → Workflows → Create workflow → From scratch**
 ### 3. Manager lookup
 
 One of:
+
 - **Per-Deal-owner routing:** in the workflow, fetch the Deal owner's manager via the owner hierarchy. HubSpot supports this natively via "User's manager" attribution.
 - **Approver group:** assign to a static list of approver User IDs.
 
@@ -936,6 +981,7 @@ One of:
 ### 5. Task template
 
 Use any of the pricer-stamped properties for context:
+
 - `{{ deal.pricer_scenario_id }}` — links manager back to the pricer scenario (build a link to `https://ninjapricer-production.up.railway.app/scenarios/{id}` in the task description)
 - `{{ deal.pricer_margin_pct }}` — margin for context
 
@@ -998,6 +1044,7 @@ All must pass. Fix any minor format/lint issues inline.
 - [ ] **Step 10.2: Spec coverage walkthrough**
 
 Re-read the Phase 2 spec's "Approval Flow" section. Confirm each bullet has a corresponding commit. Specifically:
+
 - HubSpotApprovalRequest model ✓ (T1)
 - Deal PATCH at threshold breach ✓ (T3)
 - `pricer_approval_status = pending` written ✓ (T3)
@@ -1018,7 +1065,7 @@ git commit -m "chore(hubspot): phase 2c lint + format" || echo "nothing to commi
 
 ## Self-Review Notes
 
-- **Spec coverage:** All Approval Flow bullets covered. The "admin-override unification" point from the spec ("When a rep records a hard-override intent on a scenario they're about to publish, the HubSpot approval *is* the override gate") is implicit — the admin doesn't need a separate in-pricer "release override" action because the approval record serves that role.
+- **Spec coverage:** All Approval Flow bullets covered. The "admin-override unification" point from the spec ("When a rep records a hard-override intent on a scenario they're about to publish, the HubSpot approval _is_ the override gate") is implicit — the admin doesn't need a separate in-pricer "release override" action because the approval record serves that role.
 - **Placeholder `hubspotQuoteId` during PENDING_APPROVAL:** T4 uses a synthetic `pending-<scenarioId>-<revision>` string to satisfy the `@unique` constraint on HubSpotQuote.hubspotQuoteId until the real publish creates the HubSpot Quote. Documented in code comment. Alternative (making `hubspotQuoteId` nullable) is a schema migration that feels over-engineered for one ephemeral state.
 - **Webhook deps refactor (T5/T6):** `ProcessDeps` gains a `prisma?: PrismaClient` field so the approval-resolution branch can construct the approval repo. The quote webhook path doesn't need it; making it optional keeps the existing tests green.
 - **No changes to MCP tools for approval status:** `check_publish_status` already returns whatever state is on the `HubSpotQuote` row — after Phase 2c it'll naturally show `PENDING_APPROVAL` / `APPROVAL_REJECTED`. No new MCP tool needed.

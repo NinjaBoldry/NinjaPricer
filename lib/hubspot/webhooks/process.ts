@@ -10,7 +10,10 @@ const WON_STAGES = new Set(['closedwon']);
 const LOST_STAGES = new Set(['closedlost']);
 
 export interface ProcessDeps {
-  quoteRepo: Pick<HubSpotQuoteRepository, 'recordTerminalStatus' | 'recordDealOutcome' | 'findLatestByScenario' | 'updatePublishState'>;
+  quoteRepo: Pick<
+    HubSpotQuoteRepository,
+    'recordTerminalStatus' | 'recordDealOutcome' | 'findLatestByScenario' | 'updatePublishState'
+  >;
   eventRepo: Pick<HubSpotWebhookEventRepository, 'findById' | 'markProcessed' | 'markFailed'>;
   /** Optional: required for approval-resolution path (pricer_approval_status changes). Phase 2b callers without this dep are unaffected — the branch is skipped when prisma is absent. */
   prisma?: PrismaClient;
@@ -40,13 +43,17 @@ export async function processEvent(eventId: string, deps: ProcessDeps): Promise<
         const at = payload.occurredAt ? new Date(String(payload.occurredAt)) : new Date();
         await deps.quoteRepo.recordDealOutcome(String(payload.pricerScenarioId), outcome, at);
       }
-    } else if (event.subscriptionType.startsWith('deal.') && payload.propertyName === 'pricer_approval_status') {
+    } else if (
+      event.subscriptionType.startsWith('deal.') &&
+      payload.propertyName === 'pricer_approval_status'
+    ) {
       if (deps.prisma) {
         const newStatus = String(payload.propertyValue ?? '');
         // Extract the HubSpot owner who made the change from changeSource.sourceUserId (best-effort, nullable)
         const hubspotOwnerId =
           typeof payload.changeSource === 'object' && payload.changeSource !== null
-            ? String((payload.changeSource as { sourceUserId?: unknown }).sourceUserId ?? '') || null
+            ? String((payload.changeSource as { sourceUserId?: unknown }).sourceUserId ?? '') ||
+              null
             : null;
         await resolveApprovalFromWebhook({
           hubspotDealId: event.objectId,
@@ -55,7 +62,11 @@ export async function processEvent(eventId: string, deps: ProcessDeps): Promise<
           deps: {
             approvalRepo: new HubSpotApprovalRequestRepository(deps.prisma),
             quoteRepo: deps.quoteRepo,
-            runPublishScenario: (i) => runPublishScenario({ scenarioId: i.scenarioId, correlationPrefix: i.correlationId }) as Promise<unknown>,
+            runPublishScenario: (i) =>
+              runPublishScenario({
+                scenarioId: i.scenarioId,
+                correlationPrefix: i.correlationId,
+              }) as Promise<unknown>,
           },
         });
       }
