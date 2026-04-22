@@ -3,6 +3,7 @@ import { requireAuth } from '@/lib/auth/session';
 import { prisma } from '@/lib/db/client';
 import { buildComputeRequest } from '@/lib/services/rateSnapshot';
 import { compute } from '@/lib/engine';
+import { HubSpotApprovalRequestRepository } from '@/lib/db/repositories/hubspotApprovalRequest';
 import HubSpotSection from './HubSpotSection';
 
 export const dynamic = 'force-dynamic';
@@ -54,6 +55,10 @@ export default async function HubSpotTabPage({ params }: { params: { id: string 
 
   const latestQuote = scenario.hubspotQuotes[0] ?? null;
 
+  const approvalRequest = await new HubSpotApprovalRequestRepository(prisma).findByScenarioId(
+    scenario.id,
+  );
+
   return (
     <div className="max-w-xl space-y-6">
       <HubSpotSection
@@ -68,6 +73,18 @@ export default async function HubSpotTabPage({ params }: { params: { id: string 
             : null
         }
         hasHardRailOverrides={hasHardRailOverrides}
+        approvalRequest={
+          approvalRequest
+            ? {
+                id: approvalRequest.id,
+                status: String(approvalRequest.status),
+                submittedAt: approvalRequest.submittedAt,
+                resolvedAt: approvalRequest.resolvedAt,
+                resolvedByHubspotOwnerId: approvalRequest.resolvedByHubspotOwnerId,
+                hubspotDealId: approvalRequest.hubspotDealId,
+              }
+            : null
+        }
       />
     </div>
   );

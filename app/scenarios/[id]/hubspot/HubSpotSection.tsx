@@ -25,12 +25,23 @@ export interface HubSpotQuoteRow {
   lastStatusAt: Date | null;
 }
 
+export interface HubSpotApprovalRequestRow {
+  id: string;
+  status: string;
+  submittedAt: Date;
+  resolvedAt: Date | null;
+  resolvedByHubspotOwnerId: string | null;
+  hubspotDealId: string;
+}
+
 interface Props {
   scenarioId: string;
   hubspotDealId: string | null;
   latestQuote: HubSpotQuoteRow | null;
   /** True when the engine has at least one hard-severity rail warning */
   hasHardRailOverrides: boolean;
+  /** Current approval request for this scenario, if any */
+  approvalRequest: HubSpotApprovalRequestRow | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -172,6 +183,85 @@ function PublishButton({
 }
 
 // ---------------------------------------------------------------------------
+// PENDING_APPROVAL banner
+// ---------------------------------------------------------------------------
+
+function PendingApprovalBanner({
+  approvalRequest,
+  hubspotDealId,
+}: {
+  approvalRequest: HubSpotApprovalRequestRow;
+  hubspotDealId: string;
+}) {
+  return (
+    <div className="rounded-md border border-amber-300 bg-amber-50 p-4 space-y-2">
+      <p className="text-sm font-semibold text-amber-800">Waiting on manager approval</p>
+      <p className="text-xs text-amber-700">
+        Submitted {new Date(approvalRequest.submittedAt).toLocaleString()}. A manager has been
+        notified via HubSpot Workflow.
+      </p>
+      <a
+        href={`https://app.hubspot.com/contacts/deals/${hubspotDealId}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-block text-xs underline text-blue-600"
+      >
+        View Deal in HubSpot
+      </a>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// APPROVAL_REJECTED banner + resubmit
+// ---------------------------------------------------------------------------
+
+function RejectedBanner({ scenarioId }: { scenarioId: string }) {
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  function handleResubmit() {
+    setError(null);
+    setNotice(null);
+    startTransition(async () => {
+      const res = await supersedeScenarioQuoteAction({ scenarioId });
+      if (!res.ok) {
+        setError(res.message);
+      } else if ('status' in res && res.status === 'pending_approval') {
+        setNotice(`Approval request resubmitted (ID: ${res.approvalRequestId}).`);
+      } else if ('status' in res && res.status === 'rejected') {
+        setError(`Still rejected (ID: ${res.approvalRequestId}). Review pricing and retry.`);
+      } else {
+        setNotice('Revision published successfully.');
+      }
+    });
+  }
+
+  return (
+    <div className="rounded-md border border-red-300 bg-red-50 p-4 space-y-3">
+      <p className="text-sm font-semibold text-red-800">Approval rejected</p>
+      <p className="text-xs text-red-700">
+        A manager rejected this pricing. Revise the scenario and resubmit for approval.
+      </p>
+      <div className="space-y-1">
+        <Button
+          onClick={handleResubmit}
+          disabled={isPending}
+          variant="outline"
+          size="sm"
+          className="border-red-400 text-red-700 hover:bg-red-100"
+        >
+          {isPending ? 'Resubmitting…' : 'Revise and resubmit'}
+        </Button>
+        {notice && <p className="text-xs text-amber-700">{notice}</p>}
+        {error && <p className="text-xs text-red-600">{error}</p>}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Published quote status sub-section
 // ---------------------------------------------------------------------------
 
@@ -179,14 +269,41 @@ function QuoteStatus({
   scenarioId,
   quote,
   hasHardRailOverrides,
+  approvalRequest,
 }: {
   scenarioId: string;
   quote: HubSpotQuoteRow;
   hasHardRailOverrides: boolean;
+  approvalRequest: HubSpotApprovalRequestRow | null;
 }) {
   const [reviseError, setReviseError] = useState<string | null>(null);
   const [reviseNotice, setReviseNotice] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  // Handle approval-gated states before showing standard quote UI
+  if (quote.publishState === 'PENDING_APPROVAL') {
+    return (
+      <PendingApprovalBanner
+        approvalRequest={
+          approvalRequest ?? {
+            id: '',
+            status: 'PENDING',
+            submittedAt: new Date(),
+            resolvedAt: null,
+            resolvedByHubspotOwnerId: null,
+            hubspotDealId: quote.hubspotQuoteId, // fallback
+          }
+        }
+        hubspotDealId={
+          approvalRequest?.hubspotDealId ?? quote.hubspotQuoteId
+        }
+      />
+    );
+  }
+
+  if (quote.publishState === 'APPROVAL_REJECTED') {
+    return <RejectedBanner scenarioId={scenarioId} />;
+  }
 
   function handleRevise() {
     setReviseError(null);
@@ -266,6 +383,7 @@ export default function HubSpotSection({
   hubspotDealId,
   latestQuote,
   hasHardRailOverrides,
+  approvalRequest,
 }: Props) {
   return (
     <section className="space-y-4">
@@ -293,6 +411,7 @@ export default function HubSpotSection({
           scenarioId={scenarioId}
           quote={latestQuote}
           hasHardRailOverrides={hasHardRailOverrides}
+          approvalRequest={approvalRequest}
         />
       ) : (
         <PublishButton scenarioId={scenarioId} hasHardRailOverrides={hasHardRailOverrides} />

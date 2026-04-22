@@ -24,7 +24,9 @@ export async function resolveApprovalFromWebhook(input: {
   if (status === 'approved') {
     await input.deps.approvalRepo.resolve(existing.id, {
       status: HubSpotApprovalStatus.APPROVED,
-      resolvedByHubspotOwnerId: input.hubspotOwnerId ?? undefined,
+      ...(input.hubspotOwnerId !== null && {
+        resolvedByHubspotOwnerId: input.hubspotOwnerId,
+      }),
     });
     await input.deps.runPublishScenario({
       scenarioId: existing.scenarioId,
@@ -33,7 +35,9 @@ export async function resolveApprovalFromWebhook(input: {
   } else if (status === 'rejected') {
     await input.deps.approvalRepo.resolve(existing.id, {
       status: HubSpotApprovalStatus.REJECTED,
-      resolvedByHubspotOwnerId: input.hubspotOwnerId ?? undefined,
+      ...(input.hubspotOwnerId !== null && {
+        resolvedByHubspotOwnerId: input.hubspotOwnerId,
+      }),
     });
     const quote = await input.deps.quoteRepo.findLatestByScenario(existing.scenarioId);
     if (quote) {
