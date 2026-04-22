@@ -3,6 +3,8 @@ import {
   linkScenarioToHubspotDealTool,
   createHubspotDealForScenarioTool,
   publishScenarioToHubspotTool,
+  checkPublishStatusTool,
+  supersedeHubspotQuoteTool,
 } from './hubspotQuote';
 
 // ---------------------------------------------------------------------------
@@ -189,6 +191,122 @@ describe('publish_scenario_to_hubspot', () => {
     const result = await publishScenarioToHubspotTool.handler(ctx as never, { scenarioId: 's1' });
 
     expect((result as { error: string }).error).toBe('UNRESOLVED_HARD_RAIL_OVERRIDE');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// check_publish_status
+// ---------------------------------------------------------------------------
+
+describe('check_publish_status', () => {
+  const mockFindFirst = vi.mocked(dbClient.prisma.hubSpotQuote.findFirst);
+
+  beforeEach(() => {
+    mockFindFirst.mockReset();
+  });
+
+  it('validates input schema - requires scenarioId', () => {
+    expect(() => checkPublishStatusTool.inputSchema.parse({})).toThrow();
+    expect(() => checkPublishStatusTool.inputSchema.parse({ scenarioId: 's1' })).not.toThrow();
+  });
+
+  it('is not a write and not requiresAdmin', () => {
+    expect(checkPublishStatusTool.isWrite).toBeFalsy();
+    expect(checkPublishStatusTool.requiresAdmin).toBe(false);
+  });
+
+  it('returns null fields when no HubSpotQuote row exists for scenario', async () => {
+    mockFindFirst.mockResolvedValue(null);
+
+    const ctx = { user: { id: 'u1', role: 'SALES', email: 'u@x.com', name: null }, token: { id: 't', ownerUserId: 'u1', label: 'tok' } };
+    const result = await checkPublishStatusTool.handler(ctx as never, { scenarioId: 's1' });
+
+    expect(result).toMatchObject({ publishState: null, hubspotQuoteId: null, revision: null });
+  });
+
+  it('returns the latest publish state when a row exists', async () => {
+    mockFindFirst.mockResolvedValue({
+      id: 'row-1',
+      hubspotQuoteId: 'hs-q-1',
+      revision: 2,
+      publishState: 'PUBLISHED',
+      shareableUrl: 'https://app.hubspot.com/q/x',
+      lastStatus: 'ACCEPTED',
+      dealOutcome: null,
+    } as never);
+
+    const ctx = { user: { id: 'u1', role: 'SALES', email: 'u@x.com', name: null }, token: { id: 't', ownerUserId: 'u1', label: 'tok' } };
+    const result = await checkPublishStatusTool.handler(ctx as never, { scenarioId: 's1' });
+
+    expect(result).toMatchObject({
+      publishState: 'PUBLISHED',
+      hubspotQuoteId: 'hs-q-1',
+      shareableUrl: 'https://app.hubspot.com/q/x',
+      lastStatus: 'ACCEPTED',
+      dealOutcome: null,
+      revision: 2,
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// supersede_hubspot_quote
+// ---------------------------------------------------------------------------
+
+describe('supersede_hubspot_quote', () => {
+  const mockFindFirst = vi.mocked(dbClient.prisma.hubSpotQuote.findFirst);
+  const mockFindUnique = vi.mocked(dbClient.prisma.scenario.findUnique);
+  const mockPublish = vi.mocked(publishModule.publishScenarioToHubSpot);
+
+  beforeEach(() => {
+    mockFindFirst.mockReset();
+    mockFindUnique.mockReset();
+    mockPublish.mockReset();
+    vi.mocked(dbClient.prisma.hubSpotQuote.create).mockReset();
+    vi.mocked(dbClient.prisma.hubSpotQuote.update).mockReset();
+  });
+
+  it('validates input schema - requires scenarioId', () => {
+    expect(() => supersedeHubspotQuoteTool.inputSchema.parse({})).toThrow();
+    expect(() => supersedeHubspotQuoteTool.inputSchema.parse({ scenarioId: 's1' })).not.toThrow();
+  });
+
+  it('is a write tool and not requiresAdmin', () => {
+    expect(supersedeHubspotQuoteTool.isWrite).toBe(true);
+    expect(supersedeHubspotQuoteTool.requiresAdmin).toBe(false);
+  });
+
+  it('calls publishScenarioToHubSpot with incremented revision', async () => {
+    // Latest existing revision is 1
+    mockFindFirst.mockResolvedValue({
+      id: 'row-1',
+      hubspotQuoteId: 'hs-q-1',
+      revision: 1,
+      publishState: 'PUBLISHED',
+    } as never);
+
+    mockFindUnique.mockResolvedValue({
+      id: 's1',
+      name: 'Acme Q1',
+      customerName: 'Acme Inc',
+      hubspotDealId: 'd1',
+      contractMonths: 12,
+      saasConfigs: [],
+      laborLines: [],
+    } as never);
+
+    mockPublish.mockResolvedValue({
+      hubspotQuoteId: 'hs-q-2',
+      shareableUrl: 'https://app.hubspot.com/q/y',
+    });
+
+    const ctx = { user: { id: 'u1', role: 'SALES', email: 'u@x.com', name: null }, token: { id: 't', ownerUserId: 'u1', label: 'tok' } };
+    const result = await supersedeHubspotQuoteTool.handler(ctx as never, { scenarioId: 's1' });
+
+    expect(mockPublish).toHaveBeenCalledOnce();
+    const publishCall = mockPublish.mock.calls[0]![0];
+    expect(publishCall.scenario.revision).toBe(2); // 1 + 1
+    expect(result).toMatchObject({ hubspotQuoteId: 'hs-q-2' });
   });
 });
 

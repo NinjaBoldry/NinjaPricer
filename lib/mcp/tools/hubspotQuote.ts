@@ -358,6 +358,211 @@ export const publishScenarioToHubspotTool: ToolDefinition<
 };
 
 // ---------------------------------------------------------------------------
+// check_publish_status
+// ---------------------------------------------------------------------------
+
+const checkStatusInput = z.object({ scenarioId: z.string().min(1) }).strict();
+
+type CheckStatusInput = z.infer<typeof checkStatusInput>;
+
+interface CheckStatusResult {
+  publishState: string | null;
+  hubspotQuoteId: string | null;
+  shareableUrl: string | null;
+  lastStatus: string | null;
+  dealOutcome: string | null;
+  revision: number | null;
+}
+
+export const checkPublishStatusTool: ToolDefinition<CheckStatusInput, CheckStatusResult> = {
+  name: 'check_publish_status',
+  description:
+    'Return the latest HubSpot quote publish status for a scenario: publishState, hubspotQuoteId, shareableUrl, lastStatus, dealOutcome, revision. Returns null fields when no quote has been published yet.',
+  inputSchema: checkStatusInput,
+  requiresAdmin: false,
+  targetEntityType: 'Scenario',
+  extractTargetId: (input) => input.scenarioId,
+  handler: async (_ctx, input) => {
+    const latest = await prisma.hubSpotQuote.findFirst({
+      where: { scenarioId: input.scenarioId },
+      orderBy: { revision: 'desc' },
+    });
+
+    if (!latest) {
+      return {
+        publishState: null,
+        hubspotQuoteId: null,
+        shareableUrl: null,
+        lastStatus: null,
+        dealOutcome: null,
+        revision: null,
+      };
+    }
+
+    return {
+      publishState: latest.publishState,
+      hubspotQuoteId: latest.hubspotQuoteId,
+      shareableUrl: latest.shareableUrl ?? null,
+      lastStatus: latest.lastStatus ?? null,
+      dealOutcome: latest.dealOutcome ?? null,
+      revision: latest.revision,
+    };
+  },
+};
+
+// ---------------------------------------------------------------------------
+// supersede_hubspot_quote
+// ---------------------------------------------------------------------------
+
+const supersedeInput = z
+  .object({
+    scenarioId: z.string().min(1),
+    quoteNameOverride: z.string().optional(),
+    expirationDays: z.number().int().min(1).default(30),
+  })
+  .strict();
+
+type SupersedeInput = z.infer<typeof supersedeInput>;
+
+export const supersedeHubspotQuoteTool: ToolDefinition<
+  SupersedeInput,
+  PublishResult | PublishErrorResult
+> = {
+  name: 'supersede_hubspot_quote',
+  description:
+    'Publish a new revision of the HubSpot Quote for a scenario, superseding the prior revision. Reads the latest revision number and increments by 1. Output is the same shape as publish_scenario_to_hubspot.',
+  inputSchema: supersedeInput,
+  requiresAdmin: false,
+  isWrite: true,
+  targetEntityType: 'Scenario',
+  extractTargetId: (input) => input.scenarioId,
+  handler: async (_ctx, input) => {
+    const correlationId = `supersede-${randomUUID()}`;
+
+    // Load scenario with hubspot fields + line items directly from Prisma
+    const scenario = await prisma.scenario.findUnique({
+      where: { id: input.scenarioId },
+      select: {
+        id: true,
+        name: true,
+        customerName: true,
+        hubspotDealId: true,
+        contractMonths: true,
+        saasConfigs: {
+          select: {
+            productId: true,
+            seatCount: true,
+            personaMix: true,
+            discountOverridePct: true,
+            product: {
+              select: { id: true, name: true, sku: true, description: true },
+            },
+          },
+        },
+        laborLines: {
+          select: {
+            qty: true,
+            revenuePerUnitUsd: true,
+            sku: {
+              select: { id: true, name: true, product: { select: { sku: true, description: true } } },
+            },
+            product: { select: { id: true, name: true, sku: true, description: true } },
+          },
+        },
+      },
+    });
+
+    if (!scenario) {
+      return { error: 'SCENARIO_NOT_FOUND' as const, message: `Scenario ${input.scenarioId} not found.` };
+    }
+
+    // Get the current latest revision and increment
+    const latestQuote = await prisma.hubSpotQuote.findFirst({
+      where: { scenarioId: input.scenarioId },
+      orderBy: { revision: 'desc' },
+    });
+    const revision = (latestQuote?.revision ?? 0) + 1;
+
+    // Build line items from scenario state
+    const saasLines = scenario.saasConfigs.map((cfg) => ({
+      kind: 'SAAS' as const,
+      productId: cfg.productId,
+      productName: cfg.product.name,
+      productSku: cfg.product.sku ?? '',
+      productDescription: cfg.product.description ?? '',
+      seatCount: cfg.seatCount,
+      listPriceMonthly: new Decimal(0),
+      effectiveUnitPriceMonthly: new Decimal(0),
+      discountPct: cfg.discountOverridePct ? new Decimal(cfg.discountOverridePct.toString()) : null,
+      contractMonths: scenario.contractMonths,
+      rampSchedule: null,
+    }));
+
+    const laborLines = scenario.laborLines.map((ll) => ({
+      kind: 'LABOR' as const,
+      skuId: ll.sku?.id ?? ll.product.id,
+      skuName: ll.sku?.name ?? ll.product.name,
+      skuCode: ll.product.sku ?? '',
+      skuDescription: ll.product.description ?? '',
+      qty: Number(ll.qty),
+      unitPrice: new Decimal(ll.revenuePerUnitUsd.toString()),
+    }));
+
+    const lineItems = scenarioToHubSpotLineItems({
+      scenarioId: input.scenarioId,
+      tabs: [...saasLines, ...laborLines],
+      bundles: [],
+    });
+
+    // Build PublishPersistence from HubSpotQuoteRepository
+    const quoteRepo = new HubSpotQuoteRepository(prisma);
+
+    const persistence: PublishPersistence = {
+      createHubSpotQuote: async (data) => quoteRepo.create(data),
+      updatePublishState: async (rowId, state, extras) => {
+        await quoteRepo.updatePublishState(rowId, state, extras);
+      },
+      findPriorRevision: async (scenarioId, currentRevision) => {
+        const prior = await quoteRepo.findByScenarioAndRevision(scenarioId, currentRevision - 1);
+        return prior ? { id: prior.id, hubspotQuoteId: prior.hubspotQuoteId } : null;
+      },
+      markSuperseded: async (oldRowId, newRowId) => {
+        await quoteRepo.markSuperseded(oldRowId, newRowId);
+      },
+    };
+
+    try {
+      const outcome = await publishScenarioToHubSpot({
+        scenario: {
+          id: scenario.id,
+          hubspotDealId: scenario.hubspotDealId,
+          revision,
+          hasUnresolvedHardRailOverrides: false, // TODO Phase 2c: evaluate engine rails
+        },
+        lineItems,
+        quoteConfig: {
+          name: input.quoteNameOverride ?? `${scenario.customerName} — ${scenario.name} v${revision}`,
+          expirationDays: input.expirationDays,
+        },
+        persistence,
+        now: () => new Date(),
+        correlationId,
+      });
+
+      return { ...outcome, correlationId };
+    } catch (err) {
+      if (err instanceof MissingDealLinkError) {
+        return { error: 'MISSING_DEAL_LINK' as const, message: err.message };
+      }
+      if (err instanceof UnresolvedHardRailOverrideError) {
+        return { error: 'UNRESOLVED_HARD_RAIL_OVERRIDE' as const, message: err.message };
+      }
+      throw err;
+    }
+  },
+};
+
+// ---------------------------------------------------------------------------
 // link_scenario_to_hubspot_deal
 // ---------------------------------------------------------------------------
 
