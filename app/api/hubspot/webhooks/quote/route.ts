@@ -58,6 +58,7 @@ export async function POST(req: Request): Promise<NextResponse> {
     // or elevated load, in-process processing can drop events. The retry
     // action on /admin/hubspot/webhook-events covers the happy path for now.
     setImmediate(() => {
+      // prisma is optional in ProcessDeps; quote events don't use the approval-resolution branch
       processEvent(row.id, { eventRepo, quoteRepo }).catch(() => {
         // processing errors are already recorded via markFailed inside processEvent
       });

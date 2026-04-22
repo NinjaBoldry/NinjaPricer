@@ -58,7 +58,7 @@ export async function POST(req: Request): Promise<NextResponse> {
     // or elevated load, in-process processing can drop events. The retry
     // action on /admin/hubspot/webhook-events covers the happy path for now.
     setImmediate(() => {
-      processEvent(row.id, { eventRepo, quoteRepo }).catch(() => {
+      processEvent(row.id, { eventRepo, quoteRepo, prisma }).catch(() => {
         // processing errors are already recorded via markFailed inside processEvent
       });
     });
