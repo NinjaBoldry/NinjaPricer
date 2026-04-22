@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { verifyCardSecret } from '@/lib/hubspot/card/auth';
+import { buildScenarioHubspotUrl } from '@/lib/hubspot/card/urls';
 import { prisma } from '@/lib/db/client';
 
 const bodySchema = z.object({
@@ -26,7 +27,7 @@ export async function POST(req: Request): Promise<NextResponse> {
   if (existing) {
     return NextResponse.json({
       scenarioId: existing.id,
-      pricerUrl: `${process.env.PRICER_APP_URL ?? 'https://ninjapricer-production.up.railway.app'}/scenarios/${existing.id}/hubspot`,
+      pricerUrl: buildScenarioHubspotUrl(existing.id),
       reused: true,
     });
   }
@@ -55,7 +56,7 @@ export async function POST(req: Request): Promise<NextResponse> {
 
   return NextResponse.json({
     scenarioId: scenario.id,
-    pricerUrl: `${process.env.PRICER_APP_URL ?? 'https://ninjapricer-production.up.railway.app'}/scenarios/${scenario.id}/hubspot`,
+    pricerUrl: buildScenarioHubspotUrl(scenario.id),
     reused: false,
   });
 }
