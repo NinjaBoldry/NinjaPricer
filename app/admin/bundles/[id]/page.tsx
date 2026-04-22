@@ -4,6 +4,7 @@ import type { Prisma } from '@prisma/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Table,
   TableBody,
@@ -15,7 +16,7 @@ import {
 import { prisma } from '@/lib/db/client';
 import { BundleRepository } from '@/lib/db/repositories/bundle';
 import { ProductRepository } from '@/lib/db/repositories/product';
-import { addBundleItem, removeBundleItem } from './actions';
+import { addBundleItem, removeBundleItem, updateBundle } from './actions';
 
 const KIND_LABELS: Record<string, string> = {
   SAAS_USAGE: 'SaaS Usage',
@@ -50,6 +51,7 @@ export default async function BundleDetailPage({
 
   const error = searchParams?.error ? decodeURIComponent(searchParams.error) : null;
   const addItem = addBundleItem.bind(null, params.id);
+  const updateBundleMeta = updateBundle.bind(null, params.id);
 
   return (
     <div className="p-6">
@@ -71,6 +73,41 @@ export default async function BundleDetailPage({
       )}
 
       {error && <p className="text-destructive text-sm mb-4">{error}</p>}
+
+      <section className="mb-8 max-w-md">
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+          Edit Bundle
+        </h2>
+        <form action={updateBundleMeta} className="space-y-4">
+          <div className="space-y-1">
+            <Label htmlFor="name">Name</Label>
+            <Input id="name" name="name" required defaultValue={bundle.name} />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="description">Description</Label>
+            <Textarea
+              id="description"
+              name="description"
+              placeholder="Short marketing description shown on customer quotes"
+              defaultValue={bundle.description ?? ''}
+              rows={3}
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="sku">SKU</Label>
+            <Input
+              id="sku"
+              name="sku"
+              placeholder="Auto-generated from name if blank"
+              defaultValue={(bundle as unknown as { sku?: string | null }).sku ?? ''}
+              style={{ textTransform: 'uppercase' }}
+            />
+          </div>
+          <Button type="submit" size="sm">
+            Save Changes
+          </Button>
+        </form>
+      </section>
 
       <section className="mb-8">
         <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">

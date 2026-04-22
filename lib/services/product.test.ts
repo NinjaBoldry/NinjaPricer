@@ -51,3 +51,58 @@ describe('ProductService', () => {
     expect(repo.update).toHaveBeenCalledWith('p1', { name: 'New Name' });
   });
 });
+
+describe('ProductService — description + sku validation', () => {
+  it('trims description and passes through non-empty value', async () => {
+    const repo = mockProductRepo();
+    const service = new ProductService(repo);
+    await service.createProduct({ name: 'Test', kind: 'SAAS_USAGE', description: '  A description  ' });
+    expect(repo.create).toHaveBeenCalledWith(
+      expect.objectContaining({ description: 'A description' }),
+    );
+  });
+
+  it('coerces empty description to null', async () => {
+    const repo = mockProductRepo();
+    const service = new ProductService(repo);
+    await service.createProduct({ name: 'Test', kind: 'SAAS_USAGE', description: '   ' });
+    expect(repo.create).toHaveBeenCalledWith(
+      expect.objectContaining({ description: null }),
+    );
+  });
+
+  it('uppercases and trims sku', async () => {
+    const repo = mockProductRepo();
+    const service = new ProductService(repo);
+    await service.createProduct({ name: 'Test', kind: 'SAAS_USAGE', sku: '  nn-01  ' });
+    expect(repo.create).toHaveBeenCalledWith(
+      expect.objectContaining({ sku: 'NN-01' }),
+    );
+  });
+
+  it('coerces empty sku to null', async () => {
+    const repo = mockProductRepo();
+    const service = new ProductService(repo);
+    await service.createProduct({ name: 'Test', kind: 'SAAS_USAGE', sku: '' });
+    expect(repo.create).toHaveBeenCalledWith(
+      expect.objectContaining({ sku: null }),
+    );
+  });
+
+  it('throws ValidationError for sku with invalid characters', async () => {
+    const service = new ProductService(mockProductRepo());
+    await expect(
+      service.createProduct({ name: 'Test', kind: 'SAAS_USAGE', sku: 'INVALID SKU!' }),
+    ).rejects.toMatchObject({ field: 'sku' });
+  });
+
+  it('passes description + sku through updateProduct', async () => {
+    const repo = mockProductRepo();
+    const service = new ProductService(repo);
+    await service.updateProduct('p1', { description: 'Updated desc', sku: 'NU-02' });
+    expect(repo.update).toHaveBeenCalledWith(
+      'p1',
+      expect.objectContaining({ description: 'Updated desc', sku: 'NU-02' }),
+    );
+  });
+});

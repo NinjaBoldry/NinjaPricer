@@ -1,9 +1,28 @@
 'use server';
 import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/db/client';
+import { BundleRepository } from '@/lib/db/repositories/bundle';
 import { BundleItemRepository } from '@/lib/db/repositories/bundleItem';
+import { BundleService } from '@/lib/services/bundle';
 import { BundleItemService } from '@/lib/services/bundleItem';
 import { ValidationError } from '@/lib/utils/errors';
+
+export async function updateBundle(id: string, formData: FormData) {
+  const service = new BundleService(new BundleRepository(prisma));
+  let errorMsg: string | null = null;
+  try {
+    await service.update(id, {
+      name: formData.get('name') as string,
+      description: (formData.get('description') as string) || undefined,
+      sku: (formData.get('sku') as string) || undefined,
+    });
+  } catch (e) {
+    if (e instanceof ValidationError) errorMsg = e.message;
+    else throw e;
+  }
+  if (errorMsg) redirect(`/admin/bundles/${id}?error=${encodeURIComponent(errorMsg)}`);
+  redirect(`/admin/bundles/${id}`);
+}
 
 export async function addBundleItem(bundleId: string, formData: FormData) {
   const productId = formData.get('productId') as string;

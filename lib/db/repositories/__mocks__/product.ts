@@ -8,6 +8,8 @@ const fakeProduct: Product = {
   kind: 'SAAS_USAGE',
   isActive: true,
   sortOrder: 0,
+  description: null,
+  sku: null,
   createdAt: new Date(),
   updatedAt: new Date(),
 };

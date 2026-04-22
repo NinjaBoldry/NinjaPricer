@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Table,
   TableBody,
@@ -77,7 +78,21 @@ export default async function BundlesPage({ searchParams }: { searchParams?: { e
           </div>
           <div className="space-y-1">
             <Label htmlFor="description">Description (optional)</Label>
-            <Input id="description" name="description" placeholder="What this bundle includes" />
+            <Textarea
+              id="description"
+              name="description"
+              placeholder="Short marketing description shown on customer quotes"
+              rows={3}
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="sku">SKU (optional)</Label>
+            <Input
+              id="sku"
+              name="sku"
+              placeholder="Auto-generated from name if blank"
+              style={{ textTransform: 'uppercase' }}
+            />
           </div>
           <Button type="submit">Create Bundle</Button>
         </form>

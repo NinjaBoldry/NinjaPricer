@@ -13,7 +13,8 @@ import { BundleItemRepository } from '@/lib/db/repositories/bundleItem';
 const createBundleSchema = z
   .object({
     name: z.string().min(1),
-    description: z.string().optional(),
+    description: z.string().trim().nullable().optional(),
+    sku: z.string().trim().nullable().optional(),
     isActive: z.boolean().optional(),
   })
   .strict();
@@ -45,7 +46,8 @@ const updateBundleSchema = z
   .object({
     id: z.string().min(1),
     name: z.string().min(1).optional(),
-    description: z.string().nullable().optional(),
+    description: z.string().trim().nullable().optional(),
+    sku: z.string().trim().nullable().optional(),
     isActive: z.boolean().optional(),
   })
   .strict();

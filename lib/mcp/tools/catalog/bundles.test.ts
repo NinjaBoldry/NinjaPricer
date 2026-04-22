@@ -84,6 +84,18 @@ describe('bundle catalog tools', () => {
       expect(out).toEqual({ id: 'b1' });
     });
 
+    it('passes description and sku through to service', async () => {
+      bundleSvc.create.mockResolvedValue({ id: 'b2' });
+      await createBundleTool.handler(adminCtx, {
+        name: 'Pro Bundle',
+        description: 'Pro tier',
+        sku: 'PB-01',
+      });
+      expect(bundleSvc.create).toHaveBeenCalledWith(
+        expect.objectContaining({ description: 'Pro tier', sku: 'PB-01' }),
+      );
+    });
+
     it('rejects missing name', () => {
       expect(() => createBundleTool.inputSchema.parse({ description: 'x' })).toThrow();
     });
@@ -115,6 +127,18 @@ describe('bundle catalog tools', () => {
         expect.objectContaining({ name: 'Renamed Bundle', isActive: false }),
       );
       expect(out).toEqual({ id: 'b1' });
+    });
+
+    it('passes sku through to service', async () => {
+      bundleSvc.update.mockResolvedValue({ id: 'b1' });
+      await updateBundleTool.handler(adminCtx, {
+        id: 'b1',
+        sku: 'ES-02',
+      });
+      expect(bundleSvc.update).toHaveBeenCalledWith(
+        'b1',
+        expect.objectContaining({ sku: 'ES-02' }),
+      );
     });
 
     it('rejects missing id', () => {

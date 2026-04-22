@@ -55,6 +55,19 @@ describe('product catalog tools', () => {
     it('rejects invalid kind', () => {
       expect(() => createProductTool.inputSchema.parse({ name: 'X', kind: 'INVALID' })).toThrow();
     });
+
+    it('passes description and sku through to service', async () => {
+      svc.createProduct.mockResolvedValue({ id: 'p2' });
+      await createProductTool.handler(adminCtx, {
+        name: 'Ninja Growth',
+        kind: 'SAAS_USAGE',
+        description: 'A great product',
+        sku: 'NG-01',
+      });
+      expect(svc.createProduct).toHaveBeenCalledWith(
+        expect.objectContaining({ description: 'A great product', sku: 'NG-01' }),
+      );
+    });
   });
 
   describe('update_product', () => {
@@ -86,6 +99,19 @@ describe('product catalog tools', () => {
 
     it('rejects empty patch', () => {
       expect(() => updateProductTool.inputSchema.parse({ id: 'p1' })).toThrow();
+    });
+
+    it('passes description and sku through to service', async () => {
+      svc.updateProduct.mockResolvedValue({ id: 'p1' });
+      await updateProductTool.handler(adminCtx, {
+        id: 'p1',
+        description: 'Updated desc',
+        sku: 'NU-02',
+      });
+      expect(svc.updateProduct).toHaveBeenCalledWith(
+        'p1',
+        expect.objectContaining({ description: 'Updated desc', sku: 'NU-02' }),
+      );
     });
   });
 

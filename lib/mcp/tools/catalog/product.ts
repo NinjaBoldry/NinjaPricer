@@ -14,6 +14,8 @@ const createProductSchema = z
   .object({
     name: z.string().min(1),
     kind: productKindEnum,
+    description: z.string().trim().nullable().optional(),
+    sku: z.string().trim().nullable().optional(),
   })
   .strict();
 
@@ -45,11 +47,18 @@ const updateProductSchema = z
     id: z.string(),
     name: z.string().min(1).optional(),
     isActive: z.boolean().optional(),
+    description: z.string().trim().nullable().optional(),
+    sku: z.string().trim().nullable().optional(),
   })
   .strict()
-  .refine((v) => v.name !== undefined || v.isActive !== undefined, {
-    message: 'at least one of name or isActive is required',
-  });
+  .refine(
+    (v) =>
+      v.name !== undefined ||
+      v.isActive !== undefined ||
+      v.description !== undefined ||
+      v.sku !== undefined,
+    { message: 'at least one of name, isActive, description, or sku is required' },
+  );
 
 export const updateProductTool: ToolDefinition<
   z.infer<typeof updateProductSchema>,
@@ -63,11 +72,13 @@ export const updateProductTool: ToolDefinition<
   isWrite: true,
   targetEntityType: 'Product',
   extractTargetId: (input) => input.id,
-  handler: async (_ctx, { id, name, isActive }) => {
+  handler: async (_ctx, { id, name, isActive, description, sku }) => {
     const svc = new ProductService(new ProductRepository(prisma));
-    const patch: { name?: string; isActive?: boolean } = {};
+    const patch: { name?: string; isActive?: boolean; description?: string | null; sku?: string | null } = {};
     if (name !== undefined) patch.name = name;
     if (isActive !== undefined) patch.isActive = isActive;
+    if (description !== undefined) patch.description = description;
+    if (sku !== undefined) patch.sku = sku;
     await svc.updateProduct(id, patch);
     return { id };
   },

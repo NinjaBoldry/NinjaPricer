@@ -12,6 +12,7 @@ export async function createBundle(formData: FormData) {
     const bundle = await service.create({
       name: formData.get('name') as string,
       description: (formData.get('description') as string) || undefined,
+      sku: (formData.get('sku') as string) || undefined,
     });
     const created = bundle as { id: string };
     redirect(`/admin/bundles/${created.id}`);
@@ -22,3 +23,4 @@ export async function createBundle(formData: FormData) {
   if (errorMsg) redirect(`/admin/bundles?error=${encodeURIComponent(errorMsg)}`);
   redirect('/admin/bundles');
 }
+

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { prisma } from '@/lib/db/client';
 import { ProductRepository } from '@/lib/db/repositories/product';
 import { ProductService } from '@/lib/services/product';
@@ -17,6 +18,8 @@ async function updateProduct(id: string, formData: FormData) {
     await service.updateProduct(id, {
       name: formData.get('name') as string,
       isActive: formData.get('isActive') === 'true',
+      description: (formData.get('description') as string) || undefined,
+      sku: (formData.get('sku') as string) || undefined,
     });
   } catch (e) {
     if (e instanceof ValidationError) errorMsg = e.message;
@@ -96,6 +99,26 @@ export default async function ProductDetailPage({
               <option value="true">Active</option>
               <option value="false">Inactive</option>
             </select>
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="description">Description</Label>
+            <Textarea
+              id="description"
+              name="description"
+              placeholder="Short marketing description shown on customer quotes"
+              defaultValue={product.description ?? ''}
+              rows={3}
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="sku">SKU</Label>
+            <Input
+              id="sku"
+              name="sku"
+              placeholder="Auto-generated from name if blank"
+              defaultValue={product.sku ?? ''}
+              style={{ textTransform: 'uppercase' }}
+            />
           </div>
           <Button type="submit" size="sm">
             Save Changes
