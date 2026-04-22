@@ -98,4 +98,44 @@ describe('POST /api/hubspot/card/state', () => {
     expect(body.shareableUrl).toBe('https://hs/q');
     expect(body.revision).toBe(2);
   });
+
+  it('returns { state: "pending_approval", scenarioId, pricerUrl } when quote is awaiting approval', async () => {
+    findScenarioByDeal.mockResolvedValue({ id: 's1', name: 'Acme Q1', updatedAt: new Date() });
+    findLatestQuote.mockResolvedValue({
+      id: 'q1',
+      publishState: 'PENDING_APPROVAL',
+    });
+    const res = await POST(
+      new Request('http://x/api/hubspot/card/state', {
+        method: 'POST',
+        headers: { 'x-ninja-card-secret': 'test-secret' },
+        body: JSON.stringify({ dealId: 'd1' }),
+      }) as Request,
+    );
+    const body = await res.json();
+    expect(body.state).toBe('pending_approval');
+    expect(body.scenarioId).toBe('s1');
+    expect(body.scenarioName).toBe('Acme Q1');
+    expect(body.pricerUrl).toContain('/scenarios/s1/hubspot');
+  });
+
+  it('returns { state: "approval_rejected", scenarioId, pricerUrl } when quote was rejected', async () => {
+    findScenarioByDeal.mockResolvedValue({ id: 's1', name: 'Acme Q1', updatedAt: new Date() });
+    findLatestQuote.mockResolvedValue({
+      id: 'q1',
+      publishState: 'APPROVAL_REJECTED',
+    });
+    const res = await POST(
+      new Request('http://x/api/hubspot/card/state', {
+        method: 'POST',
+        headers: { 'x-ninja-card-secret': 'test-secret' },
+        body: JSON.stringify({ dealId: 'd1' }),
+      }) as Request,
+    );
+    const body = await res.json();
+    expect(body.state).toBe('approval_rejected');
+    expect(body.scenarioId).toBe('s1');
+    expect(body.scenarioName).toBe('Acme Q1');
+    expect(body.pricerUrl).toContain('/scenarios/s1/hubspot');
+  });
 });

@@ -6,7 +6,7 @@ import { prisma } from '@/lib/db/client';
 
 const bodySchema = z.object({
   dealId: z.string().min(1),
-  customerName: z.string().trim().min(1),
+  customerName: z.string().trim().optional(),
   contactId: z.string().optional(),
   companyId: z.string().optional(),
 });
@@ -56,10 +56,12 @@ export async function POST(req: Request): Promise<NextResponse> {
     );
   }
 
+  const customerName = parsed.data.customerName ?? 'New Customer';
+
   const scenario = await prisma.scenario.create({
     data: {
-      name: `Quote for ${parsed.data.customerName}`,
-      customerName: parsed.data.customerName,
+      name: `Quote for ${customerName}`,
+      customerName,
       ownerId: owner.id,
       contractMonths: 12,
       hubspotDealId: parsed.data.dealId,

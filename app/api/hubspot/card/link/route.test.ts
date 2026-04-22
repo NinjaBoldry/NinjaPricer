@@ -90,6 +90,27 @@ describe('POST /api/hubspot/card/link', () => {
     );
   });
 
+  it('defaults customerName to "New Customer" when omitted in the request body', async () => {
+    findScenarioFirst.mockResolvedValue(null);
+    userFindUnique.mockResolvedValue({ id: 'u1', email: 'hubspot-card@ninjaconcepts.com' });
+    scenarioCreate.mockResolvedValue({ id: 's3' });
+    const res = await POST(
+      new Request('http://x/api/hubspot/card/link', {
+        method: 'POST',
+        headers: { 'x-ninja-card-secret': 'test-secret' },
+        body: JSON.stringify({ dealId: 'd1' }),
+      }) as Request,
+    );
+    const body = await res.json();
+    expect(res.status).toBe(200);
+    expect(body.scenarioId).toBe('s3');
+    expect(scenarioCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ customerName: 'New Customer' }),
+      }),
+    );
+  });
+
   it('returns 500 card_service_user_not_configured when HUBSPOT_CARD_SERVICE_USER_EMAIL is unset', async () => {
     delete process.env.HUBSPOT_CARD_SERVICE_USER_EMAIL;
     findScenarioFirst.mockResolvedValue(null);
