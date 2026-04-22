@@ -2,6 +2,7 @@
   "uid": "publish-quote",
   "type": "app-function",
   "config": {
-    "entrypoint": "publish-quote.ts"
+    "entrypoint": "publish-quote.ts",
+    "secretKeys": ["NINJA_CARD_SECRET"]
   }
 }

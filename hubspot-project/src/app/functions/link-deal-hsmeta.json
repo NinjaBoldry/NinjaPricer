@@ -2,6 +2,7 @@
   "uid": "link-deal",
   "type": "app-function",
   "config": {
-    "entrypoint": "link-deal.ts"
+    "entrypoint": "link-deal.ts",
+    "secretKeys": ["NINJA_CARD_SECRET"]
   }
 }

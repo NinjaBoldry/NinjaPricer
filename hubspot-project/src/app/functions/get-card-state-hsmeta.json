@@ -2,6 +2,7 @@
   "uid": "get-card-state",
   "type": "app-function",
   "config": {
-    "entrypoint": "get-card-state.ts"
+    "entrypoint": "get-card-state.ts",
+    "secretKeys": ["NINJA_CARD_SECRET"]
   }
 }
