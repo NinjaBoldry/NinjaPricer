@@ -53,6 +53,10 @@ export async function POST(req: Request): Promise<NextResponse> {
       payload: ev as never,
     });
 
+    // TODO(phase-2c): replace setImmediate with a durable worker that polls
+    // HubSpotWebhookEvent.listUnprocessed. Under Railway cold-cycle shutdowns
+    // or elevated load, in-process processing can drop events. The retry
+    // action on /admin/hubspot/webhook-events covers the happy path for now.
     setImmediate(() => {
       processEvent(row.id, { eventRepo, quoteRepo }).catch(() => {
         // processing errors are already recorded via markFailed inside processEvent
