@@ -7,6 +7,7 @@ const TABS = [
   { href: 'training', label: 'Training & White-glove' },
   { href: 'service', label: 'Service' },
   { href: 'quotes', label: 'Quotes' },
+  { href: 'hubspot', label: 'HubSpot' },
 ];
 
 export default function ScenarioTabNav({ scenarioId }: { scenarioId: string }) {
