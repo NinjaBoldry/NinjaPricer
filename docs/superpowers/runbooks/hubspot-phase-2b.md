@@ -28,3 +28,7 @@
 - **Event received but not processed:** check `/admin/hubspot/webhook-events`. Failed rows have `processingError` populated. Click **Retry** to re-process.
 - **Quote publish fails with `MissingDealLinkError`:** link the scenario to a Deal first.
 - **Quote publish fails with `UnresolvedHardRailOverrideError`:** scenario has hard-rail overrides. Phase 2c implements approval. For now, remove the override or adjust pricing to pass rails.
+
+## Approval flow (Phase 2c)
+
+Phase 2c adds hard-rail-override approval routing. Setup requires configuring a HubSpot Workflow — see [hubspot-phase-2c-workflow.md](./hubspot-phase-2c-workflow.md).
