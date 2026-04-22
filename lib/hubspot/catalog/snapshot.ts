@@ -37,15 +37,15 @@ export async function loadCatalogSnapshot(prisma: PrismaClient): Promise<Catalog
     include: { items: true },
   });
 
+  // NOTE: catalog sync keeps bundle price at 0 — the HubSpot Product's `price` field
+  // is informational for us; quote line items carry the real bundle price via
+  // computeBundleRolledUpMonthlyPrice (lib/engine/bundlePricing.ts), called by the
+  // quote publish flow (lib/hubspot/quote/publish.ts).
   const bundles: BundleInput[] = activeBundles.map((b) => ({
     id: b.id,
     name: b.name,
     sku: b.sku ?? '',
     description: b.description ?? '',
-    // TODO: compute true rolled-up price from bundle items in Phase 2.
-    // The engine's bundle pricing logic lives in lib/engine/compute.ts.
-    // For Phase 1, HubSpot catalog sync does not publish bundle prices, so
-    // Decimal(0) is a safe placeholder.
     rolledUpMonthlyPrice: new Decimal(0),
     itemIdentifiers: b.items.map((i) => i.productId),
   }));
