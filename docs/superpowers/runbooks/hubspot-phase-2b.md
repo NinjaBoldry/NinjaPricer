@@ -32,3 +32,7 @@
 ## Approval flow (Phase 2c)
 
 Phase 2c adds hard-rail-override approval routing. Setup requires configuring a HubSpot Workflow — see [hubspot-phase-2c-workflow.md](./hubspot-phase-2c-workflow.md).
+
+## App Card (Phase 3)
+
+Phase 3 adds a native Ninja Pricer card to HubSpot Deal records so reps can build + publish quotes without leaving HubSpot. Setup: [hubspot-phase-3-appcard.md](./hubspot-phase-3-appcard.md).
