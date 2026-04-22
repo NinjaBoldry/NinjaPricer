@@ -6,7 +6,10 @@ import { requireAdmin } from '@/lib/auth/session';
 import { prisma } from '@/lib/db/client';
 import { runCatalogPush, runCatalogPull } from '@/lib/hubspot/catalog/orchestrator';
 import { HubSpotReviewQueueItemRepository } from '@/lib/db/repositories/hubspotReviewQueueItem';
+import { HubSpotWebhookEventRepository } from '@/lib/db/repositories/hubspotWebhookEvent';
+import { HubSpotQuoteRepository } from '@/lib/db/repositories/hubspotQuote';
 import { ReviewQueueService } from '@/lib/hubspot/catalog/reviewQueue';
+import { processEvent } from '@/lib/hubspot/webhooks/process';
 import { HubSpotReviewResolution } from '@prisma/client';
 
 export async function pushCatalogAction() {
@@ -35,4 +38,12 @@ export async function resolveReviewItemAction(input: {
   const service = new ReviewQueueService(new HubSpotReviewQueueItemRepository(prisma), prisma);
   await service.resolve({ itemId: input.itemId, resolution: input.resolution, userId: user.id });
   revalidatePath('/admin/hubspot/review-queue');
+}
+
+export async function retryWebhookEventAction(input: { eventId: string }) {
+  await requireAdmin();
+  const eventRepo = new HubSpotWebhookEventRepository(prisma);
+  const quoteRepo = new HubSpotQuoteRepository(prisma);
+  await processEvent(input.eventId, { eventRepo, quoteRepo });
+  revalidatePath('/admin/hubspot/webhook-events');
 }
