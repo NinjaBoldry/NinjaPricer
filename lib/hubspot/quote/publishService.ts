@@ -169,7 +169,7 @@ export async function runPublishScenario(
       await quoteRepo.updatePublishState(rowId, state, extras);
     },
     findPriorRevision: async (sid, currentRevision) => {
-      const prior = await quoteRepo.findByScenarioAndRevision(sid, currentRevision - 1);
+      const prior = await quoteRepo.findLatestPublishedPrior(sid, currentRevision);
       return prior ? { id: prior.id, hubspotQuoteId: prior.hubspotQuoteId } : null;
     },
     markSuperseded: async (oldRowId, newRowId) => {

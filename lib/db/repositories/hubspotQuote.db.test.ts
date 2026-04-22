@@ -111,6 +111,37 @@ describe('HubSpotQuoteRepository', () => {
     expect(updated.supersedesQuoteId).toBe(v2.id);
   });
 
+  it('findLatestPublishedPrior targets the highest PUBLISHED revision below currentRevision (skipping gaps)', async () => {
+    const scenarioId = await seedScenario();
+    // Revision 1 — PUBLISHED
+    const v1 = await repo.create({
+      scenarioId,
+      revision: 1,
+      hubspotQuoteId: 'hs-q-1',
+      publishState: HubSpotPublishState.PUBLISHED,
+    });
+    // Revision 2 — failed attempt, still in PUBLISHING state (gap)
+    await repo.create({
+      scenarioId,
+      revision: 2,
+      hubspotQuoteId: 'hs-q-2',
+      publishState: HubSpotPublishState.PUBLISHING,
+    });
+    // Revision 3 — new publish, current
+    await repo.create({
+      scenarioId,
+      revision: 3,
+      hubspotQuoteId: 'hs-q-3',
+      publishState: HubSpotPublishState.PUBLISHING,
+    });
+
+    // supersede step for revision 3 should find revision 1, not revision 2
+    const prior = await repo.findLatestPublishedPrior(scenarioId, 3);
+    expect(prior?.revision).toBe(1);
+    expect(prior?.id).toBe(v1.id);
+    expect(prior?.hubspotQuoteId).toBe('hs-q-1');
+  });
+
   it('recordTerminalStatus updates lastStatus + lastStatusAt', async () => {
     const scenarioId = await seedScenario();
     const row = await repo.create({

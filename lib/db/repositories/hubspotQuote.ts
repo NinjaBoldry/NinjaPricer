@@ -53,6 +53,20 @@ export class HubSpotQuoteRepository {
     });
   }
 
+  async findLatestPublishedPrior(
+    scenarioId: string,
+    currentRevision: number,
+  ): Promise<HubSpotQuote | null> {
+    return this.db.hubSpotQuote.findFirst({
+      where: {
+        scenarioId,
+        revision: { lt: currentRevision },
+        publishState: HubSpotPublishState.PUBLISHED,
+      },
+      orderBy: { revision: 'desc' },
+    });
+  }
+
   async markSuperseded(oldQuoteId: string, newQuoteId: string): Promise<HubSpotQuote> {
     return this.db.hubSpotQuote.update({
       where: { id: oldQuoteId },
