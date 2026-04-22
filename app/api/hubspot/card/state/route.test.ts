@@ -24,12 +24,16 @@ describe('POST /api/hubspot/card/state', () => {
     findLatestQuote.mockReset();
     process.env.HUBSPOT_APP_FUNCTION_SHARED_SECRET = 'test-secret';
     const { verifyCardSecret } = await import('@/lib/hubspot/card/auth');
-    (verifyCardSecret as unknown as { mockReturnValue: (v: boolean) => void }).mockReturnValue(true);
+    (verifyCardSecret as unknown as { mockReturnValue: (v: boolean) => void }).mockReturnValue(
+      true,
+    );
   });
 
   it('401 when shared secret is missing/invalid', async () => {
     const { verifyCardSecret } = await import('@/lib/hubspot/card/auth');
-    (verifyCardSecret as unknown as { mockReturnValue: (v: boolean) => void }).mockReturnValue(false);
+    (verifyCardSecret as unknown as { mockReturnValue: (v: boolean) => void }).mockReturnValue(
+      false,
+    );
     const res = await POST(
       new Request('http://x/api/hubspot/card/state', {
         method: 'POST',
@@ -53,7 +57,11 @@ describe('POST /api/hubspot/card/state', () => {
   });
 
   it('returns { state: "linked_no_quote", scenarioId, ... } when scenario exists but no HubSpot quote', async () => {
-    findScenarioByDeal.mockResolvedValue({ id: 's1', name: 'Acme Q1', updatedAt: new Date('2026-04-22T10:00:00Z') });
+    findScenarioByDeal.mockResolvedValue({
+      id: 's1',
+      name: 'Acme Q1',
+      updatedAt: new Date('2026-04-22T10:00:00Z'),
+    });
     findLatestQuote.mockResolvedValue(null);
     const res = await POST(
       new Request('http://x/api/hubspot/card/state', {

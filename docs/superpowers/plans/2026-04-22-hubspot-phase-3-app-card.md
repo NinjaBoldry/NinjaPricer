@@ -11,6 +11,7 @@
 **Spec reference:** [docs/superpowers/specs/2026-04-21-hubspot-integration-design.md — "HubSpot Developer Project" and "App Card UX (phase 1)" sections](../specs/2026-04-21-hubspot-integration-design.md)
 
 **Out of scope:**
+
 - Rich dedupe modal for pricer-first "Create new Deal" flow (Phase 4)
 - Local dev server for card development (`hs project dev`) — docs pointer only; setup is per-dev
 - Card rendered on Contact or Company records (Phase 1 decision: Deal only)
@@ -20,6 +21,7 @@
 ## File Structure
 
 **Created:**
+
 ```
 app/api/hubspot/card/state/route.ts                    — GET card state for a dealId
 app/api/hubspot/card/state/route.test.ts
@@ -42,6 +44,7 @@ docs/superpowers/runbooks/hubspot-phase-3-appcard.md   — deployment + smoke-te
 ```
 
 **Modified:**
+
 ```
 .env.example                                           — document HUBSPOT_APP_FUNCTION_SHARED_SECRET + PRICER_APP_URL
 hubspot-project/src/app/app-hsmeta.json                — add permittedUrls for the pricer production URL
@@ -53,6 +56,7 @@ docs/superpowers/runbooks/hubspot-phase-2b.md          — pointer to phase-3 ru
 ## Task 1: Pricer card-state API endpoint
 
 **Files:**
+
 - Create: `app/api/hubspot/card/state/route.ts`
 - Create: `app/api/hubspot/card/state/route.test.ts`
 
@@ -88,7 +92,9 @@ describe('POST /api/hubspot/card/state', () => {
 
   it('401 when shared secret is missing/invalid', async () => {
     const { verifyCardSecret } = await import('@/lib/hubspot/card/auth');
-    (verifyCardSecret as unknown as { mockReturnValue: (v: boolean) => void }).mockReturnValue(false);
+    (verifyCardSecret as unknown as { mockReturnValue: (v: boolean) => void }).mockReturnValue(
+      false,
+    );
     const res = await POST(
       new Request('http://x/api/hubspot/card/state', {
         method: 'POST',
@@ -112,7 +118,11 @@ describe('POST /api/hubspot/card/state', () => {
   });
 
   it('returns { state: "linked_no_quote", scenarioId, ... } when scenario exists but no HubSpot quote', async () => {
-    findScenarioByDeal.mockResolvedValue({ id: 's1', name: 'Acme Q1', updatedAt: new Date('2026-04-22T10:00:00Z') });
+    findScenarioByDeal.mockResolvedValue({
+      id: 's1',
+      name: 'Acme Q1',
+      updatedAt: new Date('2026-04-22T10:00:00Z'),
+    });
     findLatestQuote.mockResolvedValue(null);
     const res = await POST(
       new Request('http://x/api/hubspot/card/state', {
@@ -235,6 +245,7 @@ git commit -m "feat(hubspot): card state endpoint (returns no_scenario/linked_no
 ## Task 2: Shared-secret auth helper
 
 **Files:**
+
 - Create: `lib/hubspot/card/auth.ts`
 - Create: `lib/hubspot/card/auth.test.ts`
 
@@ -301,6 +312,7 @@ git commit -m "feat(hubspot): shared-secret verification for App Card → pricer
 ## Task 3: Card link-deal endpoint
 
 **Files:**
+
 - Create: `app/api/hubspot/card/link/route.ts`
 - Create: `app/api/hubspot/card/link/route.test.ts`
 
@@ -316,7 +328,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { verifyCardSecret } from '@/lib/hubspot/card/auth';
 import { prisma } from '@/lib/db/client';
-import { auth } from '@/auth';  // may or may not be available server-side; see note below
+import { auth } from '@/auth'; // may or may not be available server-side; see note below
 
 const bodySchema = z.object({
   dealId: z.string().min(1),
@@ -348,7 +360,8 @@ export async function POST(req: Request): Promise<NextResponse> {
 
   // Create a new scenario. Owner is resolved via a dedicated "HubSpot card" service user that must exist in the DB.
   // This keeps the scenario audit trail attributed to the card's origin rather than a random admin user.
-  const ownerEmail = process.env.HUBSPOT_CARD_SERVICE_USER_EMAIL ?? 'hubspot-card@ninjaconcepts.com';
+  const ownerEmail =
+    process.env.HUBSPOT_CARD_SERVICE_USER_EMAIL ?? 'hubspot-card@ninjaconcepts.com';
   const owner = await prisma.user.upsert({
     where: { email: ownerEmail },
     create: { email: ownerEmail, role: 'ADMIN' },
@@ -392,6 +405,7 @@ git commit -m "feat(hubspot): card link endpoint (creates or reuses scenario for
 ## Task 4: Card publish endpoint
 
 **Files:**
+
 - Create: `app/api/hubspot/card/publish/route.ts`
 - Create: `app/api/hubspot/card/publish/route.test.ts`
 
@@ -439,6 +453,7 @@ git commit -m "feat(hubspot): card publish endpoint (delegates to runPublishScen
 ## Task 5: HubSpot App Function — get-card-state
 
 **Files:**
+
 - Create: `hubspot-project/src/app/functions/get-card-state.ts`
 
 - [ ] **Step 5.1: Implement function**
@@ -499,6 +514,7 @@ git commit -m "feat(hubspot): get-card-state App Function (proxies to pricer /ap
 ## Task 6: HubSpot App Function — link-deal
 
 **Files:**
+
 - Create: `hubspot-project/src/app/functions/link-deal.ts`
 
 - [ ] **Step 6.1: Implement**
@@ -558,6 +574,7 @@ git commit -m "feat(hubspot): link-deal App Function (creates-or-reuses scenario
 ## Task 7: HubSpot App Function — publish-quote
 
 **Files:**
+
 - Create: `hubspot-project/src/app/functions/publish-quote.ts`
 
 - [ ] **Step 7.1: Implement**
@@ -609,6 +626,7 @@ git commit -m "feat(hubspot): publish-quote App Function (forwards to pricer pub
 ## Task 8: App Card React component + hsmeta
 
 **Files:**
+
 - Create: `hubspot-project/src/app/cards/ninja-pricer-card.tsx`
 - Create: `hubspot-project/src/app/cards/ninja-pricer-card-hsmeta.json`
 
@@ -656,10 +674,26 @@ import {
 type CardState =
   | { state: 'loading' }
   | { state: 'no_scenario' }
-  | { state: 'linked_no_quote'; scenarioId: string; scenarioName: string; scenarioUpdatedAt: string; pricerUrl: string }
+  | {
+      state: 'linked_no_quote';
+      scenarioId: string;
+      scenarioName: string;
+      scenarioUpdatedAt: string;
+      pricerUrl: string;
+    }
   | { state: 'pending_approval'; scenarioId: string; scenarioName: string; pricerUrl: string }
   | { state: 'approval_rejected'; scenarioId: string; scenarioName: string; pricerUrl: string }
-  | { state: 'published'; scenarioId: string; scenarioName: string; hubspotQuoteId: string; shareableUrl?: string; revision: number; lastStatus?: string; dealOutcome?: string; pricerUrl: string }
+  | {
+      state: 'published';
+      scenarioId: string;
+      scenarioName: string;
+      hubspotQuoteId: string;
+      shareableUrl?: string;
+      revision: number;
+      lastStatus?: string;
+      dealOutcome?: string;
+      pricerUrl: string;
+    }
   | { state: 'error'; message: string };
 
 hubspot.extend(() => <NinjaPricerCard />);
@@ -707,11 +741,19 @@ function NinjaPricerCard() {
   }
 
   if (state.state === 'loading') {
-    return <Flex direction="column" gap="sm"><LoadingSpinner label="Loading quote state…" /></Flex>;
+    return (
+      <Flex direction="column" gap="sm">
+        <LoadingSpinner label="Loading quote state…" />
+      </Flex>
+    );
   }
 
   if (state.state === 'error') {
-    return <Alert title="Error" variant="danger">{state.message}</Alert>;
+    return (
+      <Alert title="Error" variant="danger">
+        {state.message}
+      </Alert>
+    );
   }
 
   if (state.state === 'no_scenario') {
@@ -719,7 +761,12 @@ function NinjaPricerCard() {
       <Flex direction="column" gap="md">
         <Heading>Ninja Pricer</Heading>
         <Text>No quote yet for this Deal.</Text>
-        <Input name="customerName" label="Customer name" value={customerName} onChange={setCustomerName} />
+        <Input
+          name="customerName"
+          label="Customer name"
+          value={customerName}
+          onChange={setCustomerName}
+        />
         <Button variant="primary" disabled={busy} onClick={onBuildQuote}>
           Build Quote
         </Button>
@@ -731,9 +778,13 @@ function NinjaPricerCard() {
     return (
       <Flex direction="column" gap="md">
         <Heading>{state.scenarioName}</Heading>
-        <Text>Scenario is linked. Last edited: {new Date(state.scenarioUpdatedAt).toLocaleString()}</Text>
+        <Text>
+          Scenario is linked. Last edited: {new Date(state.scenarioUpdatedAt).toLocaleString()}
+        </Text>
         <Flex direction="row" gap="sm">
-          <Link href={state.pricerUrl} external>Continue in Pricer</Link>
+          <Link href={state.pricerUrl} external>
+            Continue in Pricer
+          </Link>
           <Button variant="primary" disabled={busy} onClick={() => onPublish(state.scenarioId)}>
             Publish to HubSpot
           </Button>
@@ -749,7 +800,9 @@ function NinjaPricerCard() {
         <Alert title="Waiting on manager approval" variant="warning">
           A manager needs to approve before the quote can be sent.
         </Alert>
-        <Link href={state.pricerUrl} external>View in Pricer</Link>
+        <Link href={state.pricerUrl} external>
+          View in Pricer
+        </Link>
       </Flex>
     );
   }
@@ -761,7 +814,9 @@ function NinjaPricerCard() {
         <Alert title="Approval rejected" variant="danger">
           Revise the scenario to pass rails and resubmit.
         </Alert>
-        <Link href={state.pricerUrl} external>Open in Pricer to revise</Link>
+        <Link href={state.pricerUrl} external>
+          Open in Pricer to revise
+        </Link>
       </Flex>
     );
   }
@@ -769,14 +824,20 @@ function NinjaPricerCard() {
   // state.state === 'published'
   return (
     <Flex direction="column" gap="md">
-      <Heading>{state.scenarioName} — Rev {state.revision}</Heading>
+      <Heading>
+        {state.scenarioName} — Rev {state.revision}
+      </Heading>
       {state.shareableUrl && (
-        <Link href={state.shareableUrl} external>Open HubSpot Quote</Link>
+        <Link href={state.shareableUrl} external>
+          Open HubSpot Quote
+        </Link>
       )}
       <Text>Status: {state.lastStatus ?? 'Sent'}</Text>
       {state.dealOutcome && <Text>Deal outcome: {state.dealOutcome}</Text>}
       <Divider />
-      <Link href={state.pricerUrl} external>Revise in Pricer</Link>
+      <Link href={state.pricerUrl} external>
+        Revise in Pricer
+      </Link>
     </Flex>
   );
 }
@@ -790,6 +851,7 @@ function NinjaPricerCard() {
 cd hubspot-project
 hs project validate
 ```
+
 Expected: SUCCESS. If not, adjust `ninja-pricer-card-hsmeta.json` per the error.
 
 - [ ] **Step 8.4: Commit**
@@ -804,6 +866,7 @@ git commit -m "feat(hubspot): Ninja Pricer App Card with 5 render states"
 ## Task 9: App manifest — add permittedUrls
 
 **Files:**
+
 - Modify: `hubspot-project/src/app/app-hsmeta.json`
 
 - [ ] **Step 9.1: Add Railway URL**
@@ -839,6 +902,7 @@ git commit -m "feat(hubspot): permit App Functions to fetch pricer production UR
 ## Task 10: Documentation + runbook
 
 **Files:**
+
 - Create: `docs/superpowers/runbooks/hubspot-phase-3-appcard.md`
 - Modify: `.env.example`
 - Modify: `docs/superpowers/runbooks/hubspot-phase-2b.md`
@@ -862,10 +926,11 @@ HUBSPOT_CARD_SERVICE_USER_EMAIL=
 
 Create `docs/superpowers/runbooks/hubspot-phase-3-appcard.md`:
 
-```md
+````md
 # Phase 3 — App Card deployment + smoke test
 
 ## Prerequisites
+
 - Phase 2b + 2c deployed.
 - HubSpot Developer Project already installed in the portal (earlier phases).
 - `HUBSPOT_ACCESS_TOKEN` / `HUBSPOT_WEBHOOK_SECRET` / `HUBSPOT_APP_ID` already set in Railway.
@@ -877,8 +942,10 @@ Create `docs/superpowers/runbooks/hubspot-phase-3-appcard.md`:
 ```bash
 openssl rand -hex 32
 ```
+````
 
 Record the output. You'll set it in TWO places:
+
 - **Railway** → Pricer service → Variables → `HUBSPOT_APP_FUNCTION_SHARED_SECRET=<hex>`
 - **HubSpot Developer Project secrets:**
   ```bash
@@ -887,6 +954,7 @@ Record the output. You'll set it in TWO places:
   ```
 
 Optional:
+
 - **Railway** → `PRICER_APP_URL=https://ninjapricer-production.up.railway.app` (or your production URL)
 - **Railway** → `HUBSPOT_CARD_SERVICE_USER_EMAIL=hubspot-card@ninjaconcepts.com`
 
@@ -923,10 +991,12 @@ Note: the card is a "card" not a scope, so reinstall may or may not prompt. If t
 - **500 in App Function logs** → check pricer's Railway logs for stack traces.
 
 ## Known limitations
+
 - Build Quote opens pricer in a new browser tab. A future phase could embed the pricer via iframe or route the entire flow through card UI.
 - Card doesn't poll for state changes. Rep must refresh or re-open the Deal to see updates after publish.
 - Only one scenario per Deal is supported by the card — if multiple scenarios exist, the card surfaces the most recently updated.
-```
+
+````
 
 - [ ] **Step 10.3: Cross-link from Phase 2b runbook**
 
@@ -936,7 +1006,7 @@ Append to `docs/superpowers/runbooks/hubspot-phase-2b.md`:
 ## App Card (Phase 3)
 
 Phase 3 adds a native Ninja Pricer card to HubSpot Deal records so reps can build + publish quotes without leaving HubSpot. Setup: [hubspot-phase-3-appcard.md](./hubspot-phase-3-appcard.md).
-```
+````
 
 - [ ] **Step 10.4: Commit**
 

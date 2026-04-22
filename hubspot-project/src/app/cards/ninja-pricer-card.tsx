@@ -146,18 +146,13 @@ function NinjaPricerCard() {
       <Flex direction="column" gap="md">
         <Heading>{cardState.scenarioName}</Heading>
         <Text>
-          Scenario linked. Last edited:{' '}
-          {new Date(cardState.scenarioUpdatedAt).toLocaleString()}
+          Scenario linked. Last edited: {new Date(cardState.scenarioUpdatedAt).toLocaleString()}
         </Text>
         <Flex direction="row" gap="sm">
           <Link href={cardState.pricerUrl} external>
             Continue in Pricer
           </Link>
-          <Button
-            variant="primary"
-            disabled={busy}
-            onClick={() => onPublish(cardState.scenarioId)}
-          >
+          <Button variant="primary" disabled={busy} onClick={() => onPublish(cardState.scenarioId)}>
             {busy ? 'Publishing…' : 'Publish to HubSpot'}
           </Button>
         </Flex>

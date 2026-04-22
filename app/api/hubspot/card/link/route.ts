@@ -33,7 +33,8 @@ export async function POST(req: Request): Promise<NextResponse> {
 
   // Create a new scenario. Owner is resolved via a dedicated "HubSpot card" service user that must exist in the DB.
   // This keeps the scenario audit trail attributed to the card's origin rather than a random admin user.
-  const ownerEmail = process.env.HUBSPOT_CARD_SERVICE_USER_EMAIL ?? 'hubspot-card@ninjaconcepts.com';
+  const ownerEmail =
+    process.env.HUBSPOT_CARD_SERVICE_USER_EMAIL ?? 'hubspot-card@ninjaconcepts.com';
   const owner = await prisma.user.upsert({
     where: { email: ownerEmail },
     create: { email: ownerEmail, role: 'ADMIN' },

@@ -28,12 +28,16 @@ describe('POST /api/hubspot/card/link', () => {
     scenarioCreate.mockReset();
     process.env.HUBSPOT_APP_FUNCTION_SHARED_SECRET = 'test-secret';
     const { verifyCardSecret } = await import('@/lib/hubspot/card/auth');
-    (verifyCardSecret as unknown as { mockReturnValue: (v: boolean) => void }).mockReturnValue(true);
+    (verifyCardSecret as unknown as { mockReturnValue: (v: boolean) => void }).mockReturnValue(
+      true,
+    );
   });
 
   it('401 when shared secret is missing/invalid', async () => {
     const { verifyCardSecret } = await import('@/lib/hubspot/card/auth');
-    (verifyCardSecret as unknown as { mockReturnValue: (v: boolean) => void }).mockReturnValue(false);
+    (verifyCardSecret as unknown as { mockReturnValue: (v: boolean) => void }).mockReturnValue(
+      false,
+    );
     const res = await POST(
       new Request('http://x/api/hubspot/card/link', {
         method: 'POST',
