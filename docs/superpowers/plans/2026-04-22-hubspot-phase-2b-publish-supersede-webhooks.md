@@ -11,6 +11,7 @@
 **Spec reference:** [docs/superpowers/specs/2026-04-22-hubspot-phase-2-publish-approval-webhooks-design.md](../specs/2026-04-22-hubspot-phase-2-publish-approval-webhooks-design.md)
 
 **Explicitly deferred to Phase 2c:**
+
 - Hard-rail-override approval trigger + wait + resume
 - `HubSpotApprovalRequest` model and repository
 - Deal webhook handling for `pricer_approval_status` changes
@@ -21,6 +22,7 @@
 ## File Structure
 
 **Created:**
+
 ```
 lib/engine/bundlePricing.ts                       — pure fn returning Bundle's computed monthly revenue
 lib/engine/bundlePricing.test.ts
@@ -58,6 +60,7 @@ docs/superpowers/runbooks/hubspot-phase-2b.md     — deployment + smoke-test ch
 ```
 
 **Modified:**
+
 ```
 prisma/schema.prisma                              — HubSpotQuote, HubSpotWebhookEvent, HubSpotPublishState; additive Scenario/Quote fields
 prisma/migrations/<ts>_hubspot_phase_2b_quote_models/migration.sql
@@ -74,6 +77,7 @@ hubspot-project/src/app/app-hsmeta.json           — webhook subscriptions + we
 ## Task 1: Prisma schema additions
 
 **Files:**
+
 - Modify: `prisma/schema.prisma`
 
 - [ ] **Step 1.1: Add `HubSpotPublishState` enum**
@@ -179,6 +183,7 @@ git commit -m "feat(hubspot): add HubSpotQuote + HubSpotWebhookEvent models and 
 ## Task 2: `HubSpotQuote` repository
 
 **Files:**
+
 - Create: `lib/db/repositories/hubspotQuote.ts`
 - Create: `lib/db/repositories/hubspotQuote.db.test.ts`
 
@@ -224,22 +229,42 @@ describe('HubSpotQuoteRepository', () => {
 
   it('findByScenarioAndRevision returns the matching row', async () => {
     const scenarioId = await seedScenario();
-    await repo.create({ scenarioId, revision: 1, hubspotQuoteId: 'hs-q-1', publishState: HubSpotPublishState.PUBLISHED });
+    await repo.create({
+      scenarioId,
+      revision: 1,
+      hubspotQuoteId: 'hs-q-1',
+      publishState: HubSpotPublishState.PUBLISHED,
+    });
     const row = await repo.findByScenarioAndRevision(scenarioId, 1);
     expect(row?.hubspotQuoteId).toBe('hs-q-1');
   });
 
   it('findLatestByScenario returns highest-revision row', async () => {
     const scenarioId = await seedScenario();
-    await repo.create({ scenarioId, revision: 1, hubspotQuoteId: 'hs-q-1', publishState: HubSpotPublishState.SUPERSEDED });
-    await repo.create({ scenarioId, revision: 2, hubspotQuoteId: 'hs-q-2', publishState: HubSpotPublishState.PUBLISHED });
+    await repo.create({
+      scenarioId,
+      revision: 1,
+      hubspotQuoteId: 'hs-q-1',
+      publishState: HubSpotPublishState.SUPERSEDED,
+    });
+    await repo.create({
+      scenarioId,
+      revision: 2,
+      hubspotQuoteId: 'hs-q-2',
+      publishState: HubSpotPublishState.PUBLISHED,
+    });
     const latest = await repo.findLatestByScenario(scenarioId);
     expect(latest?.revision).toBe(2);
   });
 
   it('updatePublishState persists state transition', async () => {
     const scenarioId = await seedScenario();
-    const row = await repo.create({ scenarioId, revision: 1, hubspotQuoteId: 'hs-q-1', publishState: HubSpotPublishState.PUBLISHING });
+    const row = await repo.create({
+      scenarioId,
+      revision: 1,
+      hubspotQuoteId: 'hs-q-1',
+      publishState: HubSpotPublishState.PUBLISHING,
+    });
     const updated = await repo.updatePublishState(row.id, HubSpotPublishState.PUBLISHED, {
       shareableUrl: 'https://app.hubspot.com/q/x',
       publishedAt: new Date('2026-04-22T10:00:00Z'),
@@ -250,8 +275,18 @@ describe('HubSpotQuoteRepository', () => {
 
   it('markSuperseded links old row to new via supersedesQuoteId', async () => {
     const scenarioId = await seedScenario();
-    const v1 = await repo.create({ scenarioId, revision: 1, hubspotQuoteId: 'hs-q-1', publishState: HubSpotPublishState.PUBLISHED });
-    const v2 = await repo.create({ scenarioId, revision: 2, hubspotQuoteId: 'hs-q-2', publishState: HubSpotPublishState.PUBLISHED });
+    const v1 = await repo.create({
+      scenarioId,
+      revision: 1,
+      hubspotQuoteId: 'hs-q-1',
+      publishState: HubSpotPublishState.PUBLISHED,
+    });
+    const v2 = await repo.create({
+      scenarioId,
+      revision: 2,
+      hubspotQuoteId: 'hs-q-2',
+      publishState: HubSpotPublishState.PUBLISHED,
+    });
     const updated = await repo.markSuperseded(v1.id, v2.id);
     expect(updated.publishState).toBe('SUPERSEDED');
     expect(updated.supersedesQuoteId).toBe(v2.id);
@@ -259,8 +294,17 @@ describe('HubSpotQuoteRepository', () => {
 
   it('recordTerminalStatus updates lastStatus + lastStatusAt', async () => {
     const scenarioId = await seedScenario();
-    const row = await repo.create({ scenarioId, revision: 1, hubspotQuoteId: 'hs-q-1', publishState: HubSpotPublishState.PUBLISHED });
-    const updated = await repo.recordTerminalStatus(row.hubspotQuoteId, 'ACCEPTED', new Date('2026-04-23T00:00:00Z'));
+    const row = await repo.create({
+      scenarioId,
+      revision: 1,
+      hubspotQuoteId: 'hs-q-1',
+      publishState: HubSpotPublishState.PUBLISHED,
+    });
+    const updated = await repo.recordTerminalStatus(
+      row.hubspotQuoteId,
+      'ACCEPTED',
+      new Date('2026-04-23T00:00:00Z'),
+    );
     expect(updated?.lastStatus).toBe('ACCEPTED');
   });
 });
@@ -295,7 +339,10 @@ export class HubSpotQuoteRepository {
     return this.db.hubSpotQuote.findUnique({ where: { hubspotQuoteId } });
   }
 
-  async findByScenarioAndRevision(scenarioId: string, revision: number): Promise<HubSpotQuote | null> {
+  async findByScenarioAndRevision(
+    scenarioId: string,
+    revision: number,
+  ): Promise<HubSpotQuote | null> {
     return this.db.hubSpotQuote.findUnique({
       where: { scenarioId_revision: { scenarioId, revision } },
     });
@@ -363,6 +410,7 @@ export class HubSpotQuoteRepository {
 ```bash
 npm run test:integration -- lib/db/repositories/hubspotQuote.db.test.ts
 ```
+
 Expected: 6 pass.
 
 - [ ] **Step 2.4: Commit**
@@ -377,6 +425,7 @@ git commit -m "feat(hubspot): HubSpotQuote repository"
 ## Task 3: `HubSpotWebhookEvent` repository
 
 **Files:**
+
 - Create: `lib/db/repositories/hubspotWebhookEvent.ts`
 - Create: `lib/db/repositories/hubspotWebhookEvent.db.test.ts`
 
@@ -417,8 +466,20 @@ describe('HubSpotWebhookEventRepository', () => {
   });
 
   it('listUnprocessed returns rows with processedAt null', async () => {
-    const a = await repo.persist({ hubspotEventId: 'a', subscriptionType: 't', objectType: 'o', objectId: '1', payload: {} });
-    const b = await repo.persist({ hubspotEventId: 'b', subscriptionType: 't', objectType: 'o', objectId: '2', payload: {} });
+    const a = await repo.persist({
+      hubspotEventId: 'a',
+      subscriptionType: 't',
+      objectType: 'o',
+      objectId: '1',
+      payload: {},
+    });
+    const b = await repo.persist({
+      hubspotEventId: 'b',
+      subscriptionType: 't',
+      objectType: 'o',
+      objectId: '2',
+      payload: {},
+    });
     await repo.markProcessed(a.id);
     const pending = await repo.listUnprocessed(10);
     expect(pending.length).toBe(1);
@@ -426,13 +487,25 @@ describe('HubSpotWebhookEventRepository', () => {
   });
 
   it('markProcessed stamps processedAt', async () => {
-    const row = await repo.persist({ hubspotEventId: 'x', subscriptionType: 't', objectType: 'o', objectId: '1', payload: {} });
+    const row = await repo.persist({
+      hubspotEventId: 'x',
+      subscriptionType: 't',
+      objectType: 'o',
+      objectId: '1',
+      payload: {},
+    });
     const updated = await repo.markProcessed(row.id);
     expect(updated.processedAt).not.toBeNull();
   });
 
   it('markFailed records error + increments attempts', async () => {
-    const row = await repo.persist({ hubspotEventId: 'x', subscriptionType: 't', objectType: 'o', objectId: '1', payload: {} });
+    const row = await repo.persist({
+      hubspotEventId: 'x',
+      subscriptionType: 't',
+      objectType: 'o',
+      objectId: '1',
+      payload: {},
+    });
     const updated = await repo.markFailed(row.id, 'boom');
     expect(updated.processingError).toBe('boom');
     expect(updated.processingAttempts).toBe(1);
@@ -512,6 +585,7 @@ git commit -m "feat(hubspot): HubSpotWebhookEvent repository with idempotent per
 ## Task 4: `computeBundleRolledUpMonthlyPrice`
 
 **Files:**
+
 - Create: `lib/engine/bundlePricing.ts`
 - Create: `lib/engine/bundlePricing.test.ts`
 
@@ -520,6 +594,7 @@ git commit -m "feat(hubspot): HubSpotWebhookEvent repository with idempotent per
 - [ ] **Step 4.1: Read prior art**
 
 Open `lib/services/scenario.ts` and find `applyBundleToScenario` around line 224. Trace how a `BundleItem.config` (JSONB) gets turned into:
+
 - `ScenarioSaaSConfig` for SaaS items (seat_count, persona_mix, discount_override)
 - `ScenarioLaborLine` for labor items (sku reference or dept+hours)
 
@@ -554,7 +629,11 @@ describe('computeBundleRolledUpMonthlyPrice', () => {
         {
           kind: 'SAAS',
           productId,
-          config: { seatCount: 10, personaMix: [{ personaId, pct: 100 }], discountOverridePct: null },
+          config: {
+            seatCount: 10,
+            personaMix: [{ personaId, pct: 100 }],
+            discountOverridePct: null,
+          },
         },
       ],
       productSnapshots: {
@@ -655,6 +734,7 @@ export function computeBundleRolledUpMonthlyPrice(input: BundlePricingInput): De
 ```bash
 npm test -- lib/engine/bundlePricing.test.ts
 ```
+
 Expected: 2 pass.
 
 - [ ] **Step 4.5: Commit**
@@ -669,6 +749,7 @@ git commit -m "feat(engine): computeBundleRolledUpMonthlyPrice (pure fn synthesi
 ## Task 5: Wire `computeBundleRolledUpMonthlyPrice` into catalog snapshot
 
 **Files:**
+
 - Modify: `lib/hubspot/catalog/snapshot.ts`
 - Modify: `lib/hubspot/catalog/snapshot.db.test.ts`
 
@@ -709,6 +790,7 @@ git commit -m "chore(hubspot): document that bundle price is computed at publish
 ## Task 6: Scenario → HubSpot line items translator
 
 **Files:**
+
 - Create: `lib/hubspot/quote/translator.ts`
 - Create: `lib/hubspot/quote/translator.test.ts`
 
@@ -968,6 +1050,7 @@ git commit -m "feat(hubspot): scenario → HubSpot line items translator (hybrid
 ## Task 7: Publish state machine + supersede
 
 **Files:**
+
 - Create: `lib/hubspot/quote/publish.ts`
 - Create: `lib/hubspot/quote/publish.test.ts`
 
@@ -979,7 +1062,11 @@ This is the big one. Step-by-step orchestrator with explicit state transitions.
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import Decimal from 'decimal.js';
 import * as client from '../client';
-import { publishScenarioToHubSpot, UnresolvedHardRailOverrideError, MissingDealLinkError } from './publish';
+import {
+  publishScenarioToHubSpot,
+  UnresolvedHardRailOverrideError,
+  MissingDealLinkError,
+} from './publish';
 
 const fetchSpy = vi.spyOn(client, 'hubspotFetch');
 
@@ -1028,7 +1115,10 @@ describe('publishScenarioToHubSpot', () => {
       .mockResolvedValueOnce({ id: 'hs-q-1' })
       .mockResolvedValueOnce({ id: 'hs-li-1' })
       .mockResolvedValueOnce({})
-      .mockResolvedValueOnce({ id: 'hs-q-1', properties: { hs_quote_link: 'https://app.hubspot.com/q/x' } });
+      .mockResolvedValueOnce({
+        id: 'hs-q-1',
+        properties: { hs_quote_link: 'https://app.hubspot.com/q/x' },
+      });
 
     const persistence = {
       createHubSpotQuote: vi.fn().mockResolvedValue({ id: 'row-1' }),
@@ -1045,7 +1135,15 @@ describe('publishScenarioToHubSpot', () => {
         hasUnresolvedHardRailOverrides: false,
       },
       lineItems: [
-        { properties: { name: 'Ninja Notes', price: '400.00', quantity: '10', pricer_reason: 'other', pricer_scenario_id: 's1' } },
+        {
+          properties: {
+            name: 'Ninja Notes',
+            price: '400.00',
+            quantity: '10',
+            pricer_reason: 'other',
+            pricer_scenario_id: 's1',
+          },
+        },
       ],
       quoteConfig: { name: 'Acme Inc Q1', expirationDays: 30 },
       persistence,
@@ -1078,8 +1176,23 @@ describe('publishScenarioToHubSpot', () => {
     };
 
     await publishScenarioToHubSpot({
-      scenario: { id: 's1', hubspotDealId: 'd1', revision: 2, hasUnresolvedHardRailOverrides: false },
-      lineItems: [{ properties: { name: 'Ninja Notes', price: '400.00', quantity: '10', pricer_reason: 'other', pricer_scenario_id: 's1' } }],
+      scenario: {
+        id: 's1',
+        hubspotDealId: 'd1',
+        revision: 2,
+        hasUnresolvedHardRailOverrides: false,
+      },
+      lineItems: [
+        {
+          properties: {
+            name: 'Ninja Notes',
+            price: '400.00',
+            quantity: '10',
+            pricer_reason: 'other',
+            pricer_scenario_id: 's1',
+          },
+        },
+      ],
       quoteConfig: { name: 'Acme Inc Q1 v2', expirationDays: 30 },
       persistence,
       now: () => new Date('2026-04-22T10:00:00Z'),
@@ -1087,7 +1200,9 @@ describe('publishScenarioToHubSpot', () => {
     } as any);
 
     expect(persistence.markSuperseded).toHaveBeenCalledWith('row-1', 'row-2');
-    const patchCalls = fetchSpy.mock.calls.filter(([a]) => a.method === 'PATCH' && a.path.includes('hs-q-1'));
+    const patchCalls = fetchSpy.mock.calls.filter(
+      ([a]) => a.method === 'PATCH' && a.path.includes('hs-q-1'),
+    );
     expect(patchCalls.length).toBe(1); // old HubSpot quote gets pricer_supersedes stamped
   });
 });
@@ -1101,11 +1216,15 @@ import { HubSpotPublishState } from '@prisma/client';
 import type { HubSpotLineItemPayload } from './translator';
 
 export class MissingDealLinkError extends Error {
-  constructor() { super('Scenario must be linked to a HubSpot Deal before publishing.'); }
+  constructor() {
+    super('Scenario must be linked to a HubSpot Deal before publishing.');
+  }
 }
 
 export class UnresolvedHardRailOverrideError extends Error {
-  constructor() { super('Scenario has unresolved hard-rail overrides — approval flow (Phase 2c) required.'); }
+  constructor() {
+    super('Scenario has unresolved hard-rail overrides — approval flow (Phase 2c) required.');
+  }
 }
 
 export interface PublishPersistence {
@@ -1120,7 +1239,10 @@ export interface PublishPersistence {
     state: HubSpotPublishState,
     extras?: { shareableUrl?: string; publishedAt?: Date },
   ): Promise<void>;
-  findPriorRevision(scenarioId: string, currentRevision: number): Promise<{ id: string; hubspotQuoteId: string } | null>;
+  findPriorRevision(
+    scenarioId: string,
+    currentRevision: number,
+  ): Promise<{ id: string; hubspotQuoteId: string } | null>;
   markSuperseded(oldRowId: string, newRowId: string): Promise<void>;
 }
 
@@ -1150,7 +1272,9 @@ export async function publishScenarioToHubSpot(input: PublishInput): Promise<Pub
   if (input.lineItems.length === 0) throw new Error('Cannot publish a quote with zero line items.');
 
   // Step 2: create HubSpot Quote
-  const expiration = new Date(input.now().getTime() + input.quoteConfig.expirationDays * 24 * 60 * 60 * 1000);
+  const expiration = new Date(
+    input.now().getTime() + input.quoteConfig.expirationDays * 24 * 60 * 60 * 1000,
+  );
   const quoteRes = await hubspotFetch<{ id: string }>({
     method: 'POST',
     path: '/crm/v3/objects/quotes',
@@ -1210,7 +1334,10 @@ export async function publishScenarioToHubSpot(input: PublishInput): Promise<Pub
   });
 
   // Step 5: supersede prior revision (if any)
-  const prior = await input.persistence.findPriorRevision(input.scenario.id, input.scenario.revision);
+  const prior = await input.persistence.findPriorRevision(
+    input.scenario.id,
+    input.scenario.revision,
+  );
   if (prior) {
     await input.persistence.markSuperseded(prior.id, row.id);
     await hubspotFetch({
@@ -1242,6 +1369,7 @@ git commit -m "feat(hubspot): publish state machine (create quote + line items +
 ## Task 8: Webhook signature verification
 
 **Files:**
+
 - Create: `lib/hubspot/webhooks/verify.ts`
 - Create: `lib/hubspot/webhooks/verify.test.ts`
 
@@ -1359,6 +1487,7 @@ git commit -m "feat(hubspot): signature v3 verification for webhook endpoints"
 ## Task 9: Webhook event processor
 
 **Files:**
+
 - Create: `lib/hubspot/webhooks/process.ts`
 - Create: `lib/hubspot/webhooks/process.test.ts`
 
@@ -1398,10 +1527,18 @@ describe('processEvent', () => {
       subscriptionType: 'quote.propertyChange',
       objectType: 'quote',
       objectId: 'hs-q-1',
-      payload: { propertyName: 'hs_status', propertyValue: 'ACCEPTED', occurredAt: '2026-04-23T00:00:00Z' },
+      payload: {
+        propertyName: 'hs_status',
+        propertyValue: 'ACCEPTED',
+        occurredAt: '2026-04-23T00:00:00Z',
+      },
     });
     await processEvent('e1', { quoteRepo: mockQuoteRepo, eventRepo: mockEventRepo } as any);
-    expect(mockQuoteRepo.recordTerminalStatus).toHaveBeenCalledWith('hs-q-1', 'ACCEPTED', expect.any(Date));
+    expect(mockQuoteRepo.recordTerminalStatus).toHaveBeenCalledWith(
+      'hs-q-1',
+      'ACCEPTED',
+      expect.any(Date),
+    );
     expect(mockEventRepo.markProcessed).toHaveBeenCalledWith('e1');
   });
 
@@ -1426,7 +1563,12 @@ describe('processEvent', () => {
       subscriptionType: 'deal.propertyChange',
       objectType: 'deal',
       objectId: 'hs-d-1',
-      payload: { propertyName: 'dealstage', propertyValue: 'closedwon', occurredAt: '2026-04-23T00:00:00Z', pricerScenarioId: 's1' },
+      payload: {
+        propertyName: 'dealstage',
+        propertyValue: 'closedwon',
+        occurredAt: '2026-04-23T00:00:00Z',
+        pricerScenarioId: 's1',
+      },
     });
     await processEvent('e2', { quoteRepo: mockQuoteRepo, eventRepo: mockEventRepo } as any);
     expect(mockQuoteRepo.recordDealOutcome).toHaveBeenCalledWith('s1', 'WON', expect.any(Date));
@@ -1478,7 +1620,10 @@ export async function processEvent(eventId: string, deps: ProcessDeps): Promise<
         const at = payload.occurredAt ? new Date(String(payload.occurredAt)) : new Date();
         await deps.quoteRepo.recordTerminalStatus(event.objectId, status, at);
       }
-    } else if (event.subscriptionType === 'deal.propertyChange' && payload.propertyName === 'dealstage') {
+    } else if (
+      event.subscriptionType === 'deal.propertyChange' &&
+      payload.propertyName === 'dealstage'
+    ) {
       const stage = String(payload.propertyValue ?? '').toLowerCase();
       let outcome: 'WON' | 'LOST' | null = null;
       if (WON_STAGES.has(stage)) outcome = 'WON';
@@ -1510,6 +1655,7 @@ git commit -m "feat(hubspot): idempotent webhook event processor for terminal st
 ## Task 10: Quote webhook route
 
 **Files:**
+
 - Create: `app/api/hubspot/webhooks/quote/route.ts`
 - Create: `app/api/hubspot/webhooks/quote/route.test.ts`
 
@@ -1601,7 +1747,8 @@ import { prisma } from '@/lib/db/client';
 
 export async function POST(req: Request): Promise<NextResponse> {
   const secret = process.env.HUBSPOT_WEBHOOK_SECRET;
-  if (!secret) return NextResponse.json({ error: 'webhook secret not configured' }, { status: 500 });
+  if (!secret)
+    return NextResponse.json({ error: 'webhook secret not configured' }, { status: 500 });
 
   const signature = req.headers.get('x-hubspot-signature-v3') ?? '';
   const timestamp = req.headers.get('x-hubspot-request-timestamp') ?? '';
@@ -1609,8 +1756,9 @@ export async function POST(req: Request): Promise<NextResponse> {
 
   // The URL HubSpot signed must match this endpoint's public URL. The Railway URL
   // is authoritative (we may see req.url as a localhost/rewrite behind the load balancer).
-  const publicUrl = process.env.HUBSPOT_WEBHOOK_URL_QUOTE
-    ?? 'https://ninjapricer-production.up.railway.app/api/hubspot/webhooks/quote';
+  const publicUrl =
+    process.env.HUBSPOT_WEBHOOK_URL_QUOTE ??
+    'https://ninjapricer-production.up.railway.app/api/hubspot/webhooks/quote';
 
   const ok = verifyHubSpotSignatureV3({
     method: 'POST',
@@ -1669,6 +1817,7 @@ git commit -m "feat(hubspot): quote webhook route (signature + echo filter + per
 ## Task 11: Deal webhook route
 
 **Files:**
+
 - Create: `app/api/hubspot/webhooks/deal/route.ts`
 - Create: `app/api/hubspot/webhooks/deal/route.test.ts`
 
@@ -1677,6 +1826,7 @@ Implement exactly like Task 10 but with `objectType: 'deal'` and `HUBSPOT_WEBHOO
 - [ ] **Step 11.1: Copy-adapt from Task 10**
 
 Create `app/api/hubspot/webhooks/deal/route.ts` mirroring `/quote/route.ts` with these changes:
+
 - Default webhook URL: `https://ninjapricer-production.up.railway.app/api/hubspot/webhooks/deal`
 - `objectType: 'deal'`
 - `subscriptionType` fallback to `'deal.propertyChange'`
@@ -1698,6 +1848,7 @@ git commit -m "feat(hubspot): deal webhook route for terminal-state outcomes"
 ## Task 12: MCP tool — `link_scenario_to_hubspot_deal`
 
 **Files:**
+
 - Create: `lib/mcp/tools/hubspotQuote.ts` (grows across Tasks 12–16)
 - Create: `lib/mcp/tools/hubspotQuote.test.ts`
 
@@ -1730,9 +1881,14 @@ import type { ToolDefinition } from '@/lib/mcp/server';
 import { prisma } from '@/lib/db/client';
 import { hubspotFetch } from '@/lib/hubspot/client';
 
-const linkInput = z.object({ scenarioId: z.string().min(1), hubspotDealId: z.string().min(1) }).strict();
+const linkInput = z
+  .object({ scenarioId: z.string().min(1), hubspotDealId: z.string().min(1) })
+  .strict();
 
-export const linkScenarioToHubspotDealTool: ToolDefinition<z.infer<typeof linkInput>, { ok: true }> = {
+export const linkScenarioToHubspotDealTool: ToolDefinition<
+  z.infer<typeof linkInput>,
+  { ok: true }
+> = {
   name: 'link_scenario_to_hubspot_deal',
   description:
     'Link a pricer scenario to an existing HubSpot Deal. Validates the deal exists before writing. Returns { ok: true }.',
@@ -1762,6 +1918,7 @@ export const linkScenarioToHubspotDealTool: ToolDefinition<z.infer<typeof linkIn
 ```bash
 npm test -- lib/mcp/tools/hubspotQuote.test.ts
 ```
+
 Expected: both tests PASS.
 
 - [ ] **Step 12.4: Commit**
@@ -1776,6 +1933,7 @@ git commit -m "feat(mcp): link_scenario_to_hubspot_deal tool"
 ## Task 13: MCP tool — `create_hubspot_deal_for_scenario`
 
 **Files:**
+
 - Modify: `lib/mcp/tools/hubspotQuote.ts`
 - Modify: `lib/mcp/tools/hubspotQuote.test.ts`
 
@@ -1784,6 +1942,7 @@ Basic dedupe against HubSpot: search by contact email AND company domain. If mat
 - [ ] **Step 13.1: Test + implement**
 
 Test covers:
+
 - input schema accepts required fields (`scenarioId`, `dealName`, `contactEmail` OR `companyDomain`)
 - when HubSpot returns matches and `forceCreate` is false, tool returns matches without creating
 - when no matches (or forceCreate true), tool creates Deal + Contact + Company + links to scenario
@@ -1804,10 +1963,12 @@ git commit -m "feat(mcp): create_hubspot_deal_for_scenario with basic dedupe"
 ## Task 14: MCP tool — `publish_scenario_to_hubspot`
 
 **Files:**
+
 - Modify: `lib/mcp/tools/hubspotQuote.ts`
 - Modify: `lib/mcp/tools/hubspotQuote.test.ts`
 
 Thin wrapper that:
+
 1. Loads the scenario from Prisma with its line items / bundles
 2. Builds the `PublishInput` shape (queries engine for line data; calls `scenarioToHubSpotLineItems`)
 3. Constructs `PublishPersistence` from `HubSpotQuoteRepository`
@@ -1827,6 +1988,7 @@ Commit: `feat(mcp): publish_scenario_to_hubspot tool`
 ## Task 15: MCP tools — `check_publish_status` + `supersede_hubspot_quote`
 
 **Files:**
+
 - Modify: `lib/mcp/tools/hubspotQuote.ts`
 
 - **`check_publish_status`**: input `{ scenarioId }`, returns `{ publishState, hubspotQuoteId?, shareableUrl?, lastStatus?, dealOutcome?, revision }` from the latest `HubSpotQuote` row for that scenario.
@@ -1844,6 +2006,7 @@ git commit -m "feat(mcp): check_publish_status + supersede_hubspot_quote tools"
 ## Task 16: Register Phase 2b MCP tools in route
 
 **Files:**
+
 - Modify: `app/api/mcp/route.ts`
 
 - [ ] **Step 16.1: Add import + spread**
@@ -1875,6 +2038,7 @@ Add `...hubspotQuoteTools` to the `tools` array passed to `createMcpServer`.
 ```bash
 npm run build
 ```
+
 Expected: clean compile.
 
 - [ ] **Step 16.3: Commit**
@@ -1889,6 +2053,7 @@ git commit -m "feat(mcp): register Phase 2b HubSpot quote tools"
 ## Task 17: Admin UI — `/admin/hubspot/published-quotes`
 
 **Files:**
+
 - Create: `app/admin/hubspot/published-quotes/page.tsx`
 
 - [ ] **Step 17.1: Implement page**
@@ -1907,6 +2072,7 @@ git commit -m "feat(hubspot): admin published-quotes log page"
 ## Task 18: Admin UI — `/admin/hubspot/webhook-events`
 
 **Files:**
+
 - Create: `app/admin/hubspot/webhook-events/page.tsx`
 - Create: `app/admin/hubspot/webhook-events/RetryButton.tsx`
 - Modify: `app/admin/hubspot/actions.ts` (add `retryWebhookEventAction`)
@@ -1941,7 +2107,11 @@ export function RetryButton({ eventId }: { eventId: string }) {
       type="button"
       disabled={pending}
       className="text-xs px-2 py-1 border rounded disabled:opacity-50"
-      onClick={() => startTransition(async () => { await retryWebhookEventAction({ eventId }); })}
+      onClick={() =>
+        startTransition(async () => {
+          await retryWebhookEventAction({ eventId });
+        })
+      }
     >
       {pending ? '…' : 'Retry'}
     </button>
@@ -1965,6 +2135,7 @@ git commit -m "feat(hubspot): admin webhook-events log + retry"
 ## Task 19: Scenario page — HubSpot section
 
 **Files:**
+
 - Modify: `app/scenarios/[id]/page.tsx` (or equivalent scenario-detail page)
 - Modify: `app/scenarios/[id]/actions.ts` (add link + publish server actions)
 
@@ -1995,6 +2166,7 @@ Reuse the service-layer logic — don't duplicate the publish orchestration.
 - [ ] **Step 19.3: Add HubSpot section component**
 
 Client component inside the scenario page. Four states:
+
 - **No hubspotDealId**: show input + "Link Deal" button (server action `linkScenarioDealAction`). Also a "Create new Deal" link to the collision-free flow (Phase 4 polish — for now, just the link action).
 - **Linked, no quote yet**: show "Publish to HubSpot" button + rail warning summary.
 - **Published**: show quote link, revision, status, "Revise" button (calls `supersede_hubspot_quote` via `publishScenarioAction` with incremented revision).
@@ -2012,6 +2184,7 @@ git commit -m "feat(hubspot): scenario page HubSpot section (link deal + publish
 ## Task 20: HubSpot Developer Project — add webhook subscriptions + deployment runbook
 
 **Files:**
+
 - Modify: `hubspot-project/src/app/app-hsmeta.json`
 - Create: `docs/superpowers/runbooks/hubspot-phase-2b.md`
 
@@ -2048,6 +2221,7 @@ Create `docs/superpowers/runbooks/hubspot-phase-2b.md`:
 # Phase 2b — Deployment + Smoke Test
 
 ## Prerequisites
+
 - Phase 2a deployed (Product/Bundle have description + sku).
 - Classic/Developer-Project private app token configured as `HUBSPOT_ACCESS_TOKEN` in Railway.
 

@@ -48,10 +48,7 @@ interface CreateDealResult {
   companyId?: string | undefined;
 }
 
-export const createHubspotDealForScenarioTool: ToolDefinition<
-  CreateDealInput,
-  CreateDealResult
-> = {
+export const createHubspotDealForScenarioTool: ToolDefinition<CreateDealInput, CreateDealResult> = {
   name: 'create_hubspot_deal_for_scenario',
   description:
     'Create a new HubSpot Deal for a scenario. Searches by contact email and company domain first — if matches are found and forceCreate is false, returns matches without creating. Otherwise creates Deal + Contact + Company and links to the scenario.',
@@ -66,7 +63,10 @@ export const createHubspotDealForScenarioTool: ToolDefinition<
 
     // Search by contact email
     if (input.contactEmail) {
-      const contactSearch = await hubspotFetch<{ results: Array<{ id: string; properties: Record<string, string | null> }>; total: number }>({
+      const contactSearch = await hubspotFetch<{
+        results: Array<{ id: string; properties: Record<string, string | null> }>;
+        total: number;
+      }>({
         method: 'POST',
         path: '/crm/v3/objects/contacts/search',
         body: {
@@ -86,7 +86,10 @@ export const createHubspotDealForScenarioTool: ToolDefinition<
 
     // Search by company domain
     if (input.companyDomain) {
-      const companySearch = await hubspotFetch<{ results: Array<{ id: string; properties: Record<string, string | null> }>; total: number }>({
+      const companySearch = await hubspotFetch<{
+        results: Array<{ id: string; properties: Record<string, string | null> }>;
+        total: number;
+      }>({
         method: 'POST',
         path: '/crm/v3/objects/companies/search',
         body: {
@@ -237,7 +240,12 @@ export const publishScenarioToHubspotTool: ToolDefinition<
     try {
       ({ scenarioRow, computeResult } = await computeScenario(input.scenarioId));
     } catch (err: unknown) {
-      if (err && typeof err === 'object' && 'name' in err && (err as { name: string }).name === 'NotFoundError') {
+      if (
+        err &&
+        typeof err === 'object' &&
+        'name' in err &&
+        (err as { name: string }).name === 'NotFoundError'
+      ) {
         return { error: 'SCENARIO_NOT_FOUND', message: `Scenario ${input.scenarioId} not found.` };
       }
       throw err;
@@ -254,26 +262,25 @@ export const publishScenarioToHubspotTool: ToolDefinition<
 
     // Build a map of productId → engine TabResult for SaaS tabs
     const saasTabResultByProductId = new Map(
-      computeResult.perTab
-        .filter((t) => t.kind === 'SAAS_USAGE')
-        .map((t) => [t.productId, t]),
+      computeResult.perTab.filter((t) => t.kind === 'SAAS_USAGE').map((t) => [t.productId, t]),
     );
 
     // Build SaaS lines using engine-computed prices
     // Load product details needed for HubSpot payload (name, sku, description)
     const saasProductIds = scenario.saasConfigs.map((c) => c.productId);
-    const saasProductDetails = saasProductIds.length > 0
-      ? await prisma.product.findMany({
-          where: { id: { in: saasProductIds } },
-          select: {
-            id: true,
-            name: true,
-            sku: true,
-            description: true,
-            listPrice: { select: { usdPerSeatPerMonth: true } },
-          },
-        })
-      : [];
+    const saasProductDetails =
+      saasProductIds.length > 0
+        ? await prisma.product.findMany({
+            where: { id: { in: saasProductIds } },
+            select: {
+              id: true,
+              name: true,
+              sku: true,
+              description: true,
+              listPrice: { select: { usdPerSeatPerMonth: true } },
+            },
+          })
+        : [];
     const saasProductMap = new Map(saasProductDetails.map((p) => [p.id, p]));
 
     const saasLines = scenario.saasConfigs.map((cfg) => {
@@ -284,15 +291,18 @@ export const publishScenarioToHubspotTool: ToolDefinition<
       const productDescription = productDetail?.description ?? '';
 
       // List price per seat from the product snapshot
-      const listPriceMonthly = productDetail?.listPrice?.usdPerSeatPerMonth != null
-        ? new Decimal(productDetail.listPrice.usdPerSeatPerMonth.toString())
-        : new Decimal(0);
+      const listPriceMonthly =
+        productDetail?.listPrice?.usdPerSeatPerMonth != null
+          ? new Decimal(productDetail.listPrice.usdPerSeatPerMonth.toString())
+          : new Decimal(0);
 
       // Effective unit price = engine monthlyRevenueCents / 100 / seatCount
       const seatCount = cfg.seatCount;
       let effectiveUnitPriceMonthly = new Decimal(0);
       if (tabResult && seatCount > 0) {
-        effectiveUnitPriceMonthly = new Decimal(tabResult.monthlyRevenueCents).div(100).div(seatCount);
+        effectiveUnitPriceMonthly = new Decimal(tabResult.monthlyRevenueCents)
+          .div(100)
+          .div(seatCount);
       } else if (tabResult && seatCount === 0) {
         effectiveUnitPriceMonthly = listPriceMonthly;
       }
@@ -472,8 +482,16 @@ export const supersedeHubspotQuoteTool: ToolDefinition<
     try {
       ({ scenarioRow, computeResult } = await computeScenario(input.scenarioId));
     } catch (err: unknown) {
-      if (err && typeof err === 'object' && 'name' in err && (err as { name: string }).name === 'NotFoundError') {
-        return { error: 'SCENARIO_NOT_FOUND' as const, message: `Scenario ${input.scenarioId} not found.` };
+      if (
+        err &&
+        typeof err === 'object' &&
+        'name' in err &&
+        (err as { name: string }).name === 'NotFoundError'
+      ) {
+        return {
+          error: 'SCENARIO_NOT_FOUND' as const,
+          message: `Scenario ${input.scenarioId} not found.`,
+        };
       }
       throw err;
     }
@@ -489,25 +507,24 @@ export const supersedeHubspotQuoteTool: ToolDefinition<
 
     // Build a map of productId → engine TabResult for SaaS tabs
     const saasTabResultByProductId = new Map(
-      computeResult.perTab
-        .filter((t) => t.kind === 'SAAS_USAGE')
-        .map((t) => [t.productId, t]),
+      computeResult.perTab.filter((t) => t.kind === 'SAAS_USAGE').map((t) => [t.productId, t]),
     );
 
     // Load product details needed for HubSpot payload (name, sku, description)
     const saasProductIds = scenario.saasConfigs.map((c) => c.productId);
-    const saasProductDetails = saasProductIds.length > 0
-      ? await prisma.product.findMany({
-          where: { id: { in: saasProductIds } },
-          select: {
-            id: true,
-            name: true,
-            sku: true,
-            description: true,
-            listPrice: { select: { usdPerSeatPerMonth: true } },
-          },
-        })
-      : [];
+    const saasProductDetails =
+      saasProductIds.length > 0
+        ? await prisma.product.findMany({
+            where: { id: { in: saasProductIds } },
+            select: {
+              id: true,
+              name: true,
+              sku: true,
+              description: true,
+              listPrice: { select: { usdPerSeatPerMonth: true } },
+            },
+          })
+        : [];
     const saasProductMap = new Map(saasProductDetails.map((p) => [p.id, p]));
 
     // Build SaaS lines using engine-computed prices
@@ -518,14 +535,17 @@ export const supersedeHubspotQuoteTool: ToolDefinition<
       const productSku = productDetail?.sku ?? '';
       const productDescription = productDetail?.description ?? '';
 
-      const listPriceMonthly = productDetail?.listPrice?.usdPerSeatPerMonth != null
-        ? new Decimal(productDetail.listPrice.usdPerSeatPerMonth.toString())
-        : new Decimal(0);
+      const listPriceMonthly =
+        productDetail?.listPrice?.usdPerSeatPerMonth != null
+          ? new Decimal(productDetail.listPrice.usdPerSeatPerMonth.toString())
+          : new Decimal(0);
 
       const seatCount = cfg.seatCount;
       let effectiveUnitPriceMonthly = new Decimal(0);
       if (tabResult && seatCount > 0) {
-        effectiveUnitPriceMonthly = new Decimal(tabResult.monthlyRevenueCents).div(100).div(seatCount);
+        effectiveUnitPriceMonthly = new Decimal(tabResult.monthlyRevenueCents)
+          .div(100)
+          .div(seatCount);
       } else if (tabResult && seatCount === 0) {
         effectiveUnitPriceMonthly = listPriceMonthly;
       }
@@ -595,7 +615,8 @@ export const supersedeHubspotQuoteTool: ToolDefinition<
         },
         lineItems,
         quoteConfig: {
-          name: input.quoteNameOverride ?? `${scenario.customerName} — ${scenario.name} v${revision}`,
+          name:
+            input.quoteNameOverride ?? `${scenario.customerName} — ${scenario.name} v${revision}`,
           expirationDays: input.expirationDays,
         },
         persistence,
@@ -620,7 +641,9 @@ export const supersedeHubspotQuoteTool: ToolDefinition<
 // link_scenario_to_hubspot_deal
 // ---------------------------------------------------------------------------
 
-const linkInput = z.object({ scenarioId: z.string().min(1), hubspotDealId: z.string().min(1) }).strict();
+const linkInput = z
+  .object({ scenarioId: z.string().min(1), hubspotDealId: z.string().min(1) })
+  .strict();
 
 export const linkScenarioToHubspotDealTool: ToolDefinition<
   z.infer<typeof linkInput>,

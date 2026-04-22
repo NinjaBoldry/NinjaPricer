@@ -31,10 +31,18 @@ describe('processEvent', () => {
       subscriptionType: 'quote.propertyChange',
       objectType: 'quote',
       objectId: 'hs-q-1',
-      payload: { propertyName: 'hs_status', propertyValue: 'ACCEPTED', occurredAt: '2026-04-23T00:00:00Z' },
+      payload: {
+        propertyName: 'hs_status',
+        propertyValue: 'ACCEPTED',
+        occurredAt: '2026-04-23T00:00:00Z',
+      },
     });
     await processEvent('e1', { quoteRepo: mockQuoteRepo, eventRepo: mockEventRepo } as any);
-    expect(mockQuoteRepo.recordTerminalStatus).toHaveBeenCalledWith('hs-q-1', 'ACCEPTED', expect.any(Date));
+    expect(mockQuoteRepo.recordTerminalStatus).toHaveBeenCalledWith(
+      'hs-q-1',
+      'ACCEPTED',
+      expect.any(Date),
+    );
     expect(mockEventRepo.markProcessed).toHaveBeenCalledWith('e1');
   });
 
@@ -59,7 +67,12 @@ describe('processEvent', () => {
       subscriptionType: 'deal.propertyChange',
       objectType: 'deal',
       objectId: 'hs-d-1',
-      payload: { propertyName: 'dealstage', propertyValue: 'closedwon', occurredAt: '2026-04-23T00:00:00Z', pricerScenarioId: 's1' },
+      payload: {
+        propertyName: 'dealstage',
+        propertyValue: 'closedwon',
+        occurredAt: '2026-04-23T00:00:00Z',
+        pricerScenarioId: 's1',
+      },
     });
     await processEvent('e2', { quoteRepo: mockQuoteRepo, eventRepo: mockEventRepo } as any);
     expect(mockQuoteRepo.recordDealOutcome).toHaveBeenCalledWith('s1', 'WON', expect.any(Date));

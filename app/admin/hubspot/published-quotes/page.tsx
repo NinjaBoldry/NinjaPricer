@@ -17,9 +17,7 @@ export default async function PublishedQuotesPage() {
       <h1 className="text-2xl font-semibold">Published HubSpot Quotes</h1>
       <p className="text-sm text-muted-foreground">Most recent 200 entries, newest first.</p>
 
-      {quotes.length === 0 && (
-        <p className="text-muted-foreground">No published quotes yet.</p>
-      )}
+      {quotes.length === 0 && <p className="text-muted-foreground">No published quotes yet.</p>}
 
       <div className="overflow-x-auto">
         <table className="w-full text-sm border-collapse">

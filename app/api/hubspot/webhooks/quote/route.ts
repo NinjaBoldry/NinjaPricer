@@ -7,7 +7,8 @@ import { prisma } from '@/lib/db/client';
 
 export async function POST(req: Request): Promise<NextResponse> {
   const secret = process.env.HUBSPOT_WEBHOOK_SECRET;
-  if (!secret) return NextResponse.json({ error: 'webhook secret not configured' }, { status: 500 });
+  if (!secret)
+    return NextResponse.json({ error: 'webhook secret not configured' }, { status: 500 });
 
   const signature = req.headers.get('x-hubspot-signature-v3') ?? '';
   const timestamp = req.headers.get('x-hubspot-request-timestamp') ?? '';

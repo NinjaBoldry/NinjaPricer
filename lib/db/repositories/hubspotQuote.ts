@@ -22,7 +22,10 @@ export class HubSpotQuoteRepository {
     return this.db.hubSpotQuote.findUnique({ where: { hubspotQuoteId } });
   }
 
-  async findByScenarioAndRevision(scenarioId: string, revision: number): Promise<HubSpotQuote | null> {
+  async findByScenarioAndRevision(
+    scenarioId: string,
+    revision: number,
+  ): Promise<HubSpotQuote | null> {
     return this.db.hubSpotQuote.findUnique({
       where: { scenarioId_revision: { scenarioId, revision } },
     });

@@ -1,6 +1,7 @@
 # Phase 2b — Deployment + Smoke Test
 
 ## Prerequisites
+
 - Phase 2a deployed (Product/Bundle have description + sku).
 - Classic/Developer-Project private app token configured as `HUBSPOT_ACCESS_TOKEN` in Railway.
 

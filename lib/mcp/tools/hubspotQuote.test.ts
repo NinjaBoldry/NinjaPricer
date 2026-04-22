@@ -34,10 +34,14 @@ vi.mock('@/lib/db/client', () => ({
 vi.mock('@/lib/hubspot/quote/publish', () => ({
   publishScenarioToHubSpot: vi.fn(),
   MissingDealLinkError: class MissingDealLinkError extends Error {
-    constructor() { super('Missing deal link'); }
+    constructor() {
+      super('Missing deal link');
+    }
   },
   UnresolvedHardRailOverrideError: class UnresolvedHardRailOverrideError extends Error {
-    constructor() { super('Unresolved hard-rail override'); }
+    constructor() {
+      super('Unresolved hard-rail override');
+    }
   },
 }));
 
@@ -92,7 +96,10 @@ describe('create_hubspot_deal_for_scenario', () => {
   it('validates input schema - requires scenarioId and dealName', () => {
     expect(() => createHubspotDealForScenarioTool.inputSchema.parse({})).toThrow();
     expect(() =>
-      createHubspotDealForScenarioTool.inputSchema.parse({ scenarioId: 's1', dealName: 'Acme Deal' }),
+      createHubspotDealForScenarioTool.inputSchema.parse({
+        scenarioId: 's1',
+        dealName: 'Acme Deal',
+      }),
     ).not.toThrow();
   });
 
@@ -116,7 +123,10 @@ describe('create_hubspot_deal_for_scenario', () => {
     // Search by company domain returns 0 matches
     mockFetch.mockResolvedValueOnce({ results: [], total: 0 });
 
-    const ctx = { user: { id: 'u1', role: 'SALES', email: 'u@x.com', name: null }, token: { id: 't', ownerUserId: 'u1', label: 'tok' } };
+    const ctx = {
+      user: { id: 'u1', role: 'SALES', email: 'u@x.com', name: null },
+      token: { id: 't', ownerUserId: 'u1', label: 'tok' },
+    };
     const result = await createHubspotDealForScenarioTool.handler(ctx as never, {
       scenarioId: 's1',
       dealName: 'Acme Deal',
@@ -127,8 +137,10 @@ describe('create_hubspot_deal_for_scenario', () => {
     expect((result as { created: boolean }).created).toBe(false);
     expect((result as { matches: unknown[] }).matches.length).toBeGreaterThan(0);
     // Should NOT have called deal create
-    const createCalls = mockFetch.mock.calls.filter(([opts]) =>
-      (opts as { method: string }).method === 'POST' && (opts as { path: string }).path.includes('deals'),
+    const createCalls = mockFetch.mock.calls.filter(
+      ([opts]) =>
+        (opts as { method: string }).method === 'POST' &&
+        (opts as { path: string }).path.includes('deals'),
     );
     expect(createCalls.length).toBe(0);
   });
@@ -158,7 +170,9 @@ describe('publish_scenario_to_hubspot', () => {
 
   it('validates input schema - requires scenarioId', () => {
     expect(() => publishScenarioToHubspotTool.inputSchema.parse({})).toThrow();
-    expect(() => publishScenarioToHubspotTool.inputSchema.parse({ scenarioId: 's1' })).not.toThrow();
+    expect(() =>
+      publishScenarioToHubspotTool.inputSchema.parse({ scenarioId: 's1' }),
+    ).not.toThrow();
   });
 
   it('is a write tool and not requiresAdmin', () => {
@@ -179,11 +193,20 @@ describe('publish_scenario_to_hubspot', () => {
       shareableUrl: 'https://app.hubspot.com/q/x',
     });
 
-    const ctx = { user: { id: 'u1', role: 'SALES', email: 'u@x.com', name: null }, token: { id: 't', ownerUserId: 'u1', label: 'tok' } };
-    const result = await publishScenarioToHubspotTool.handler(ctx as never, { scenarioId: 's1', expirationDays: 30 });
+    const ctx = {
+      user: { id: 'u1', role: 'SALES', email: 'u@x.com', name: null },
+      token: { id: 't', ownerUserId: 'u1', label: 'tok' },
+    };
+    const result = await publishScenarioToHubspotTool.handler(ctx as never, {
+      scenarioId: 's1',
+      expirationDays: 30,
+    });
 
     expect(mockPublish).toHaveBeenCalledOnce();
-    expect(result).toMatchObject({ hubspotQuoteId: 'hs-q-1', shareableUrl: 'https://app.hubspot.com/q/x' });
+    expect(result).toMatchObject({
+      hubspotQuoteId: 'hs-q-1',
+      shareableUrl: 'https://app.hubspot.com/q/x',
+    });
     expect((result as { correlationId: string }).correlationId).toBeDefined();
   });
 
@@ -197,8 +220,14 @@ describe('publish_scenario_to_hubspot', () => {
     const { MissingDealLinkError } = await import('@/lib/hubspot/quote/publish');
     mockPublish.mockRejectedValue(new MissingDealLinkError());
 
-    const ctx = { user: { id: 'u1', role: 'SALES', email: 'u@x.com', name: null }, token: { id: 't', ownerUserId: 'u1', label: 'tok' } };
-    const result = await publishScenarioToHubspotTool.handler(ctx as never, { scenarioId: 's1', expirationDays: 30 });
+    const ctx = {
+      user: { id: 'u1', role: 'SALES', email: 'u@x.com', name: null },
+      token: { id: 't', ownerUserId: 'u1', label: 'tok' },
+    };
+    const result = await publishScenarioToHubspotTool.handler(ctx as never, {
+      scenarioId: 's1',
+      expirationDays: 30,
+    });
 
     expect((result as { error: string }).error).toBe('MISSING_DEAL_LINK');
   });
@@ -213,8 +242,14 @@ describe('publish_scenario_to_hubspot', () => {
     const { UnresolvedHardRailOverrideError } = await import('@/lib/hubspot/quote/publish');
     mockPublish.mockRejectedValue(new UnresolvedHardRailOverrideError());
 
-    const ctx = { user: { id: 'u1', role: 'SALES', email: 'u@x.com', name: null }, token: { id: 't', ownerUserId: 'u1', label: 'tok' } };
-    const result = await publishScenarioToHubspotTool.handler(ctx as never, { scenarioId: 's1', expirationDays: 30 });
+    const ctx = {
+      user: { id: 'u1', role: 'SALES', email: 'u@x.com', name: null },
+      token: { id: 't', ownerUserId: 'u1', label: 'tok' },
+    };
+    const result = await publishScenarioToHubspotTool.handler(ctx as never, {
+      scenarioId: 's1',
+      expirationDays: 30,
+    });
 
     expect((result as { error: string }).error).toBe('UNRESOLVED_HARD_RAIL_OVERRIDE');
   });
@@ -290,8 +325,14 @@ describe('publish_scenario_to_hubspot', () => {
       return { hubspotQuoteId: 'hs-q-1', shareableUrl: null };
     });
 
-    const ctx = { user: { id: 'u1', role: 'SALES', email: 'u@x.com', name: null }, token: { id: 't', ownerUserId: 'u1', label: 'tok' } };
-    await publishScenarioToHubspotTool.handler(ctx as never, { scenarioId: 's1', expirationDays: 30 });
+    const ctx = {
+      user: { id: 'u1', role: 'SALES', email: 'u@x.com', name: null },
+      token: { id: 't', ownerUserId: 'u1', label: 'tok' },
+    };
+    await publishScenarioToHubspotTool.handler(ctx as never, {
+      scenarioId: 's1',
+      expirationDays: 30,
+    });
 
     // The first line item should be the SaaS line with negotiated discount
     // The translator uses listPriceMonthly as `price` when discountPct is non-zero
@@ -332,7 +373,10 @@ describe('check_publish_status', () => {
   it('returns null fields when no HubSpotQuote row exists for scenario', async () => {
     mockFindFirst.mockResolvedValue(null);
 
-    const ctx = { user: { id: 'u1', role: 'SALES', email: 'u@x.com', name: null }, token: { id: 't', ownerUserId: 'u1', label: 'tok' } };
+    const ctx = {
+      user: { id: 'u1', role: 'SALES', email: 'u@x.com', name: null },
+      token: { id: 't', ownerUserId: 'u1', label: 'tok' },
+    };
     const result = await checkPublishStatusTool.handler(ctx as never, { scenarioId: 's1' });
 
     expect(result).toMatchObject({ publishState: null, hubspotQuoteId: null, revision: null });
@@ -349,7 +393,10 @@ describe('check_publish_status', () => {
       dealOutcome: null,
     } as never);
 
-    const ctx = { user: { id: 'u1', role: 'SALES', email: 'u@x.com', name: null }, token: { id: 't', ownerUserId: 'u1', label: 'tok' } };
+    const ctx = {
+      user: { id: 'u1', role: 'SALES', email: 'u@x.com', name: null },
+      token: { id: 't', ownerUserId: 'u1', label: 'tok' },
+    };
     const result = await checkPublishStatusTool.handler(ctx as never, { scenarioId: 's1' });
 
     expect(result).toMatchObject({
@@ -410,8 +457,14 @@ describe('supersede_hubspot_quote', () => {
       shareableUrl: 'https://app.hubspot.com/q/y',
     });
 
-    const ctx = { user: { id: 'u1', role: 'SALES', email: 'u@x.com', name: null }, token: { id: 't', ownerUserId: 'u1', label: 'tok' } };
-    const result = await supersedeHubspotQuoteTool.handler(ctx as never, { scenarioId: 's1', expirationDays: 30 });
+    const ctx = {
+      user: { id: 'u1', role: 'SALES', email: 'u@x.com', name: null },
+      token: { id: 't', ownerUserId: 'u1', label: 'tok' },
+    };
+    const result = await supersedeHubspotQuoteTool.handler(ctx as never, {
+      scenarioId: 's1',
+      expirationDays: 30,
+    });
 
     expect(mockPublish).toHaveBeenCalledOnce();
     const publishCall = mockPublish.mock.calls[0]![0];

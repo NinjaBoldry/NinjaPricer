@@ -138,8 +138,8 @@ function PublishButton({
           Publish to HubSpot
         </Button>
         <p className="text-sm text-amber-700">
-          Approval flow required — configure HubSpot Workflow (Phase 2c) before publishing
-          scenarios with rail overrides.
+          Approval flow required — configure HubSpot Workflow (Phase 2c) before publishing scenarios
+          with rail overrides.
         </p>
       </div>
     );

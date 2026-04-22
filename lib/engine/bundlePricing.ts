@@ -30,7 +30,11 @@ export interface BundleCustomLaborConfig {
 export interface BundleItemInput {
   kind: 'SAAS' | 'PACKAGED_LABOR' | 'CUSTOM_LABOR';
   productId: string;
-  config: BundleSaaSConfig | BundlePackagedLaborConfig | BundleCustomLaborConfig | Record<string, unknown>;
+  config:
+    | BundleSaaSConfig
+    | BundlePackagedLaborConfig
+    | BundleCustomLaborConfig
+    | Record<string, unknown>;
 }
 
 export interface BundlePricingInput {

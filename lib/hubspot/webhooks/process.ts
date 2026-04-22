@@ -24,7 +24,10 @@ export async function processEvent(eventId: string, deps: ProcessDeps): Promise<
         const at = payload.occurredAt ? new Date(String(payload.occurredAt)) : new Date();
         await deps.quoteRepo.recordTerminalStatus(event.objectId, status, at);
       }
-    } else if (event.subscriptionType === 'deal.propertyChange' && payload.propertyName === 'dealstage') {
+    } else if (
+      event.subscriptionType === 'deal.propertyChange' &&
+      payload.propertyName === 'dealstage'
+    ) {
       const stage = String(payload.propertyValue ?? '').toLowerCase();
       let outcome: 'WON' | 'LOST' | null = null;
       if (WON_STAGES.has(stage)) outcome = 'WON';

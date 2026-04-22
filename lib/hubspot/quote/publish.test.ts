@@ -1,11 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as client from '../client';
-import { publishScenarioToHubSpot, UnresolvedHardRailOverrideError, MissingDealLinkError } from './publish';
+import {
+  publishScenarioToHubSpot,
+  UnresolvedHardRailOverrideError,
+  MissingDealLinkError,
+} from './publish';
 
 describe('publishScenarioToHubSpot', () => {
   const fetchSpy = vi.spyOn(client, 'hubspotFetch');
 
-  beforeEach(() => { fetchSpy.mockReset(); });
+  beforeEach(() => {
+    fetchSpy.mockReset();
+  });
 
   it('rejects when scenario has no hubspotDealId', async () => {
     await expect(
@@ -49,7 +55,10 @@ describe('publishScenarioToHubSpot', () => {
       .mockResolvedValueOnce({ id: 'hs-q-1' })
       .mockResolvedValueOnce({ id: 'hs-li-1' })
       .mockResolvedValueOnce({})
-      .mockResolvedValueOnce({ id: 'hs-q-1', properties: { hs_quote_link: 'https://app.hubspot.com/q/x' } });
+      .mockResolvedValueOnce({
+        id: 'hs-q-1',
+        properties: { hs_quote_link: 'https://app.hubspot.com/q/x' },
+      });
 
     const persistence = {
       createHubSpotQuote: vi.fn().mockResolvedValue({ id: 'row-1' }),
@@ -66,7 +75,15 @@ describe('publishScenarioToHubSpot', () => {
         hasUnresolvedHardRailOverrides: false,
       },
       lineItems: [
-        { properties: { name: 'Ninja Notes', price: '400.00', quantity: '10', pricer_reason: 'other', pricer_scenario_id: 's1' } },
+        {
+          properties: {
+            name: 'Ninja Notes',
+            price: '400.00',
+            quantity: '10',
+            pricer_reason: 'other',
+            pricer_scenario_id: 's1',
+          },
+        },
       ],
       quoteConfig: { name: 'Acme Inc Q1', expirationDays: 30 },
       persistence,
@@ -99,8 +116,23 @@ describe('publishScenarioToHubSpot', () => {
     };
 
     await publishScenarioToHubSpot({
-      scenario: { id: 's1', hubspotDealId: 'd1', revision: 2, hasUnresolvedHardRailOverrides: false },
-      lineItems: [{ properties: { name: 'Ninja Notes', price: '400.00', quantity: '10', pricer_reason: 'other', pricer_scenario_id: 's1' } }],
+      scenario: {
+        id: 's1',
+        hubspotDealId: 'd1',
+        revision: 2,
+        hasUnresolvedHardRailOverrides: false,
+      },
+      lineItems: [
+        {
+          properties: {
+            name: 'Ninja Notes',
+            price: '400.00',
+            quantity: '10',
+            pricer_reason: 'other',
+            pricer_scenario_id: 's1',
+          },
+        },
+      ],
       quoteConfig: { name: 'Acme Inc Q1 v2', expirationDays: 30 },
       persistence,
       now: () => new Date('2026-04-22T10:00:00Z'),
@@ -108,7 +140,9 @@ describe('publishScenarioToHubSpot', () => {
     } as any);
 
     expect(persistence.markSuperseded).toHaveBeenCalledWith('row-1', 'row-2');
-    const patchCalls = fetchSpy.mock.calls.filter(([a]) => a.method === 'PATCH' && a.path.includes('hs-q-1'));
+    const patchCalls = fetchSpy.mock.calls.filter(
+      ([a]) => a.method === 'PATCH' && a.path.includes('hs-q-1'),
+    );
     expect(patchCalls.length).toBe(1); // old HubSpot quote gets pricer_supersedes stamped
   });
 });

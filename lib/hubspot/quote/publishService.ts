@@ -17,7 +17,11 @@ import { HubSpotQuoteRepository } from '@/lib/db/repositories/hubspotQuote';
 
 export type PublishServiceResult =
   | { ok: true; hubspotQuoteId: string; shareableUrl: string | null; correlationId: string }
-  | { ok: false; error: 'MISSING_DEAL_LINK' | 'UNRESOLVED_HARD_RAIL_OVERRIDE' | 'SCENARIO_NOT_FOUND'; message: string };
+  | {
+      ok: false;
+      error: 'MISSING_DEAL_LINK' | 'UNRESOLVED_HARD_RAIL_OVERRIDE' | 'SCENARIO_NOT_FOUND';
+      message: string;
+    };
 
 export interface PublishServiceOptions {
   scenarioId: string;
@@ -33,8 +37,15 @@ export interface PublishServiceOptions {
  * Build line items from the pricing engine, then call publishScenarioToHubSpot.
  * Shared by the MCP tools and the Next.js server actions.
  */
-export async function runPublishScenario(opts: PublishServiceOptions): Promise<PublishServiceResult> {
-  const { scenarioId, quoteNameOverride, expirationDays = 30, correlationPrefix = 'publish' } = opts;
+export async function runPublishScenario(
+  opts: PublishServiceOptions,
+): Promise<PublishServiceResult> {
+  const {
+    scenarioId,
+    quoteNameOverride,
+    expirationDays = 30,
+    correlationPrefix = 'publish',
+  } = opts;
   const correlationId = `${correlationPrefix}-${randomUUID()}`;
 
   let scenarioRow: Awaited<ReturnType<typeof computeScenario>>['scenarioRow'];
@@ -42,8 +53,17 @@ export async function runPublishScenario(opts: PublishServiceOptions): Promise<P
   try {
     ({ scenarioRow, computeResult } = await computeScenario(scenarioId));
   } catch (err: unknown) {
-    if (err && typeof err === 'object' && 'name' in err && (err as { name: string }).name === 'NotFoundError') {
-      return { ok: false, error: 'SCENARIO_NOT_FOUND', message: `Scenario ${scenarioId} not found.` };
+    if (
+      err &&
+      typeof err === 'object' &&
+      'name' in err &&
+      (err as { name: string }).name === 'NotFoundError'
+    ) {
+      return {
+        ok: false,
+        error: 'SCENARIO_NOT_FOUND',
+        message: `Scenario ${scenarioId} not found.`,
+      };
     }
     throw err;
   }
@@ -62,9 +82,7 @@ export async function runPublishScenario(opts: PublishServiceOptions): Promise<P
 
   // Build a map of productId → engine TabResult for SaaS tabs
   const saasTabResultByProductId = new Map(
-    computeResult.perTab
-      .filter((t) => t.kind === 'SAAS_USAGE')
-      .map((t) => [t.productId, t]),
+    computeResult.perTab.filter((t) => t.kind === 'SAAS_USAGE').map((t) => [t.productId, t]),
   );
 
   // Load product details needed for HubSpot payload (name, sku, description)
@@ -99,7 +117,9 @@ export async function runPublishScenario(opts: PublishServiceOptions): Promise<P
     const seatCount = cfg.seatCount;
     let effectiveUnitPriceMonthly = new Decimal(0);
     if (tabResult && seatCount > 0) {
-      effectiveUnitPriceMonthly = new Decimal(tabResult.monthlyRevenueCents).div(100).div(seatCount);
+      effectiveUnitPriceMonthly = new Decimal(tabResult.monthlyRevenueCents)
+        .div(100)
+        .div(seatCount);
     } else if (tabResult && seatCount === 0) {
       effectiveUnitPriceMonthly = listPriceMonthly;
     }

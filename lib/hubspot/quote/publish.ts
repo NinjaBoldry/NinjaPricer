@@ -3,11 +3,15 @@ import { HubSpotPublishState } from '@prisma/client';
 import type { HubSpotLineItemPayload } from './translator';
 
 export class MissingDealLinkError extends Error {
-  constructor() { super('Scenario must be linked to a HubSpot Deal before publishing.'); }
+  constructor() {
+    super('Scenario must be linked to a HubSpot Deal before publishing.');
+  }
 }
 
 export class UnresolvedHardRailOverrideError extends Error {
-  constructor() { super('Scenario has unresolved hard-rail overrides — approval flow (Phase 2c) required.'); }
+  constructor() {
+    super('Scenario has unresolved hard-rail overrides — approval flow (Phase 2c) required.');
+  }
 }
 
 export interface PublishPersistence {
@@ -22,7 +26,10 @@ export interface PublishPersistence {
     state: HubSpotPublishState,
     extras?: { shareableUrl?: string; publishedAt?: Date },
   ): Promise<void>;
-  findPriorRevision(scenarioId: string, currentRevision: number): Promise<{ id: string; hubspotQuoteId: string } | null>;
+  findPriorRevision(
+    scenarioId: string,
+    currentRevision: number,
+  ): Promise<{ id: string; hubspotQuoteId: string } | null>;
   markSuperseded(oldRowId: string, newRowId: string): Promise<void>;
 }
 
@@ -52,7 +59,9 @@ export async function publishScenarioToHubSpot(input: PublishInput): Promise<Pub
   if (input.lineItems.length === 0) throw new Error('Cannot publish a quote with zero line items.');
 
   // Step 2: create HubSpot Quote
-  const expiration = new Date(input.now().getTime() + input.quoteConfig.expirationDays * 24 * 60 * 60 * 1000);
+  const expiration = new Date(
+    input.now().getTime() + input.quoteConfig.expirationDays * 24 * 60 * 60 * 1000,
+  );
   const quoteRes = await hubspotFetch<{ id: string }>({
     method: 'POST',
     path: '/crm/v3/objects/quotes',
@@ -112,7 +121,10 @@ export async function publishScenarioToHubSpot(input: PublishInput): Promise<Pub
   });
 
   // Step 5: supersede prior revision (if any)
-  const prior = await input.persistence.findPriorRevision(input.scenario.id, input.scenario.revision);
+  const prior = await input.persistence.findPriorRevision(
+    input.scenario.id,
+    input.scenario.revision,
+  );
   if (prior) {
     await input.persistence.markSuperseded(prior.id, row.id);
     await hubspotFetch({
