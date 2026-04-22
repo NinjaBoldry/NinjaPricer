@@ -3,11 +3,12 @@ import type { PrismaClient, Bundle, BundleItem } from '@prisma/client';
 export class BundleRepository {
   constructor(private db: PrismaClient) {}
 
-  async create(data: { name: string; description?: string | undefined }): Promise<Bundle> {
+  async create(data: { name: string; description?: string | undefined; sku?: string | null | undefined }): Promise<Bundle> {
     return this.db.bundle.create({
       data: {
         name: data.name,
         ...(data.description !== undefined && { description: data.description }),
+        ...(data.sku !== undefined && { sku: data.sku }),
       },
     });
   }
@@ -38,6 +39,7 @@ export class BundleRepository {
       name?: string | undefined;
       description?: string | undefined;
       isActive?: boolean | undefined;
+      sku?: string | null | undefined;
     },
   ): Promise<Bundle> {
     return this.db.bundle.update({
@@ -46,6 +48,7 @@ export class BundleRepository {
         ...(data.name !== undefined && { name: data.name }),
         ...(data.description !== undefined && { description: data.description }),
         ...(data.isActive !== undefined && { isActive: data.isActive }),
+        ...(data.sku !== undefined && { sku: data.sku }),
       },
     });
   }

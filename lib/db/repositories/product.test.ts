@@ -42,4 +42,16 @@ describe.skipIf(!process.env.DATABASE_URL)('ProductRepository', () => {
     const found = await repo.findById('nonexistent-id');
     expect(found).toBeNull();
   });
+
+  it('create persists description and sku when provided', async () => {
+    const created = await repo.create({
+      name: 'Descriptive Product',
+      kind: 'SAAS_USAGE',
+      isActive: true,
+      description: 'A lovely product',
+      sku: 'DP-001',
+    });
+    expect(created.description).toBe('A lovely product');
+    expect(created.sku).toBe('DP-001');
+  });
 });
