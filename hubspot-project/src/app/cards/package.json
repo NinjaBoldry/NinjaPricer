@@ -1,0 +1,10 @@
+{
+  "name": "ninja-pricer-card",
+  "version": "1.0.0",
+  "description": "Ninja Pricer HubSpot App Card (Deal sidebar)",
+  "private": true,
+  "dependencies": {
+    "@hubspot/ui-extensions": "^1.0.0",
+    "react": "^18.0.0"
+  }
+}
