@@ -2,6 +2,6 @@
   "uid": "get-card-state",
   "type": "app-function",
   "config": {
-    "entrypoint": "get-card-state.ts"
+    "entrypoint": "/app/functions/get-card-state.ts"
   }
 }

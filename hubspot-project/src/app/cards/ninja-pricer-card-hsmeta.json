@@ -6,6 +6,6 @@
     "description": "Build, publish, and track Ninja Pricer quotes for this Deal.",
     "location": "crm.record.tab",
     "objectTypes": ["DEAL"],
-    "entrypoint": "ninja-pricer-card.tsx"
+    "entrypoint": "/app/cards/ninja-pricer-card.tsx"
   }
 }
