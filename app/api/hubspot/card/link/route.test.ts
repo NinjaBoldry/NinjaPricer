@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { POST } from './route';
 
 vi.mock('@/lib/hubspot/card/auth', () => ({
-  verifyCardSecret: vi.fn(() => true),
+  verifyCardAuth: vi.fn(() => true),
 }));
 
 const findScenarioFirst = vi.fn();
@@ -26,19 +26,15 @@ describe('POST /api/hubspot/card/link', () => {
     findScenarioFirst.mockReset();
     userFindUnique.mockReset();
     scenarioCreate.mockReset();
-    process.env.HUBSPOT_APP_FUNCTION_SHARED_SECRET = 'test-secret';
+    process.env.HUBSPOT_ACCESS_TOKEN = 'test-token';
     process.env.HUBSPOT_CARD_SERVICE_USER_EMAIL = 'hubspot-card@ninjaconcepts.com';
-    const { verifyCardSecret } = await import('@/lib/hubspot/card/auth');
-    (verifyCardSecret as unknown as { mockReturnValue: (v: boolean) => void }).mockReturnValue(
-      true,
-    );
+    const { verifyCardAuth } = await import('@/lib/hubspot/card/auth');
+    (verifyCardAuth as unknown as { mockReturnValue: (v: boolean) => void }).mockReturnValue(true);
   });
 
-  it('401 when shared secret is missing/invalid', async () => {
-    const { verifyCardSecret } = await import('@/lib/hubspot/card/auth');
-    (verifyCardSecret as unknown as { mockReturnValue: (v: boolean) => void }).mockReturnValue(
-      false,
-    );
+  it('401 when bearer token is missing/invalid', async () => {
+    const { verifyCardAuth } = await import('@/lib/hubspot/card/auth');
+    (verifyCardAuth as unknown as { mockReturnValue: (v: boolean) => void }).mockReturnValue(false);
     const res = await POST(
       new Request('http://x/api/hubspot/card/link', {
         method: 'POST',
@@ -53,7 +49,7 @@ describe('POST /api/hubspot/card/link', () => {
     const res = await POST(
       new Request('http://x/api/hubspot/card/link', {
         method: 'POST',
-        headers: { 'x-ninja-card-secret': 'test-secret' },
+        headers: { authorization: 'Bearer test-token' },
         body: JSON.stringify({ dealId: 'd1', customerName: 'Acme' }),
       }) as Request,
     );
@@ -71,7 +67,7 @@ describe('POST /api/hubspot/card/link', () => {
     const res = await POST(
       new Request('http://x/api/hubspot/card/link', {
         method: 'POST',
-        headers: { 'x-ninja-card-secret': 'test-secret' },
+        headers: { authorization: 'Bearer test-token' },
         body: JSON.stringify({ dealId: 'd1', customerName: 'Acme Corp' }),
       }) as Request,
     );
@@ -97,7 +93,7 @@ describe('POST /api/hubspot/card/link', () => {
     const res = await POST(
       new Request('http://x/api/hubspot/card/link', {
         method: 'POST',
-        headers: { 'x-ninja-card-secret': 'test-secret' },
+        headers: { authorization: 'Bearer test-token' },
         body: JSON.stringify({ dealId: 'd1' }),
       }) as Request,
     );
@@ -117,7 +113,7 @@ describe('POST /api/hubspot/card/link', () => {
     const res = await POST(
       new Request('http://x/api/hubspot/card/link', {
         method: 'POST',
-        headers: { 'x-ninja-card-secret': 'test-secret' },
+        headers: { authorization: 'Bearer test-token' },
         body: JSON.stringify({ dealId: 'd1', customerName: 'Acme' }),
       }) as Request,
     );
@@ -133,7 +129,7 @@ describe('POST /api/hubspot/card/link', () => {
     const res = await POST(
       new Request('http://x/api/hubspot/card/link', {
         method: 'POST',
-        headers: { 'x-ninja-card-secret': 'test-secret' },
+        headers: { authorization: 'Bearer test-token' },
         body: JSON.stringify({ dealId: 'd1', customerName: 'Acme' }),
       }) as Request,
     );

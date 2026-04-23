@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { POST } from './route';
 
 vi.mock('@/lib/hubspot/card/auth', () => ({
-  verifyCardSecret: vi.fn(() => true),
+  verifyCardAuth: vi.fn(() => true),
 }));
 
 const mockRunPublishScenario = vi.fn();
@@ -13,18 +13,14 @@ vi.mock('@/lib/hubspot/quote/publishService', () => ({
 describe('POST /api/hubspot/card/publish', () => {
   beforeEach(async () => {
     mockRunPublishScenario.mockReset();
-    process.env.HUBSPOT_APP_FUNCTION_SHARED_SECRET = 'test-secret';
-    const { verifyCardSecret } = await import('@/lib/hubspot/card/auth');
-    (verifyCardSecret as unknown as { mockReturnValue: (v: boolean) => void }).mockReturnValue(
-      true,
-    );
+    process.env.HUBSPOT_ACCESS_TOKEN = 'test-token';
+    const { verifyCardAuth } = await import('@/lib/hubspot/card/auth');
+    (verifyCardAuth as unknown as { mockReturnValue: (v: boolean) => void }).mockReturnValue(true);
   });
 
-  it('401 when shared secret is missing/invalid', async () => {
-    const { verifyCardSecret } = await import('@/lib/hubspot/card/auth');
-    (verifyCardSecret as unknown as { mockReturnValue: (v: boolean) => void }).mockReturnValue(
-      false,
-    );
+  it('401 when bearer token is missing/invalid', async () => {
+    const { verifyCardAuth } = await import('@/lib/hubspot/card/auth');
+    (verifyCardAuth as unknown as { mockReturnValue: (v: boolean) => void }).mockReturnValue(false);
     const res = await POST(
       new Request('http://x/api/hubspot/card/publish', {
         method: 'POST',
@@ -45,7 +41,7 @@ describe('POST /api/hubspot/card/publish', () => {
     const res = await POST(
       new Request('http://x/api/hubspot/card/publish', {
         method: 'POST',
-        headers: { 'x-ninja-card-secret': 'test-secret' },
+        headers: { authorization: 'Bearer test-token' },
         body: JSON.stringify({ scenarioId: 's1' }),
       }) as Request,
     );
@@ -64,7 +60,7 @@ describe('POST /api/hubspot/card/publish', () => {
     const res = await POST(
       new Request('http://x/api/hubspot/card/publish', {
         method: 'POST',
-        headers: { 'x-ninja-card-secret': 'test-secret' },
+        headers: { authorization: 'Bearer test-token' },
         body: JSON.stringify({ scenarioId: 's1' }),
       }) as Request,
     );
@@ -83,7 +79,7 @@ describe('POST /api/hubspot/card/publish', () => {
     const res = await POST(
       new Request('http://x/api/hubspot/card/publish', {
         method: 'POST',
-        headers: { 'x-ninja-card-secret': 'test-secret' },
+        headers: { authorization: 'Bearer test-token' },
         body: JSON.stringify({ scenarioId: 's1' }),
       }) as Request,
     );
@@ -102,7 +98,7 @@ describe('POST /api/hubspot/card/publish', () => {
     const res = await POST(
       new Request('http://x/api/hubspot/card/publish', {
         method: 'POST',
-        headers: { 'x-ninja-card-secret': 'test-secret' },
+        headers: { authorization: 'Bearer test-token' },
         body: JSON.stringify({ scenarioId: 's1' }),
       }) as Request,
     );

@@ -24,20 +24,12 @@
 > the user is missing. It never auto-creates an ADMIN user from an env var, which would be a
 > privilege-escalation path.
 
-### 1. Generate the shared secret
+### 1. No new secret setup required
 
-```bash
-openssl rand -hex 32
-```
-
-Record the output. You'll set it in TWO places:
-
-- **Railway** → Pricer service → Variables → `HUBSPOT_APP_FUNCTION_SHARED_SECRET=<hex>`
-- **HubSpot Developer Project secrets:**
-  ```bash
-  cd hubspot-project
-  hs secret add NINJA_CARD_SECRET <paste-hex>
-  ```
+The App Card reuses the existing `HUBSPOT_ACCESS_TOKEN` already configured in Railway from earlier
+phases as the bearer credential for the `/api/hubspot/card/*` endpoints. HubSpot automatically
+injects this same token into every App Function at runtime as `PRIVATE_APP_ACCESS_TOKEN` — no
+`openssl rand`, no `hs secret add`, and no Railway variable duplication needed.
 
 Optional:
 
@@ -74,9 +66,9 @@ Note: the card is a "card" not a scope, so reinstall may or may not prompt. If t
 
 ### 5. Troubleshooting
 
-- **Card shows "Error: fetch failed"** → App Function can't reach the pricer. Check the Railway URL is in `app-hsmeta.json`'s `permittedUrls.fetch`. Check `HUBSPOT_APP_FUNCTION_SHARED_SECRET` matches in both places.
+- **Card shows "Error: fetch failed"** → App Function can't reach the pricer. Check the Railway URL is in `app-hsmeta.json`'s `permittedUrls.fetch`. Check `HUBSPOT_ACCESS_TOKEN` is set in Railway.
 - **Card never leaves "Loading…"** → `hubspot.serverless('get-card-state', ...)` is failing. Open HubSpot's "Logs" tab on the app to see App Function execution logs.
-- **401 in App Function logs** → shared secret mismatch.
+- **401 in App Function logs** → token mismatch between `PRIVATE_APP_ACCESS_TOKEN` (injected by HubSpot) and `HUBSPOT_ACCESS_TOKEN` in Railway. Verify both point to the same private app access token.
 - **500 in App Function logs** → check pricer's Railway logs for stack traces.
 
 ## Known limitations

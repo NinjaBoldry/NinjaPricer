@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { verifyCardSecret } from '@/lib/hubspot/card/auth';
+import { verifyCardAuth } from '@/lib/hubspot/card/auth';
 import { runPublishScenario } from '@/lib/hubspot/quote/publishService';
 
 const bodySchema = z.object({ scenarioId: z.string().min(1) });
 
 export async function POST(req: Request): Promise<NextResponse> {
-  if (!verifyCardSecret(req.headers)) {
+  if (!verifyCardAuth(req.headers)) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
 
