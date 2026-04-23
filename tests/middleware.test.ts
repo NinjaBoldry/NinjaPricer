@@ -20,14 +20,10 @@ describe('userHasAdminRole', () => {
   });
 });
 
-// Verify the middleware source exempts the HubSpot App Card and webhook paths
-// so those unauthenticated-by-design endpoints never get auth-redirected.
+// Verify the middleware source exempts the HubSpot webhook path
+// so that unauthenticated-by-design endpoint never gets auth-redirected.
 describe('middleware.ts — HubSpot public path exemptions', () => {
   const src = readFileSync(join(process.cwd(), 'middleware.ts'), 'utf-8');
-
-  it('exempts /api/hubspot/card/ from auth redirect', () => {
-    expect(src).toContain("pathname.startsWith('/api/hubspot/card/')");
-  });
 
   it('exempts /api/hubspot/webhooks/ from auth redirect', () => {
     expect(src).toContain("pathname.startsWith('/api/hubspot/webhooks/')");

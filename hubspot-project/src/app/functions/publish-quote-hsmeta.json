@@ -1,7 +1,0 @@
-{
-  "uid": "publish-quote",
-  "type": "app-function",
-  "config": {
-    "entrypoint": "/app/functions/publish-quote.ts"
-  }
-}
