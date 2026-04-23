@@ -8,6 +8,7 @@
     "auth": {
       "type": "static",
       "requiredScopes": [
+        "oauth",
         "crm.objects.products.read",
         "crm.objects.products.write",
         "crm.objects.line_items.read",
