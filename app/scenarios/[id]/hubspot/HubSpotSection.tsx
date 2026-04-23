@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import {
   linkScenarioDealAction,
   publishScenarioAction,
+  refreshDealSnapshotAction,
   supersedeScenarioQuoteAction,
 } from '@/app/scenarios/[id]/actions';
 
@@ -34,6 +35,13 @@ export interface HubSpotApprovalRequestRow {
   hubspotDealId: string;
 }
 
+export interface DealSnapshotRow {
+  dealName: string | null;
+  dealStage: string | null;
+  companyName: string | null;
+  snapshotAt: Date | null;
+}
+
 interface Props {
   scenarioId: string;
   hubspotDealId: string | null;
@@ -42,6 +50,63 @@ interface Props {
   hasHardRailOverrides: boolean;
   /** Current approval request for this scenario, if any */
   approvalRequest: HubSpotApprovalRequestRow | null;
+  /** Cached HubSpot Deal metadata snapshot */
+  dealSnapshot: DealSnapshotRow | null;
+}
+
+// ---------------------------------------------------------------------------
+// Deal Info Panel
+// ---------------------------------------------------------------------------
+
+function DealInfoPanel({
+  scenarioId,
+  snapshot,
+}: {
+  scenarioId: string;
+  snapshot: DealSnapshotRow;
+}) {
+  const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  function handleRefresh() {
+    setError(null);
+    startTransition(async () => {
+      const result = await refreshDealSnapshotAction({ scenarioId });
+      if (!result.ok) setError(result.error);
+    });
+  }
+
+  const displayDate = snapshot.snapshotAt ? new Date(snapshot.snapshotAt).toLocaleString() : null;
+
+  return (
+    <div className="rounded-md border border-slate-200 bg-slate-50 p-4 space-y-3">
+      <div className="flex items-start justify-between gap-4">
+        <div className="space-y-1 min-w-0">
+          <p className="text-sm font-semibold text-slate-800 truncate">
+            {snapshot.dealName ?? '—'}
+          </p>
+          <p className="text-xs text-slate-500 truncate">{snapshot.companyName ?? '—'}</p>
+          {snapshot.dealStage && (
+            <span className="inline-block px-2 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-700">
+              {snapshot.dealStage}
+            </span>
+          )}
+          {!snapshot.dealStage && <span className="text-xs text-slate-400">Stage: —</span>}
+        </div>
+        <Button
+          onClick={handleRefresh}
+          disabled={isPending}
+          variant="outline"
+          size="sm"
+          className="shrink-0"
+        >
+          {isPending ? 'Refreshing…' : 'Refresh'}
+        </Button>
+      </div>
+      {displayDate && <p className="text-xs text-slate-400">Last updated: {displayDate}</p>}
+      {error && <p className="text-xs text-red-600">{error}</p>}
+    </div>
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -384,6 +449,7 @@ export default function HubSpotSection({
   latestQuote,
   hasHardRailOverrides,
   approvalRequest,
+  dealSnapshot,
 }: Props) {
   return (
     <section className="space-y-4">
@@ -403,6 +469,8 @@ export default function HubSpotSection({
           </p>
         )}
       </div>
+
+      {dealSnapshot && <DealInfoPanel scenarioId={scenarioId} snapshot={dealSnapshot} />}
 
       {!hubspotDealId ? (
         <LinkDealForm scenarioId={scenarioId} />

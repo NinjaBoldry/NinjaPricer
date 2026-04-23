@@ -350,6 +350,10 @@ model Scenario {
   hubspotDealId            String?
   hubspotCompanyId         String?
   hubspotPrimaryContactId  String?
+  hubspotDealName          String?
+  hubspotDealStage         String?
+  hubspotCompanyName       String?
+  hubspotSnapshotAt        DateTime?
   hubspotQuotes            HubSpotQuote[]
   hubspotApprovalRequest   HubSpotApprovalRequest?
 }

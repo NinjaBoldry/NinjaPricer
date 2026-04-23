@@ -19,6 +19,10 @@ export default async function HubSpotTabPage({ params }: { params: { id: string 
       customerName: true,
       ownerId: true,
       hubspotDealId: true,
+      hubspotDealName: true,
+      hubspotDealStage: true,
+      hubspotCompanyName: true,
+      hubspotSnapshotAt: true,
       hubspotQuotes: {
         orderBy: { revision: 'desc' },
         take: 1,
@@ -82,6 +86,19 @@ export default async function HubSpotTabPage({ params }: { params: { id: string 
                 resolvedAt: approvalRequest.resolvedAt,
                 resolvedByHubspotOwnerId: approvalRequest.resolvedByHubspotOwnerId,
                 hubspotDealId: approvalRequest.hubspotDealId,
+              }
+            : null
+        }
+        dealSnapshot={
+          scenario.hubspotDealName !== null ||
+          scenario.hubspotDealStage !== null ||
+          scenario.hubspotCompanyName !== null ||
+          scenario.hubspotSnapshotAt !== null
+            ? {
+                dealName: scenario.hubspotDealName,
+                dealStage: scenario.hubspotDealStage,
+                companyName: scenario.hubspotCompanyName,
+                snapshotAt: scenario.hubspotSnapshotAt,
               }
             : null
         }

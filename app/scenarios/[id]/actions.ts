@@ -1,9 +1,11 @@
 'use server';
+import { randomUUID } from 'node:crypto';
 import { revalidatePath } from 'next/cache';
 import { requireAuth } from '@/lib/auth/session';
 import { applyBundleToScenario, unapplyBundleFromScenario } from '@/lib/services/scenario';
 import { prisma } from '@/lib/db/client';
 import { runPublishScenario } from '@/lib/hubspot/quote/publishService';
+import { fetchDealSnapshot } from '@/lib/hubspot/deal/fetch';
 
 export async function applyBundleAction(formData: FormData) {
   await requireAuth();
@@ -31,6 +33,33 @@ export async function unapplyBundleAction(formData: FormData) {
 // ---------------------------------------------------------------------------
 // HubSpot actions
 // ---------------------------------------------------------------------------
+
+export async function refreshDealSnapshotAction(input: {
+  scenarioId: string;
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  await requireAuth();
+  const scenario = await prisma.scenario.findUnique({ where: { id: input.scenarioId } });
+  if (!scenario?.hubspotDealId) {
+    return { ok: false, error: 'Scenario not linked to a HubSpot Deal' };
+  }
+
+  const snapshot = await fetchDealSnapshot(scenario.hubspotDealId, `refresh-${randomUUID()}`);
+
+  await prisma.scenario.update({
+    where: { id: scenario.id },
+    data: {
+      hubspotDealName: snapshot.dealName,
+      hubspotDealStage: snapshot.dealStage,
+      hubspotCompanyName: snapshot.companyName,
+      hubspotCompanyId: snapshot.companyId,
+      hubspotPrimaryContactId: snapshot.primaryContactId,
+      hubspotSnapshotAt: new Date(),
+    },
+  });
+
+  revalidatePath(`/scenarios/${scenario.id}/hubspot`);
+  return { ok: true };
+}
 
 export async function linkScenarioDealAction(input: {
   scenarioId: string;
