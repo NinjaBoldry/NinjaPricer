@@ -66,6 +66,11 @@ enum ScenarioStatus {
   ARCHIVED
 }
 
+enum SaaSRevenueModel {
+  PER_SEAT
+  METERED
+}
+
 model User {
   id              String           @id @default(cuid())
   email           String           @unique
@@ -89,6 +94,7 @@ model Product {
   id                    String                   @id @default(cuid())
   name                  String                   @unique
   kind                  ProductKind
+  revenueModel SaaSRevenueModel @default(PER_SEAT)
   sortOrder             Int                      @default(0)
   isActive              Boolean                  @default(true)
   description           String?
@@ -102,6 +108,7 @@ model Product {
   fixedCosts            ProductFixedCost[]
   scale                 ProductScale?
   listPrice             ListPrice?
+  meteredPricing        MeteredPricing?
   volumeTiers           VolumeDiscountTier[]
   contractModifiers     ContractLengthModifier[]
   laborSKUs             LaborSKU[]
@@ -179,6 +186,19 @@ model ListPrice {
   productId          String  @unique
   usdPerSeatPerMonth Decimal @db.Decimal(18, 4)
   product            Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model MeteredPricing {
+  id                     String  @id @default(cuid())
+  productId              String  @unique
+  unitLabel              String
+  includedUnitsPerMonth  Int
+  committedMonthlyUsd    Decimal @db.Decimal(18, 4)
+  overageRatePerUnitUsd  Decimal @db.Decimal(18, 6)
+  costPerUnitUsd         Decimal @db.Decimal(18, 6)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  product                Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
 
 model VolumeDiscountTier {
@@ -365,6 +385,8 @@ model ScenarioSaaSConfig {
   seatCount           Int
   personaMix          Json
   discountOverridePct Decimal? @db.Decimal(6, 4)
+  committedUnitsPerMonth      Int?
+  expectedActualUnitsPerMonth Int?
   scenario            Scenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
   product             Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
 
