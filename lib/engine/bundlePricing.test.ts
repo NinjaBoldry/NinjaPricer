@@ -26,6 +26,8 @@ describe('computeBundleRolledUpMonthlyPrice', () => {
     const product: SaaSProductSnap = {
       kind: 'SAAS_USAGE',
       productId,
+      revenueModel: 'PER_SEAT',
+      meteredPricing: null,
       vendorRates: [],
       baseUsage: [],
       otherVariableUsdPerUserPerMonth: new Decimal(0),

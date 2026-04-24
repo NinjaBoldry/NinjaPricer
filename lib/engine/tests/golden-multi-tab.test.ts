@@ -37,6 +37,8 @@ describe('Golden fixture: multi-tab scenario', () => {
         notes: {
           kind: 'SAAS_USAGE',
           productId: 'notes',
+          revenueModel: 'PER_SEAT',
+          meteredPricing: null,
           vendorRates: [
             { id: 'dg', name: 'Deepgram', unitLabel: 'per min', rateUsd: d('0.0043') },
             { id: 'llm', name: 'LLM', unitLabel: 'per M tok', rateUsd: d('2.50') },

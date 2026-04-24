@@ -7,6 +7,8 @@ import type { ComputeRequest, SaaSProductSnap } from './types';
 const minimalProduct: SaaSProductSnap = {
   kind: 'SAAS_USAGE',
   productId: 'p1',
+  revenueModel: 'PER_SEAT',
+  meteredPricing: null,
   vendorRates: [],
   baseUsage: [],
   otherVariableUsdPerUserPerMonth: d('0'),

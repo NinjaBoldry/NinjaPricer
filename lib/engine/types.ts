@@ -36,9 +36,20 @@ export interface ContractModifierSnap {
   additionalDiscountPct: Decimal;
 }
 
+export type SaaSRevenueModel = 'PER_SEAT' | 'METERED';
+
+export interface MeteredPricingSnap {
+  unitLabel: string;
+  includedUnitsPerMonth: number;
+  committedMonthlyUsd: Decimal;
+  overageRatePerUnitUsd: Decimal;
+  costPerUnitUsd: Decimal;
+}
+
 export interface SaaSProductSnap {
   kind: 'SAAS_USAGE';
   productId: string;
+  revenueModel: SaaSRevenueModel;
   vendorRates: VendorRateSnap[];
   baseUsage: BaseUsageSnap[];
   otherVariableUsdPerUserPerMonth: Decimal;
@@ -48,6 +59,7 @@ export interface SaaSProductSnap {
   listPriceUsdPerSeatPerMonth: Decimal;
   volumeTiers: VolumeTierSnap[];
   contractModifiers: ContractModifierSnap[];
+  meteredPricing: MeteredPricingSnap | null;
 }
 
 export interface LaborSKUSnap {
@@ -71,9 +83,13 @@ export interface DepartmentSnap {
 export interface SaaSTabInput {
   kind: 'SAAS_USAGE';
   productId: string;
+  // PER_SEAT fields (required for PER_SEAT, ignored for METERED)
   seatCount: number;
   personaMix: { personaId: string; pct: number }[];
   discountOverridePct?: Decimal;
+  // METERED fields (required for METERED, ignored for PER_SEAT)
+  committedUnitsPerMonth?: number;
+  expectedActualUnitsPerMonth?: number;
 }
 
 export interface PackagedLaborTabInput {
@@ -142,6 +158,13 @@ export interface ComputeRequest {
 
 export interface SaaSMeta {
   effectiveDiscountPct: Decimal;
+  metered?: {
+    includedUnitsPerMonth: number;
+    committedMonthlyUsd: Decimal;
+    overageUnits: number;
+    overageRatePerUnitUsd: Decimal;
+    contractDiscountPct: Decimal;
+  };
 }
 
 export interface TabResult {

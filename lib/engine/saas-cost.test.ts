@@ -11,6 +11,8 @@ import { ValidationError } from '@/lib/utils/errors';
 const product: SaaSProductSnap = {
   kind: 'SAAS_USAGE',
   productId: 'notes',
+  revenueModel: 'PER_SEAT',
+  meteredPricing: null,
   vendorRates: [
     { id: 'dg', name: 'Deepgram', unitLabel: 'per min', rateUsd: d('0.0043') },
     { id: 'llm_in', name: 'LLM input', unitLabel: 'per M tokens', rateUsd: d('2.50') },
@@ -36,6 +38,8 @@ describe('saas-cost', () => {
     const p: SaaSProductSnap = {
       kind: 'SAAS_USAGE',
       productId: 'p1',
+      revenueModel: 'PER_SEAT',
+      meteredPricing: null,
       vendorRates: [], // empty — no rates defined
       baseUsage: [{ vendorRateId: 'ghost', usagePerMonth: d('100') }], // ghost id
       otherVariableUsdPerUserPerMonth: d('0'),
