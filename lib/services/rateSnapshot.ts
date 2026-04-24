@@ -55,6 +55,7 @@ export async function buildComputeRequest(scenarioId: string): Promise<{
           volumeTiers: { orderBy: { minSeats: 'asc' } },
           contractModifiers: { orderBy: { minMonths: 'asc' } },
           rails: { where: { isEnabled: true } },
+          meteredPricing: true,
         },
       }),
       prisma.product.findMany({
@@ -84,7 +85,7 @@ export async function buildComputeRequest(scenarioId: string): Promise<{
     saasSnaps[p.id] = {
       kind: 'SAAS_USAGE',
       productId: p.id,
-      revenueModel: 'PER_SEAT',
+      revenueModel: p.revenueModel,
       vendorRates: p.vendorRates.map((vr) => ({
         id: vr.id,
         name: vr.name,
@@ -116,7 +117,15 @@ export async function buildComputeRequest(scenarioId: string): Promise<{
         minMonths: cm.minMonths,
         additionalDiscountPct: d(cm.additionalDiscountPct),
       })),
-      meteredPricing: null,
+      meteredPricing: p.meteredPricing
+        ? {
+            unitLabel: p.meteredPricing.unitLabel,
+            includedUnitsPerMonth: p.meteredPricing.includedUnitsPerMonth,
+            committedMonthlyUsd: d(p.meteredPricing.committedMonthlyUsd.toString()),
+            overageRatePerUnitUsd: d(p.meteredPricing.overageRatePerUnitUsd.toString()),
+            costPerUnitUsd: d(p.meteredPricing.costPerUnitUsd.toString()),
+          }
+        : null,
     };
   }
 
@@ -193,6 +202,12 @@ export async function buildComputeRequest(scenarioId: string): Promise<{
       seatCount: cfg.seatCount,
       personaMix: cfg.personaMix as { personaId: string; pct: number }[],
       ...(cfg.discountOverridePct != null && { discountOverridePct: d(cfg.discountOverridePct) }),
+      ...(cfg.committedUnitsPerMonth != null && {
+        committedUnitsPerMonth: cfg.committedUnitsPerMonth,
+      }),
+      ...(cfg.expectedActualUnitsPerMonth != null && {
+        expectedActualUnitsPerMonth: cfg.expectedActualUnitsPerMonth,
+      }),
     });
   }
 
