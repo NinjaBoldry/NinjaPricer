@@ -10,6 +10,7 @@ const fakeProduct: Product = {
   sortOrder: 0,
   description: null,
   sku: null,
+  revenueModel: 'PER_SEAT',
   createdAt: new Date(),
   updatedAt: new Date(),
 };
@@ -22,5 +23,8 @@ export function mockProductRepo(): IProductRepository {
     listAll: vi.fn().mockResolvedValue([]),
     update: vi.fn().mockResolvedValue(fakeProduct),
     delete: vi.fn().mockResolvedValue(fakeProduct),
+    findListPriceByProductId: vi.fn().mockResolvedValue(null),
+    findMeteredPricingByProductId: vi.fn().mockResolvedValue(null),
+    countScenarioSaaSConfigsByProductId: vi.fn().mockResolvedValue(0),
   };
 }

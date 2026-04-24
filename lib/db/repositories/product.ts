@@ -1,4 +1,4 @@
-import type { PrismaClient, Product, ProductKind } from '@prisma/client';
+import type { PrismaClient, Product, ProductKind, SaaSRevenueModel } from '@prisma/client';
 
 export class ProductRepository {
   constructor(private db: PrismaClient) {}
@@ -9,6 +9,7 @@ export class ProductRepository {
     isActive: boolean;
     description?: string | null;
     sku?: string | null;
+    revenueModel?: SaaSRevenueModel;
   }): Promise<Product> {
     return this.db.product.create({ data });
   }
@@ -32,6 +33,7 @@ export class ProductRepository {
       isActive: boolean;
       description: string | null;
       sku: string | null;
+      revenueModel: SaaSRevenueModel;
     }>,
   ): Promise<Product> {
     return this.db.product.update({ where: { id }, data });
@@ -39,5 +41,17 @@ export class ProductRepository {
 
   async delete(id: string): Promise<Product> {
     return this.db.product.delete({ where: { id } });
+  }
+
+  async findListPriceByProductId(productId: string): Promise<{ id: string } | null> {
+    return this.db.listPrice.findUnique({ where: { productId }, select: { id: true } });
+  }
+
+  async findMeteredPricingByProductId(productId: string): Promise<{ id: string } | null> {
+    return this.db.meteredPricing.findUnique({ where: { productId }, select: { id: true } });
+  }
+
+  async countScenarioSaaSConfigsByProductId(productId: string): Promise<number> {
+    return this.db.scenarioSaaSConfig.count({ where: { productId } });
   }
 }

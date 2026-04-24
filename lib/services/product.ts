@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { ValidationError, NotFoundError } from '../utils/errors';
-import { ProductKind } from '@prisma/client';
+import { ProductKind, SaaSRevenueModel } from '@prisma/client';
 import type { Product } from '@prisma/client';
 import { prisma } from '@/lib/db/client';
 import { ProductRepository } from '@/lib/db/repositories/product';
@@ -12,6 +12,7 @@ export interface IProductRepository {
     isActive: boolean;
     description?: string | null;
     sku?: string | null;
+    revenueModel?: SaaSRevenueModel;
   }): Promise<Product>;
   findById(id: string): Promise<Product | null>;
   listActive(): Promise<Product[]>;
@@ -23,9 +24,13 @@ export interface IProductRepository {
       isActive: boolean;
       description: string | null;
       sku: string | null;
+      revenueModel: SaaSRevenueModel;
     }>,
   ): Promise<Product>;
   delete(id: string): Promise<Product>;
+  findListPriceByProductId(productId: string): Promise<{ id: string } | null>;
+  findMeteredPricingByProductId(productId: string): Promise<{ id: string } | null>;
+  countScenarioSaaSConfigsByProductId(productId: string): Promise<number>;
 }
 
 const SKU_REGEX = /^[A-Z0-9-]+$/;
@@ -58,6 +63,7 @@ const CreateProductSchema = z.object({
   kind: z.nativeEnum(ProductKind),
   description: descriptionSchema,
   sku: skuSchema,
+  revenueModel: z.nativeEnum(SaaSRevenueModel).optional(),
 });
 
 const UpdateProductSchema = z.object({
@@ -65,6 +71,7 @@ const UpdateProductSchema = z.object({
   isActive: z.boolean().optional(),
   description: descriptionSchema,
   sku: skuSchema,
+  revenueModel: z.nativeEnum(SaaSRevenueModel).optional(),
 });
 
 export class ProductService {
@@ -76,16 +83,26 @@ export class ProductService {
       const issue = parsed.error.issues[0]!;
       throw new ValidationError(issue.path.join('.') || 'product', issue.message);
     }
+    if (
+      parsed.data.revenueModel === SaaSRevenueModel.METERED &&
+      parsed.data.kind !== ProductKind.SAAS_USAGE
+    ) {
+      throw new ValidationError('revenueModel', 'METERED only valid for SAAS_USAGE products');
+    }
+    const resolvedRevenueModel: SaaSRevenueModel =
+      parsed.data.revenueModel ?? SaaSRevenueModel.PER_SEAT;
     const createData: {
       name: string;
       kind: ProductKind;
       isActive: boolean;
       description?: string | null;
       sku?: string | null;
+      revenueModel: SaaSRevenueModel;
     } = {
       name: parsed.data.name,
       kind: parsed.data.kind,
       isActive: true,
+      revenueModel: resolvedRevenueModel,
     };
     if (parsed.data.description !== undefined) createData.description = parsed.data.description;
     if (parsed.data.sku !== undefined) createData.sku = parsed.data.sku;
@@ -98,17 +115,35 @@ export class ProductService {
       const issue = parsed.error.issues[0]!;
       throw new ValidationError(issue.path.join('.') || 'product', issue.message);
     }
+    if (parsed.data.revenueModel !== undefined) {
+      const existing = await this.repo.findById(id);
+      if (existing && parsed.data.revenueModel !== existing.revenueModel) {
+        const [listPrice, meteredPricing, scenarioCount] = await Promise.all([
+          this.repo.findListPriceByProductId(id),
+          this.repo.findMeteredPricingByProductId(id),
+          this.repo.countScenarioSaaSConfigsByProductId(id),
+        ]);
+        if (listPrice || meteredPricing || scenarioCount > 0) {
+          throw new ValidationError(
+            'revenueModel',
+            'cannot change revenueModel — product already has pricing or scenario references',
+          );
+        }
+      }
+    }
     const updateData: Partial<{
       name: string;
       isActive: boolean;
       description: string | null;
       sku: string | null;
+      revenueModel: SaaSRevenueModel;
     }> = {};
     if (parsed.data.name !== undefined) updateData.name = parsed.data.name;
     if (parsed.data.isActive !== undefined) updateData.isActive = parsed.data.isActive;
     if (parsed.data.description !== undefined)
       updateData.description = parsed.data.description as string | null;
     if (parsed.data.sku !== undefined) updateData.sku = parsed.data.sku as string | null;
+    if (parsed.data.revenueModel !== undefined) updateData.revenueModel = parsed.data.revenueModel;
     return this.repo.update(id, updateData);
   }
 

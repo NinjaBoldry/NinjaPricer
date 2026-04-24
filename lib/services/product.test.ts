@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { ProductService } from './product';
 import { ValidationError } from '../utils/errors';
 import { mockProductRepo } from '../db/repositories/__mocks__/product';
@@ -33,6 +33,7 @@ describe('ProductService', () => {
       name: 'Ninja Notes',
       kind: 'SAAS_USAGE',
       isActive: true,
+      revenueModel: 'PER_SEAT',
     });
   });
 
@@ -102,5 +103,121 @@ describe('ProductService — description + sku validation', () => {
       'p1',
       expect.objectContaining({ description: 'Updated desc', sku: 'NU-02' }),
     );
+  });
+});
+
+describe('ProductService — revenueModel invariants (phase 6)', () => {
+  it('createProduct — accepts revenueModel for SAAS_USAGE', async () => {
+    const repo = mockProductRepo();
+    const service = new ProductService(repo);
+    await service.createProduct({
+      name: 'Omni Concierge',
+      kind: 'SAAS_USAGE',
+      revenueModel: 'METERED',
+    });
+    expect(repo.create).toHaveBeenCalledWith(
+      expect.objectContaining({ revenueModel: 'METERED' }),
+    );
+  });
+
+  it('createProduct — defaults revenueModel to PER_SEAT when omitted', async () => {
+    const repo = mockProductRepo();
+    const service = new ProductService(repo);
+    await service.createProduct({ name: 'X', kind: 'SAAS_USAGE' });
+    expect(repo.create).toHaveBeenCalledWith(
+      expect.objectContaining({ revenueModel: 'PER_SEAT' }),
+    );
+  });
+
+  it('createProduct — rejects revenueModel METERED for non-SAAS kinds', async () => {
+    const repo = mockProductRepo();
+    const service = new ProductService(repo);
+    await expect(
+      service.createProduct({
+        name: 'X',
+        kind: 'PACKAGED_LABOR',
+        revenueModel: 'METERED' as 'METERED',
+      }),
+    ).rejects.toThrow(ValidationError);
+    await expect(
+      service.createProduct({
+        name: 'X',
+        kind: 'PACKAGED_LABOR',
+        revenueModel: 'METERED' as 'METERED',
+      }),
+    ).rejects.toMatchObject({ field: 'revenueModel' });
+  });
+
+  it('updateProduct — rejects revenueModel change once MeteredPricing exists', async () => {
+    const repo = mockProductRepo();
+    repo.findById = vi.fn().mockResolvedValue({
+      id: 'p1',
+      kind: 'SAAS_USAGE',
+      revenueModel: 'METERED',
+    });
+    repo.findMeteredPricingByProductId = vi.fn().mockResolvedValue({ id: 'm1' });
+    const service = new ProductService(repo);
+    await expect(
+      service.updateProduct('p1', { revenueModel: 'PER_SEAT' }),
+    ).rejects.toThrow(ValidationError);
+    await expect(
+      service.updateProduct('p1', { revenueModel: 'PER_SEAT' }),
+    ).rejects.toMatchObject({ field: 'revenueModel' });
+  });
+
+  it('updateProduct — rejects revenueModel change once ListPrice exists', async () => {
+    const repo = mockProductRepo();
+    repo.findById = vi.fn().mockResolvedValue({
+      id: 'p1',
+      kind: 'SAAS_USAGE',
+      revenueModel: 'PER_SEAT',
+    });
+    repo.findListPriceByProductId = vi.fn().mockResolvedValue({ id: 'lp1' });
+    const service = new ProductService(repo);
+    await expect(
+      service.updateProduct('p1', { revenueModel: 'METERED' }),
+    ).rejects.toThrow(ValidationError);
+  });
+
+  it('updateProduct — rejects revenueModel change once scenarios reference product', async () => {
+    const repo = mockProductRepo();
+    repo.findById = vi.fn().mockResolvedValue({
+      id: 'p1',
+      kind: 'SAAS_USAGE',
+      revenueModel: 'PER_SEAT',
+    });
+    repo.countScenarioSaaSConfigsByProductId = vi.fn().mockResolvedValue(3);
+    const service = new ProductService(repo);
+    await expect(
+      service.updateProduct('p1', { revenueModel: 'METERED' }),
+    ).rejects.toThrow(ValidationError);
+  });
+
+  it('updateProduct — allows revenueModel change when no references exist', async () => {
+    const repo = mockProductRepo();
+    repo.findById = vi.fn().mockResolvedValue({
+      id: 'p1',
+      kind: 'SAAS_USAGE',
+      revenueModel: 'PER_SEAT',
+    });
+    const service = new ProductService(repo);
+    await service.updateProduct('p1', { revenueModel: 'METERED' });
+    expect(repo.update).toHaveBeenCalledWith(
+      'p1',
+      expect.objectContaining({ revenueModel: 'METERED' }),
+    );
+  });
+
+  it('updateProduct — no-op when revenueModel matches existing value, even with references', async () => {
+    const repo = mockProductRepo();
+    repo.findById = vi.fn().mockResolvedValue({
+      id: 'p1',
+      kind: 'SAAS_USAGE',
+      revenueModel: 'METERED',
+    });
+    repo.findMeteredPricingByProductId = vi.fn().mockResolvedValue({ id: 'm1' });
+    const service = new ProductService(repo);
+    await service.updateProduct('p1', { revenueModel: 'METERED' });
+    expect(repo.update).toHaveBeenCalled();
   });
 });
