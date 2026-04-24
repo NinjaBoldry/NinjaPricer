@@ -3,12 +3,16 @@ import type { SaaSProductSnap, SaaSTabInput, TabResult, SaaSMeta } from './types
 import { saasVariableCostPerSeatPerMonth, saasInfraCostPerSeatPerMonth } from './saas-cost';
 import { pickVolumeDiscount, pickContractDiscount, effectiveDiscount } from './saas-discount';
 import { ValidationError } from '@/lib/utils/errors';
+import { computeMeteredSaaSTab } from './metered-saas-tab';
 
 export function computeSaaSTab(
   tab: SaaSTabInput,
   product: SaaSProductSnap,
   contractMonths: number,
 ): TabResult {
+  if (product.revenueModel === 'METERED') {
+    return computeMeteredSaaSTab(tab, product, contractMonths);
+  }
   if (tab.seatCount < 0) throw new ValidationError('seatCount', 'must be >= 0');
   if (contractMonths <= 0) throw new ValidationError('contractMonths', 'must be > 0');
 
