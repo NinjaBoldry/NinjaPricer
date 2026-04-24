@@ -1,6 +1,7 @@
 import { d, toCents } from '@/lib/utils/money';
 import type { SaaSProductSnap, SaaSTabInput, TabResult, SaaSMeta } from './types';
 import { ValidationError } from '@/lib/utils/errors';
+import { pickContractDiscount } from './saas-discount';
 
 export function computeMeteredSaaSTab(
   tab: SaaSTabInput,
@@ -18,9 +19,7 @@ export function computeMeteredSaaSTab(
 
   const mp = product.meteredPricing;
 
-  const contractDiscountPct = product.contractModifiers
-    .filter((m) => contractMonths >= m.minMonths)
-    .reduce((acc, m) => (m.additionalDiscountPct.gt(acc) ? m.additionalDiscountPct : acc), d(0));
+  const contractDiscountPct = pickContractDiscount(product.contractModifiers, contractMonths);
   const discountedCommitted = mp.committedMonthlyUsd.mul(d(1).minus(contractDiscountPct));
 
   const overageUnits = Math.max(0, expected - mp.includedUnitsPerMonth);
