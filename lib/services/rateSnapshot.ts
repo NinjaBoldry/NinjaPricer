@@ -84,6 +84,7 @@ export async function buildComputeRequest(scenarioId: string): Promise<{
     saasSnaps[p.id] = {
       kind: 'SAAS_USAGE',
       productId: p.id,
+      revenueModel: 'PER_SEAT',
       vendorRates: p.vendorRates.map((vr) => ({
         id: vr.id,
         name: vr.name,
@@ -115,6 +116,7 @@ export async function buildComputeRequest(scenarioId: string): Promise<{
         minMonths: cm.minMonths,
         additionalDiscountPct: d(cm.additionalDiscountPct),
       })),
+      meteredPricing: null,
     };
   }
 
