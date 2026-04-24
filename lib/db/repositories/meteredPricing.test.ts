@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { Prisma } from '@prisma/client';
 import { MeteredPricingRepository } from './meteredPricing';
 
 describe('MeteredPricingRepository', () => {
@@ -28,9 +29,9 @@ describe('MeteredPricingRepository', () => {
     const data = {
       unitLabel: 'minute',
       includedUnitsPerMonth: 5000,
-      committedMonthlyUsd: 2500,
-      overageRatePerUnitUsd: 0.5,
-      costPerUnitUsd: 0.2,
+      committedMonthlyUsd: new Prisma.Decimal('2500'),
+      overageRatePerUnitUsd: new Prisma.Decimal('0.5'),
+      costPerUnitUsd: new Prisma.Decimal('0.2'),
     };
     await repo.upsert('p1', data);
     expect(prisma.meteredPricing.upsert).toHaveBeenCalledWith({
