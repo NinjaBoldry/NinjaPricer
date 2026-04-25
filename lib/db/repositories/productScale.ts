@@ -1,7 +1,16 @@
-import type { PrismaClient, ProductScale } from '@prisma/client';
+import type { PrismaClient, ProductScale, ProductKind, SaaSRevenueModel } from '@prisma/client';
 
 export class ProductScaleRepository {
   constructor(private db: PrismaClient) {}
+
+  async findProductRevenueInfo(
+    productId: string,
+  ): Promise<{ kind: ProductKind; revenueModel: SaaSRevenueModel } | null> {
+    return this.db.product.findUnique({
+      where: { id: productId },
+      select: { kind: true, revenueModel: true },
+    });
+  }
 
   async upsert(data: { productId: string; activeUsersAtScale: number }): Promise<ProductScale> {
     const { productId, ...updatePayload } = data;

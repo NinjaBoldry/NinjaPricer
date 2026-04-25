@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import Decimal from 'decimal.js';
 import { VendorRateService } from './vendorRate';
 import { ValidationError } from '../utils/errors';
@@ -55,5 +55,23 @@ describe('VendorRateService', () => {
         rateUsd: new Decimal('0'),
       }),
     ).rejects.toMatchObject({ field: 'rateUsd' });
+  });
+
+  it('rejects mutation when product revenueModel is METERED', async () => {
+    const repo = mockVendorRateRepo();
+    (repo.findProductRevenueInfo as ReturnType<typeof vi.fn>).mockResolvedValue({
+      kind: 'SAAS_USAGE',
+      revenueModel: 'METERED',
+    });
+    const service = new VendorRateService(repo);
+    await expect(
+      service.upsert({
+        productId: 'p1',
+        name: 'Bandwidth',
+        unitLabel: 'GB',
+        rateUsd: new Decimal('0.05'),
+      }),
+    ).rejects.toThrow(/revenueModel/);
+    expect(repo.upsert).not.toHaveBeenCalled();
   });
 });

@@ -1,8 +1,10 @@
 import { z } from 'zod';
 import Decimal from 'decimal.js';
 import { ValidationError } from '../utils/errors';
+import type { IProductRevenueInfoRepository } from './_revenueModelGuard';
+import { assertProductRevenueModel } from './_revenueModelGuard';
 
-export interface IOtherVariableRepository {
+export interface IOtherVariableRepository extends IProductRevenueInfoRepository {
   upsert(data: { productId: string; usdPerUserPerMonth: Decimal }): Promise<unknown>;
   findByProduct(productId: string): Promise<unknown>;
 }
@@ -24,6 +26,7 @@ export class OtherVariableService {
     if (parsed.data.usdPerUserPerMonth.lt(0)) {
       throw new ValidationError('usdPerUserPerMonth', 'must be >= 0');
     }
+    await assertProductRevenueModel(this.repo, parsed.data.productId, 'PER_SEAT');
     return this.repo.upsert(parsed.data);
   }
 

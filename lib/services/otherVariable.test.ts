@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import Decimal from 'decimal.js';
 import { OtherVariableService } from './otherVariable';
 import { ValidationError } from '../utils/errors';
@@ -30,5 +30,21 @@ describe('OtherVariableService', () => {
         usdPerUserPerMonth: new Decimal('-1'),
       }),
     ).rejects.toMatchObject({ field: 'usdPerUserPerMonth' });
+  });
+
+  it('rejects mutation when product revenueModel is METERED', async () => {
+    const repo = mockOtherVariableRepo();
+    (repo.findProductRevenueInfo as ReturnType<typeof vi.fn>).mockResolvedValue({
+      kind: 'SAAS_USAGE',
+      revenueModel: 'METERED',
+    });
+    const service = new OtherVariableService(repo);
+    await expect(
+      service.upsert({
+        productId: 'p1',
+        usdPerUserPerMonth: new Decimal('5'),
+      }),
+    ).rejects.toThrow(/revenueModel/);
+    expect(repo.upsert).not.toHaveBeenCalled();
   });
 });

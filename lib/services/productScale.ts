@@ -1,7 +1,9 @@
 import { z } from 'zod';
 import { ValidationError } from '../utils/errors';
+import type { IProductRevenueInfoRepository } from './_revenueModelGuard';
+import { assertProductRevenueModel } from './_revenueModelGuard';
 
-export interface IProductScaleRepository {
+export interface IProductScaleRepository extends IProductRevenueInfoRepository {
   upsert(data: { productId: string; activeUsersAtScale: number }): Promise<unknown>;
   findByProduct(productId: string): Promise<unknown>;
 }
@@ -20,6 +22,7 @@ export class ProductScaleService {
       const issue = parsed.error.issues[0]!;
       throw new ValidationError(issue.path.join('.') || 'productScale', issue.message);
     }
+    await assertProductRevenueModel(this.repo, parsed.data.productId, 'PER_SEAT');
     return this.repo.upsert(parsed.data);
   }
 

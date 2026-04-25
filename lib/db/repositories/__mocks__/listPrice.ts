@@ -13,5 +13,8 @@ export function mockListPriceRepo(): IListPriceRepository {
   return {
     upsert: vi.fn().mockResolvedValue(fakeListPrice),
     findByProduct: vi.fn().mockResolvedValue(null),
+    findProductRevenueInfo: vi
+      .fn()
+      .mockResolvedValue({ kind: 'SAAS_USAGE', revenueModel: 'PER_SEAT' }),
   };
 }

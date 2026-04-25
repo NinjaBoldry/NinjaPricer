@@ -15,5 +15,8 @@ export function mockVolumeDiscountTierRepo(): IVolumeDiscountTierRepository {
     upsert: vi.fn().mockResolvedValue(fakeVolumeDiscountTier),
     findByProduct: vi.fn().mockResolvedValue([]),
     delete: vi.fn().mockResolvedValue(undefined),
+    findProductRevenueInfo: vi
+      .fn()
+      .mockResolvedValue({ kind: 'SAAS_USAGE', revenueModel: 'PER_SEAT' }),
   };
 }

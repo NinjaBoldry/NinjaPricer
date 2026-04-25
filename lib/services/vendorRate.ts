@@ -1,8 +1,10 @@
 import { z } from 'zod';
 import Decimal from 'decimal.js';
 import { ValidationError } from '../utils/errors';
+import type { IProductRevenueInfoRepository } from './_revenueModelGuard';
+import { assertProductRevenueModel } from './_revenueModelGuard';
 
-export interface IVendorRateRepository {
+export interface IVendorRateRepository extends IProductRevenueInfoRepository {
   upsert(data: {
     productId: string;
     name: string;
@@ -51,6 +53,7 @@ export class VendorRateService {
     if (parsed.data.rateUsd.lte(0)) {
       throw new ValidationError('rateUsd', 'must be > 0');
     }
+    await assertProductRevenueModel(this.repo, parsed.data.productId, 'PER_SEAT');
     return this.repo.upsert(parsed.data);
   }
 
@@ -63,6 +66,7 @@ export class VendorRateService {
     if (parsed.data.rateUsd.lte(0)) {
       throw new ValidationError('rateUsd', 'must be > 0');
     }
+    await assertProductRevenueModel(this.repo, parsed.data.productId, 'PER_SEAT');
     return this.repo.create(parsed.data);
   }
 
@@ -74,6 +78,10 @@ export class VendorRateService {
     }
     if (parsed.data.rateUsd !== undefined && parsed.data.rateUsd.lte(0)) {
       throw new ValidationError('rateUsd', 'must be > 0');
+    }
+    const existing = (await this.repo.findById(id)) as { productId: string } | null;
+    if (existing) {
+      await assertProductRevenueModel(this.repo, existing.productId, 'PER_SEAT');
     }
     // Build a clean patch object with only defined keys to satisfy exactOptionalPropertyTypes
     const cleanPatch: { name?: string; unitLabel?: string; rateUsd?: Decimal } = {};
@@ -88,6 +96,10 @@ export class VendorRateService {
   }
 
   async delete(id: string) {
+    const existing = (await this.repo.findById(id)) as { productId: string } | null;
+    if (existing) {
+      await assertProductRevenueModel(this.repo, existing.productId, 'PER_SEAT');
+    }
     return this.repo.delete(id);
   }
 }

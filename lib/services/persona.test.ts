@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import Decimal from 'decimal.js';
 import { PersonaService } from './persona';
 import { ValidationError } from '../utils/errors';
@@ -55,5 +55,23 @@ describe('PersonaService', () => {
         sortOrder: 0,
       }),
     ).rejects.toMatchObject({ field: 'multiplier' });
+  });
+
+  it('rejects mutation when product revenueModel is METERED', async () => {
+    const repo = mockPersonaRepo();
+    (repo.findProductRevenueInfo as ReturnType<typeof vi.fn>).mockResolvedValue({
+      kind: 'SAAS_USAGE',
+      revenueModel: 'METERED',
+    });
+    const service = new PersonaService(repo);
+    await expect(
+      service.upsert({
+        productId: 'p1',
+        name: 'Standard',
+        multiplier: new Decimal('1.00'),
+        sortOrder: 0,
+      }),
+    ).rejects.toThrow(/revenueModel/);
+    expect(repo.upsert).not.toHaveBeenCalled();
   });
 });

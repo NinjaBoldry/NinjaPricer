@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import Decimal from 'decimal.js';
 import { RailService } from './rail';
 import { ValidationError } from '../utils/errors';
@@ -162,5 +162,45 @@ describe('RailService.upsert', () => {
     };
     await expect(service.upsert(input)).rejects.toThrow(ValidationError);
     await expect(service.upsert(input)).rejects.toMatchObject({ field: 'hardThreshold' });
+  });
+
+  it.each(['MAX_DISCOUNT_PCT', 'MIN_SEAT_PRICE'] as const)(
+    'rejects %s rail on METERED product',
+    async (kind) => {
+      const repo = mockRailRepo();
+      (repo.findProductRevenueInfo as ReturnType<typeof vi.fn>).mockResolvedValue({
+        kind: 'SAAS_USAGE',
+        revenueModel: 'METERED',
+      });
+      const service = new RailService(repo);
+      // Pick threshold values that pass shape validation for each kind:
+      // - MAX_DISCOUNT_PCT requires 0..1 with hard ≤ soft
+      // - MIN_SEAT_PRICE requires > 0 with soft ≤ hard
+      const thresholds =
+        kind === 'MAX_DISCOUNT_PCT'
+          ? { softThreshold: new Decimal('0.20'), hardThreshold: new Decimal('0.10') }
+          : { softThreshold: new Decimal('5'), hardThreshold: new Decimal('10') };
+      await expect(
+        service.upsert({
+          productId: 'p1',
+          kind,
+          marginBasis: 'CONTRIBUTION' as const,
+          ...thresholds,
+          isEnabled: true,
+        }),
+      ).rejects.toThrow(ValidationError);
+      expect(repo.upsert).not.toHaveBeenCalled();
+    },
+  );
+
+  it('allows MIN_MARGIN_PCT rail on METERED product', async () => {
+    const repo = mockRailRepo();
+    (repo.findProductRevenueInfo as ReturnType<typeof vi.fn>).mockResolvedValue({
+      kind: 'SAAS_USAGE',
+      revenueModel: 'METERED',
+    });
+    const service = new RailService(repo);
+    await expect(service.upsert(validMinMarginInput)).resolves.toBeDefined();
+    expect(repo.upsert).toHaveBeenCalledOnce();
   });
 });

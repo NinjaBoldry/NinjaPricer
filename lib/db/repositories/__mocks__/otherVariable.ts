@@ -13,5 +13,8 @@ export function mockOtherVariableRepo(): IOtherVariableRepository {
   return {
     upsert: vi.fn().mockResolvedValue(fakeOtherVariable),
     findByProduct: vi.fn().mockResolvedValue(null),
+    findProductRevenueInfo: vi
+      .fn()
+      .mockResolvedValue({ kind: 'SAAS_USAGE', revenueModel: 'PER_SEAT' }),
   };
 }

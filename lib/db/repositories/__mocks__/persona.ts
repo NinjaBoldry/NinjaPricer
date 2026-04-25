@@ -19,5 +19,8 @@ export function mockPersonaRepo(): IPersonaRepository {
     findById: vi.fn().mockResolvedValue(fakePersona),
     findByProduct: vi.fn().mockResolvedValue([]),
     delete: vi.fn().mockResolvedValue(undefined),
+    findProductRevenueInfo: vi
+      .fn()
+      .mockResolvedValue({ kind: 'SAAS_USAGE', revenueModel: 'PER_SEAT' }),
   };
 }

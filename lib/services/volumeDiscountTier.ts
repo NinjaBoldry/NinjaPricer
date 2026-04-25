@@ -2,8 +2,10 @@ import { z } from 'zod';
 import Decimal from 'decimal.js';
 import { ValidationError } from '../utils/errors';
 import type { PrismaClient } from '@prisma/client';
+import type { IProductRevenueInfoRepository } from './_revenueModelGuard';
+import { assertProductRevenueModel } from './_revenueModelGuard';
 
-export interface IVolumeDiscountTierRepository {
+export interface IVolumeDiscountTierRepository extends IProductRevenueInfoRepository {
   upsert(data: { productId: string; minSeats: number; discountPct: Decimal }): Promise<unknown>;
   findByProduct(productId: string): Promise<unknown[]>;
   delete(id: string): Promise<void>;
@@ -30,6 +32,7 @@ export class VolumeDiscountTierService {
     if (parsed.data.discountPct.gt(1)) {
       throw new ValidationError('discountPct', 'must be <= 1');
     }
+    await assertProductRevenueModel(this.repo, parsed.data.productId, 'PER_SEAT');
     return this.repo.upsert(parsed.data);
   }
 
@@ -50,6 +53,7 @@ export class VolumeDiscountTierService {
     tiers: { minSeats: number; discountPct: Decimal }[],
     db: PrismaClient,
   ) {
+    await assertProductRevenueModel(this.repo, productId, 'PER_SEAT');
     await db.$transaction(async (tx) => {
       await tx.volumeDiscountTier.deleteMany({ where: { productId } });
       for (const tier of tiers) {

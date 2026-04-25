@@ -20,5 +20,8 @@ export function mockRailRepo(): IRailRepository {
     upsert: vi.fn().mockResolvedValue(fakeRail),
     update: vi.fn().mockResolvedValue(fakeRail),
     delete: vi.fn().mockResolvedValue(fakeRail),
+    findProductRevenueInfo: vi
+      .fn()
+      .mockResolvedValue({ kind: 'SAAS_USAGE', revenueModel: 'PER_SEAT' }),
   };
 }

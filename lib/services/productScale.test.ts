@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { ProductScaleService } from './productScale';
 import { ValidationError } from '../utils/errors';
 import { mockProductScaleRepo } from '../db/repositories/__mocks__/productScale';
@@ -44,5 +44,21 @@ describe('ProductScaleService', () => {
         activeUsersAtScale: -1,
       }),
     ).rejects.toMatchObject({ field: 'activeUsersAtScale' });
+  });
+
+  it('rejects mutation when product revenueModel is METERED', async () => {
+    const repo = mockProductScaleRepo();
+    (repo.findProductRevenueInfo as ReturnType<typeof vi.fn>).mockResolvedValue({
+      kind: 'SAAS_USAGE',
+      revenueModel: 'METERED',
+    });
+    const service = new ProductScaleService(repo);
+    await expect(
+      service.upsert({
+        productId: 'p1',
+        activeUsersAtScale: 1000,
+      }),
+    ).rejects.toThrow(/revenueModel/);
+    expect(repo.upsert).not.toHaveBeenCalled();
   });
 });

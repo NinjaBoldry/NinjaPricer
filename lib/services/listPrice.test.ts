@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import Decimal from 'decimal.js';
 import { ListPriceService } from './listPrice';
 import { ValidationError } from '../utils/errors';
@@ -45,5 +45,21 @@ describe('ListPriceService', () => {
         usdPerSeatPerMonth: new Decimal('-1'),
       }),
     ).rejects.toMatchObject({ field: 'usdPerSeatPerMonth' });
+  });
+
+  it('rejects mutation when product revenueModel is METERED', async () => {
+    const repo = mockListPriceRepo();
+    (repo.findProductRevenueInfo as ReturnType<typeof vi.fn>).mockResolvedValue({
+      kind: 'SAAS_USAGE',
+      revenueModel: 'METERED',
+    });
+    const service = new ListPriceService(repo);
+    await expect(
+      service.upsert({
+        productId: 'p1',
+        usdPerSeatPerMonth: new Decimal('99'),
+      }),
+    ).rejects.toThrow(/revenueModel/);
+    expect(repo.upsert).not.toHaveBeenCalled();
   });
 });

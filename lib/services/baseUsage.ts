@@ -2,8 +2,10 @@ import { z } from 'zod';
 import Decimal from 'decimal.js';
 import { ValidationError } from '../utils/errors';
 import type { PrismaClient } from '@prisma/client';
+import type { IProductRevenueInfoRepository } from './_revenueModelGuard';
+import { assertProductRevenueModel } from './_revenueModelGuard';
 
-export interface IBaseUsageRepository {
+export interface IBaseUsageRepository extends IProductRevenueInfoRepository {
   upsert(data: {
     productId: string;
     vendorRateId: string;
@@ -30,6 +32,7 @@ export class BaseUsageService {
     if (parsed.data.usagePerMonth.lt(0)) {
       throw new ValidationError('usagePerMonth', 'must be >= 0');
     }
+    await assertProductRevenueModel(this.repo, parsed.data.productId, 'PER_SEAT');
     return this.repo.upsert(parsed.data);
   }
 
@@ -46,6 +49,7 @@ export class BaseUsageService {
     entries: { vendorRateId: string; usagePerMonth: Decimal }[],
     db: PrismaClient,
   ) {
+    await assertProductRevenueModel(this.repo, productId, 'PER_SEAT');
     await db.$transaction(async (tx) => {
       await tx.baseUsage.deleteMany({ where: { productId } });
       for (const entry of entries) {

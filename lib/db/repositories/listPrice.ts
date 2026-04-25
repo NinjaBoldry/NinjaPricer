@@ -1,8 +1,17 @@
-import type { PrismaClient, ListPrice } from '@prisma/client';
+import type { PrismaClient, ListPrice, ProductKind, SaaSRevenueModel } from '@prisma/client';
 import type { Decimal } from '@prisma/client/runtime/library';
 
 export class ListPriceRepository {
   constructor(private db: PrismaClient) {}
+
+  async findProductRevenueInfo(
+    productId: string,
+  ): Promise<{ kind: ProductKind; revenueModel: SaaSRevenueModel } | null> {
+    return this.db.product.findUnique({
+      where: { id: productId },
+      select: { kind: true, revenueModel: true },
+    });
+  }
 
   async upsert(data: { productId: string; usdPerSeatPerMonth: Decimal }): Promise<ListPrice> {
     const { productId, ...updatePayload } = data;

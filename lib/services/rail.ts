@@ -2,8 +2,10 @@ import { z } from 'zod';
 import Decimal from 'decimal.js';
 import { RailKind, MarginBasis } from '@prisma/client';
 import { ValidationError } from '../utils/errors';
+import type { IProductRevenueInfoRepository } from './_revenueModelGuard';
+import { assertProductRevenueModel } from './_revenueModelGuard';
 
-export interface IRailRepository {
+export interface IRailRepository extends IProductRevenueInfoRepository {
   findByProduct(productId: string): Promise<unknown[]>;
   findById(id: string): Promise<unknown | null>;
   upsert(data: {
@@ -87,7 +89,27 @@ export class RailService {
       throw new ValidationError(issue.path.join('.') || 'rail', issue.message);
     }
     this.validateMerged(parsed.data);
+    await this.assertRailKindAllowed(parsed.data.productId, parsed.data.kind);
     return this.repo.upsert(parsed.data);
+  }
+
+  /**
+   * Reject MAX_DISCOUNT_PCT and MIN_SEAT_PRICE rails on METERED SaaS products
+   * — those rail kinds operate on per-seat pricing and are not applicable to
+   * metered revenue. Other rail kinds (e.g. MIN_MARGIN_PCT, MIN_CONTRACT_MONTHS)
+   * remain valid for METERED.
+   */
+  private async assertRailKindAllowed(productId: string, kind: RailKind): Promise<void> {
+    if (kind !== 'MAX_DISCOUNT_PCT' && kind !== 'MIN_SEAT_PRICE') return;
+    const info = await this.repo.findProductRevenueInfo(productId);
+    if (!info) return; // upsert will surface a not-found / FK error downstream
+    if (info.kind !== 'SAAS_USAGE') return;
+    if (info.revenueModel === 'METERED') {
+      throw new ValidationError(
+        'kind',
+        `rail kind ${kind} not applicable to METERED products`,
+      );
+    }
   }
 
   async findById(id: string) {

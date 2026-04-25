@@ -14,5 +14,8 @@ export function mockBaseUsageRepo(): IBaseUsageRepository {
   return {
     upsert: vi.fn().mockResolvedValue(fakeBaseUsage),
     findByProduct: vi.fn().mockResolvedValue([]),
+    findProductRevenueInfo: vi
+      .fn()
+      .mockResolvedValue({ kind: 'SAAS_USAGE', revenueModel: 'PER_SEAT' }),
   };
 }

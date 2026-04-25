@@ -21,5 +21,8 @@ export function mockVendorRateRepo(): IVendorRateRepository {
     findById: vi.fn().mockResolvedValue(fakeVendorRate),
     findByProduct: vi.fn().mockResolvedValue([]),
     delete: vi.fn().mockResolvedValue(undefined),
+    findProductRevenueInfo: vi
+      .fn()
+      .mockResolvedValue({ kind: 'SAAS_USAGE', revenueModel: 'PER_SEAT' }),
   };
 }

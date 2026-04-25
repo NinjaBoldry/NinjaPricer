@@ -1,8 +1,24 @@
-import type { PrismaClient, Rail, RailKind, MarginBasis } from '@prisma/client';
+import type {
+  PrismaClient,
+  Rail,
+  RailKind,
+  MarginBasis,
+  ProductKind,
+  SaaSRevenueModel,
+} from '@prisma/client';
 import type { Decimal } from '@prisma/client/runtime/library';
 
 export class RailRepository {
   constructor(private db: PrismaClient) {}
+
+  async findProductRevenueInfo(
+    productId: string,
+  ): Promise<{ kind: ProductKind; revenueModel: SaaSRevenueModel } | null> {
+    return this.db.product.findUnique({
+      where: { id: productId },
+      select: { kind: true, revenueModel: true },
+    });
+  }
 
   async findByProduct(productId: string): Promise<Rail[]> {
     return this.db.rail.findMany({ where: { productId }, orderBy: { kind: 'asc' } });

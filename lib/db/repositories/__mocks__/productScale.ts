@@ -12,5 +12,8 @@ export function mockProductScaleRepo(): IProductScaleRepository {
   return {
     upsert: vi.fn().mockResolvedValue(fakeProductScale),
     findByProduct: vi.fn().mockResolvedValue(null),
+    findProductRevenueInfo: vi
+      .fn()
+      .mockResolvedValue({ kind: 'SAAS_USAGE', revenueModel: 'PER_SEAT' }),
   };
 }
