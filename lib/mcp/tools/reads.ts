@@ -160,11 +160,13 @@ export const computeQuoteTool: ToolDefinition<ComputeQuoteInput, unknown> = {
 
 import { listProducts, getProductById } from '@/lib/services/product';
 import { listBundles, getBundleById } from '@/lib/services/bundle';
+import { MeteredPricingService } from '@/lib/services/meteredPricing';
+import { prisma } from '@/lib/db/client';
 
 export const listProductsTool: ToolDefinition<Record<string, never>, unknown> = {
   name: 'list_products',
   description:
-    'Lists every product with id, name, kind (SAAS_USAGE | PACKAGED_LABOR | CUSTOM_LABOR), and archive flag. Use as the starting point for discovering what pricing is available.',
+    'Lists every product with id, name, kind (SAAS_USAGE | PACKAGED_LABOR | CUSTOM_LABOR), revenueModel (PER_SEAT | METERED), and archive flag. Use as the starting point for discovering what pricing is available.',
   inputSchema: z.object({}).strict() as z.ZodType<Record<string, never>>,
   requiresAdmin: false,
   handler: async () => {
@@ -173,6 +175,7 @@ export const listProductsTool: ToolDefinition<Record<string, never>, unknown> = 
       id: p.id,
       name: p.name,
       kind: p.kind,
+      revenueModel: p.revenueModel,
       isArchived: (p as unknown as { isArchived?: boolean }).isArchived ?? false,
     }));
   },
@@ -181,10 +184,21 @@ export const listProductsTool: ToolDefinition<Record<string, never>, unknown> = 
 export const getProductTool: ToolDefinition<{ id: string }, unknown> = {
   name: 'get_product',
   description:
-    'Full product snapshot including rate card, personas, list price, volume tiers, contract modifiers, and rails. Returns the same shape the engine consumes. Admin callers see additional fields (loaded rates). Throws if the id does not exist.',
+    'Full product snapshot including rate card, personas, list price, volume tiers, contract modifiers, rails, revenueModel, and (for SAAS_USAGE + METERED products) the metered pricing row. meteredPricing is null for PER_SEAT or non-SAAS products. Throws if the id does not exist.',
   inputSchema: z.object({ id: z.string() }).strict(),
   requiresAdmin: false,
-  handler: async (_ctx, { id }) => getProductById(id),
+  handler: async (_ctx, { id }) => {
+    const product = await getProductById(id);
+    let meteredPricing: unknown = null;
+    if (product.kind === 'SAAS_USAGE' && product.revenueModel === 'METERED') {
+      const svc = new MeteredPricingService(prisma);
+      meteredPricing = await svc.get(id);
+    }
+    return {
+      ...product,
+      meteredPricing,
+    };
+  },
 };
 
 export const listBundlesTool: ToolDefinition<Record<string, never>, unknown> = {
@@ -247,7 +261,6 @@ export const getScenarioTool: ToolDefinition<{ id: string }, unknown> = {
 
 import { readFile } from 'node:fs/promises';
 import { QuoteRepository } from '@/lib/db/repositories/quote';
-import { prisma } from '@/lib/db/client';
 
 export const listQuotesForScenarioTool: ToolDefinition<{ scenarioId: string }, unknown> = {
   name: 'list_quotes_for_scenario',

@@ -198,6 +198,52 @@ describe('set_scenario_saas_config', () => {
       }),
     ).toThrow();
   });
+
+  it('METERED: passes committedUnitsPerMonth + expectedActualUnitsPerMonth through to upsertSaasConfig', async () => {
+    vi.mocked(getScenarioById).mockResolvedValue({ id: 's1', ownerId: 'u2' } as any);
+    vi.mocked(upsertSaasConfig).mockResolvedValue({ id: 'c1' } as any);
+    await setScenarioSaasConfigTool.handler(salesCtx, {
+      scenarioId: 's1',
+      productId: 'p_metered',
+      seatCount: 0,
+      personaMix: [{ personaId: 'heavy', pct: 100 }],
+      committedUnitsPerMonth: 5000,
+      expectedActualUnitsPerMonth: 6000,
+    });
+    expect(upsertSaasConfig).toHaveBeenCalledWith(
+      expect.objectContaining({
+        scenarioId: 's1',
+        productId: 'p_metered',
+        committedUnitsPerMonth: 5000,
+        expectedActualUnitsPerMonth: 6000,
+      }),
+    );
+  });
+
+  it('schema accepts metered fields and rejects negative values', () => {
+    expect(() =>
+      setScenarioSaasConfigTool.inputSchema.parse({
+        scenarioId: 's',
+        productId: 'p',
+        seatCount: 0,
+        personaMix: [{ personaId: 'a', pct: 100 }],
+        committedUnitsPerMonth: -1,
+        expectedActualUnitsPerMonth: 100,
+      }),
+    ).toThrow();
+  });
+
+  it('schema rejects unknown keys (.strict)', () => {
+    expect(() =>
+      setScenarioSaasConfigTool.inputSchema.parse({
+        scenarioId: 's',
+        productId: 'p',
+        seatCount: 0,
+        personaMix: [{ personaId: 'a', pct: 100 }],
+        bogusField: true,
+      }),
+    ).toThrow();
+  });
 });
 
 describe('set_scenario_labor_lines', () => {

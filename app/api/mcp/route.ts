@@ -6,6 +6,7 @@ import { readTools } from '@/lib/mcp/tools/reads';
 import { adminReadTools } from '@/lib/mcp/tools/adminReads';
 import { scenarioWriteTools } from '@/lib/mcp/tools/scenarioWrites';
 import { productCatalogTools } from '@/lib/mcp/tools/catalog/product';
+import { meteredPricingTools } from '@/lib/mcp/tools/catalog/meteredPricing';
 import { saasRateCardTools } from '@/lib/mcp/tools/catalog/saasRateCard';
 import { laborTools } from '@/lib/mcp/tools/catalog/labor';
 import { commissionTools } from '@/lib/mcp/tools/catalog/commissions';
@@ -34,6 +35,7 @@ const tools: Parameters<typeof createMcpServer>[0] = [
   ...adminReadTools,
   ...scenarioWriteTools,
   ...productCatalogTools,
+  ...meteredPricingTools,
   ...saasRateCardTools,
   ...laborTools,
   ...commissionTools,

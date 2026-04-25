@@ -147,6 +147,9 @@ const setScenarioSaasConfigSchema = z
       .union([z.string(), z.number()])
       .transform((v) => String(v))
       .optional(),
+    // Phase 6: METERED SaaS — required when product.revenueModel = METERED, forbidden otherwise.
+    committedUnitsPerMonth: z.number().int().min(0).optional(),
+    expectedActualUnitsPerMonth: z.number().int().min(0).optional(),
   })
   .strict();
 
@@ -157,6 +160,8 @@ type SetScenarioSaasConfigInput = {
   seatCount: number;
   personaMix: { personaId: string; pct: number }[];
   discountOverridePct?: string;
+  committedUnitsPerMonth?: number;
+  expectedActualUnitsPerMonth?: number;
 };
 
 export const setScenarioSaasConfigTool: ToolDefinition<
@@ -165,7 +170,7 @@ export const setScenarioSaasConfigTool: ToolDefinition<
 > = {
   name: 'set_scenario_saas_config',
   description:
-    "Upsert a scenario's SaaS tab for one product: seatCount, personaMix (sums to 100), optional discountOverridePct. Replaces any existing config for the same (scenarioId, productId).",
+    "Upsert a scenario's SaaS tab for one product: seatCount, personaMix (sums to 100), optional discountOverridePct. For METERED products, also pass committedUnitsPerMonth + expectedActualUnitsPerMonth (both required); these are forbidden for PER_SEAT products. Replaces any existing config for the same (scenarioId, productId).",
   // Cast needed because Zod transform changes _input shape vs _output shape
   inputSchema: setScenarioSaasConfigSchema as unknown as z.ZodType<SetScenarioSaasConfigInput>,
   requiresAdmin: false,
@@ -181,6 +186,12 @@ export const setScenarioSaasConfigTool: ToolDefinition<
       personaMix: input.personaMix,
       ...(input.discountOverridePct !== undefined && {
         discountOverridePct: input.discountOverridePct,
+      }),
+      ...(input.committedUnitsPerMonth !== undefined && {
+        committedUnitsPerMonth: input.committedUnitsPerMonth,
+      }),
+      ...(input.expectedActualUnitsPerMonth !== undefined && {
+        expectedActualUnitsPerMonth: input.expectedActualUnitsPerMonth,
       }),
     });
     return { scenarioId: input.scenarioId, productId: input.productId };

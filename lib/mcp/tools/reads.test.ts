@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import Decimal from 'decimal.js';
 import { computeQuoteTool } from './reads';
 import type { McpContext } from '@/lib/mcp/context';
@@ -62,28 +62,123 @@ vi.mock('@/lib/services/bundle', () => ({
   listBundles: vi.fn(),
   getBundleById: vi.fn(),
 }));
+vi.mock('@/lib/db/client', () => ({ prisma: {} }));
+vi.mock('@/lib/services/meteredPricing', () => ({
+  MeteredPricingService: vi.fn(function (this: any) {
+    this.get = vi.fn();
+    this.set = vi.fn();
+    return this;
+  }),
+}));
 
 import { listProductsTool, getProductTool, listBundlesTool, getBundleTool } from './reads';
 import { listProducts, getProductById } from '@/lib/services/product';
 import { listBundles, getBundleById } from '@/lib/services/bundle';
+import { MeteredPricingService } from '@/lib/services/meteredPricing';
 import { NotFoundError } from '@/lib/utils/errors';
 
 describe('list_products tool', () => {
-  it('returns sanitized product list (id, name, kind, isArchived)', async () => {
+  it('returns sanitized product list (id, name, kind, revenueModel, isArchived)', async () => {
     vi.mocked(listProducts).mockResolvedValue([
-      { id: 'p1', name: 'Ninja Notes', kind: 'SAAS_USAGE', isArchived: false } as any,
+      {
+        id: 'p1',
+        name: 'Ninja Notes',
+        kind: 'SAAS_USAGE',
+        revenueModel: 'PER_SEAT',
+        isArchived: false,
+      } as any,
+      {
+        id: 'p2',
+        name: 'Ninja Voice',
+        kind: 'SAAS_USAGE',
+        revenueModel: 'METERED',
+        isArchived: false,
+      } as any,
     ]);
     const out = await listProductsTool.handler(ctx, {});
-    expect(out).toEqual([{ id: 'p1', name: 'Ninja Notes', kind: 'SAAS_USAGE', isArchived: false }]);
+    expect(out).toEqual([
+      {
+        id: 'p1',
+        name: 'Ninja Notes',
+        kind: 'SAAS_USAGE',
+        revenueModel: 'PER_SEAT',
+        isArchived: false,
+      },
+      {
+        id: 'p2',
+        name: 'Ninja Voice',
+        kind: 'SAAS_USAGE',
+        revenueModel: 'METERED',
+        isArchived: false,
+      },
+    ]);
   });
+
 });
 
 describe('get_product tool', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    const inst: any = { get: vi.fn().mockResolvedValue(null), set: vi.fn() };
+    (MeteredPricingService as any).mockImplementation(function (this: any) {
+      Object.assign(this, inst);
+      return this;
+    });
+  });
+
   it('passes id to service', async () => {
-    vi.mocked(getProductById).mockResolvedValue({ id: 'p1', name: 'X' } as any);
+    vi.mocked(getProductById).mockResolvedValue({
+      id: 'p1',
+      name: 'X',
+      kind: 'SAAS_USAGE',
+      revenueModel: 'PER_SEAT',
+    } as any);
     await getProductTool.handler(ctx, { id: 'p1' });
     expect(getProductById).toHaveBeenCalledWith('p1');
   });
+
+  it('per-seat product: meteredPricing is null and service is NOT called', async () => {
+    vi.mocked(getProductById).mockResolvedValue({
+      id: 'p1',
+      name: 'Notes',
+      kind: 'SAAS_USAGE',
+      revenueModel: 'PER_SEAT',
+    } as any);
+    const out = (await getProductTool.handler(ctx, { id: 'p1' })) as any;
+    expect(out.revenueModel).toBe('PER_SEAT');
+    expect(out.meteredPricing).toBeNull();
+  });
+
+  it('metered product: meteredPricing is the row from MeteredPricingService.get', async () => {
+    vi.mocked(getProductById).mockResolvedValue({
+      id: 'p2',
+      name: 'Voice',
+      kind: 'SAAS_USAGE',
+      revenueModel: 'METERED',
+    } as any);
+    const meteredRow = { id: 'm1', unitLabel: 'minute' };
+    const inst: any = { get: vi.fn().mockResolvedValue(meteredRow), set: vi.fn() };
+    (MeteredPricingService as any).mockImplementation(function (this: any) {
+      Object.assign(this, inst);
+      return this;
+    });
+    const out = (await getProductTool.handler(ctx, { id: 'p2' })) as any;
+    expect(inst.get).toHaveBeenCalledWith('p2');
+    expect(out.revenueModel).toBe('METERED');
+    expect(out.meteredPricing).toEqual(meteredRow);
+  });
+
+  it('non-SAAS product: meteredPricing is null', async () => {
+    vi.mocked(getProductById).mockResolvedValue({
+      id: 'p3',
+      name: 'Onboarding',
+      kind: 'PACKAGED_LABOR',
+      revenueModel: 'PER_SEAT',
+    } as any);
+    const out = (await getProductTool.handler(ctx, { id: 'p3' })) as any;
+    expect(out.meteredPricing).toBeNull();
+  });
+
   it('NotFoundError propagates', async () => {
     vi.mocked(getProductById).mockRejectedValue(new NotFoundError('Product', 'zzz'));
     await expect(getProductTool.handler(ctx, { id: 'zzz' })).rejects.toBeInstanceOf(NotFoundError);
