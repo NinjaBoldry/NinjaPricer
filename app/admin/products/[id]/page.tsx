@@ -29,6 +29,17 @@ async function updateProduct(id: string, formData: FormData) {
   redirect(`/admin/products/${id}`);
 }
 
+// Sections only relevant to per-seat SaaS pricing.
+const PER_SEAT_ONLY_HREFS = new Set([
+  'base-usage',
+  'vendor-rates',
+  'personas',
+  'other-variable',
+  'list-price',
+  'volume-tiers',
+  'scale',
+]);
+
 const SUBSECTIONS = [
   { href: 'vendor-rates', label: 'Vendor Rates' },
   { href: 'base-usage', label: 'Base Usage' },
@@ -131,7 +142,10 @@ export default async function ProductDetailPage({
           Rate Card Sections
         </h2>
         <div className="grid grid-cols-2 gap-2 max-w-lg">
-          {SUBSECTIONS.map(({ href, label }) => (
+          {SUBSECTIONS.filter(
+            ({ href }) =>
+              product.revenueModel === 'PER_SEAT' || !PER_SEAT_ONLY_HREFS.has(href),
+          ).map(({ href, label }) => (
             <Link
               key={href}
               href={`/admin/products/${params.id}/${href}`}
@@ -140,6 +154,14 @@ export default async function ProductDetailPage({
               {label}
             </Link>
           ))}
+          {product.revenueModel === 'METERED' && (
+            <Link
+              href={`/admin/products/${params.id}/metered-pricing`}
+              className="block rounded-md border px-4 py-3 text-sm font-medium hover:bg-accent transition-colors"
+            >
+              Metered Pricing
+            </Link>
+          )}
         </div>
       </section>
     </div>
