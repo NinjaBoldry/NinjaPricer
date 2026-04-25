@@ -49,6 +49,14 @@ export default async function RailsPage({
   const error = searchParams?.error ? decodeURIComponent(searchParams.error) : null;
   const upsert = upsertRail.bind(null, params.id);
 
+  // METERED products only support margin and contract-length rails; seat-price
+  // and discount-percent rails are rejected by the service-layer guard added in
+  // Task 6-I, so hide them from the UI as well.
+  const isMetered = product.revenueModel === 'METERED';
+  const allowedKinds: string[] = isMetered
+    ? ['MIN_MARGIN_PCT', 'MIN_CONTRACT_MONTHS']
+    : ['MIN_MARGIN_PCT', 'MAX_DISCOUNT_PCT', 'MIN_SEAT_PRICE', 'MIN_CONTRACT_MONTHS'];
+
   return (
     <div className="p-6">
       <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
@@ -129,10 +137,11 @@ export default async function RailsPage({
               className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
             >
               <option value="">Select kind</option>
-              <option value="MIN_MARGIN_PCT">Min Margin %</option>
-              <option value="MAX_DISCOUNT_PCT">Max Discount %</option>
-              <option value="MIN_SEAT_PRICE">Min Seat Price</option>
-              <option value="MIN_CONTRACT_MONTHS">Min Contract Months</option>
+              {allowedKinds.map((kind) => (
+                <option key={kind} value={kind}>
+                  {RAIL_KIND_LABELS[kind] ?? kind}
+                </option>
+              ))}
             </select>
           </div>
           <div className="space-y-1">
