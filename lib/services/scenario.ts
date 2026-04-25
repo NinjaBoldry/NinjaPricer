@@ -143,9 +143,23 @@ export async function getScenarioById(
 // Scenario-write free functions shared by server actions and MCP tools
 // ---------------------------------------------------------------------------
 
+const UpsertSaasConfigSchema = z.object({
+  scenarioId: z.string().min(1, 'is required'),
+  productId: z.string().min(1, 'is required'),
+  seatCount: z.number().int().min(0),
+  personaMix: z.array(z.object({ personaId: z.string(), pct: z.number() })),
+  discountOverridePct: z.string().nullable().optional(),
+  committedUnitsPerMonth: z.number().int().min(0).optional(),
+  expectedActualUnitsPerMonth: z.number().int().min(0).optional(),
+});
+
 /**
  * Upsert a SaaS config row for one (scenarioId, productId) pair.
  * Mirrors the repo call in app/scenarios/[id]/notes/actions.ts upsertSaaSConfigAction.
+ *
+ * Phase 6: enforces revenueModel cross-field invariant —
+ *   - METERED products require both committedUnitsPerMonth + expectedActualUnitsPerMonth
+ *   - PER_SEAT products forbid both fields
  */
 export async function upsertSaasConfig(
   input: {
@@ -154,14 +168,49 @@ export async function upsertSaasConfig(
     seatCount: number;
     personaMix: { personaId: string; pct: number }[];
     discountOverridePct?: string | null;
+    committedUnitsPerMonth?: number | null;
+    expectedActualUnitsPerMonth?: number | null;
   },
   repo: ScenarioSaaSConfigRepository = new ScenarioSaaSConfigRepository(prisma),
 ) {
+  const parsed = UpsertSaasConfigSchema.safeParse(input);
+  if (!parsed.success) {
+    const issue = parsed.error.issues[0]!;
+    throw new ValidationError(issue.path.join('.') || 'scenarioSaaSConfig', issue.message);
+  }
+
+  const info = await repo.findProductRevenueInfo(input.productId);
+  if (!info) throw new NotFoundError('Product', input.productId);
+
+  if (info.kind === 'SAAS_USAGE') {
+    if (info.revenueModel === 'METERED') {
+      if (input.committedUnitsPerMonth == null || input.expectedActualUnitsPerMonth == null) {
+        throw new ValidationError(
+          'committedUnitsPerMonth',
+          'METERED SaaS config requires committed + expected units',
+        );
+      }
+    } else {
+      if (input.committedUnitsPerMonth != null || input.expectedActualUnitsPerMonth != null) {
+        throw new ValidationError(
+          'committedUnitsPerMonth',
+          'committed/expected units only allowed for METERED products',
+        );
+      }
+    }
+  }
+
   return repo.upsert(input.scenarioId, input.productId, {
     seatCount: input.seatCount,
     personaMix: input.personaMix,
     ...(input.discountOverridePct !== undefined && {
       discountOverridePct: input.discountOverridePct,
+    }),
+    ...(input.committedUnitsPerMonth !== undefined && {
+      committedUnitsPerMonth: input.committedUnitsPerMonth,
+    }),
+    ...(input.expectedActualUnitsPerMonth !== undefined && {
+      expectedActualUnitsPerMonth: input.expectedActualUnitsPerMonth,
     }),
   });
 }
@@ -280,6 +329,17 @@ export async function applyBundleToScenario(
       const config = item.config as BundleItemConfig;
 
       if (config.kind === 'SAAS_USAGE') {
+        // Phase 6 invariant: bundles cannot carry METERED products yet —
+        // a METERED row would require committed/expected which the bundle
+        // schema does not capture. Guard here so the scenario rows we
+        // create stay valid.
+        const info = await saasConfigRepo.findProductRevenueInfo(item.productId);
+        if (info?.kind === 'SAAS_USAGE' && info.revenueModel === 'METERED') {
+          throw new ValidationError(
+            'product',
+            `bundle item product ${item.productId} is METERED; metered products are not supported in bundles yet`,
+          );
+        }
         await saasConfigRepo.upsert(scenarioId, item.productId, {
           seatCount: config.seatCount,
           personaMix: config.personaMix,

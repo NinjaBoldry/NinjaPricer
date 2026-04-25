@@ -1,9 +1,21 @@
-import type { PrismaClient, ScenarioSaaSConfig } from '@prisma/client';
+import type {
+  PrismaClient,
+  ProductKind,
+  SaaSRevenueModel,
+  ScenarioSaaSConfig,
+} from '@prisma/client';
 import { Prisma } from '@prisma/client';
 
 type SaaSConfigRow = Pick<
   ScenarioSaaSConfig,
-  'id' | 'scenarioId' | 'productId' | 'seatCount' | 'personaMix' | 'discountOverridePct'
+  | 'id'
+  | 'scenarioId'
+  | 'productId'
+  | 'seatCount'
+  | 'personaMix'
+  | 'discountOverridePct'
+  | 'committedUnitsPerMonth'
+  | 'expectedActualUnitsPerMonth'
 >;
 
 const saasConfigSelect = {
@@ -13,10 +25,21 @@ const saasConfigSelect = {
   seatCount: true,
   personaMix: true,
   discountOverridePct: true,
+  committedUnitsPerMonth: true,
+  expectedActualUnitsPerMonth: true,
 } as const;
 
 export class ScenarioSaaSConfigRepository {
   constructor(private db: PrismaClient) {}
+
+  async findProductRevenueInfo(
+    productId: string,
+  ): Promise<{ kind: ProductKind; revenueModel: SaaSRevenueModel } | null> {
+    return this.db.product.findUnique({
+      where: { id: productId },
+      select: { kind: true, revenueModel: true },
+    });
+  }
 
   async upsert(
     scenarioId: string,
@@ -25,6 +48,8 @@ export class ScenarioSaaSConfigRepository {
       seatCount: number;
       personaMix: unknown;
       discountOverridePct?: string | null;
+      committedUnitsPerMonth?: number | null;
+      expectedActualUnitsPerMonth?: number | null;
     },
   ): Promise<SaaSConfigRow> {
     const updateData = {
@@ -32,6 +57,12 @@ export class ScenarioSaaSConfigRepository {
       personaMix: data.personaMix as Prisma.InputJsonValue,
       ...(data.discountOverridePct !== undefined && {
         discountOverridePct: data.discountOverridePct,
+      }),
+      ...(data.committedUnitsPerMonth !== undefined && {
+        committedUnitsPerMonth: data.committedUnitsPerMonth,
+      }),
+      ...(data.expectedActualUnitsPerMonth !== undefined && {
+        expectedActualUnitsPerMonth: data.expectedActualUnitsPerMonth,
       }),
     };
 

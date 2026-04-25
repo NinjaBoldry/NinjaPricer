@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { ScenarioService } from './scenario';
 import { mockScenarioRepo } from '../db/repositories/__mocks__/scenario';
+import { mockScenarioSaaSConfigRepo } from '../db/repositories/__mocks__/scenarioSaaSConfig';
 
 describe('ScenarioService.create', () => {
   it('creates successfully with valid data', async () => {
@@ -108,6 +109,60 @@ describe('upsertSaasConfig', () => {
   });
 });
 
+describe('upsertSaasConfig — metered fields (phase 6)', () => {
+  it('requires committed + expected for METERED products', async () => {
+    const repo = mockScenarioSaaSConfigRepo('METERED');
+    await expect(
+      upsertSaasConfig(
+        { scenarioId: 's1', productId: 'p1', seatCount: 0, personaMix: [] },
+        repo,
+      ),
+    ).rejects.toThrow(/METERED/);
+    expect(repo.upsert).not.toHaveBeenCalled();
+  });
+
+  it('rejects committed/expected on PER_SEAT products', async () => {
+    const repo = mockScenarioSaaSConfigRepo('PER_SEAT');
+    await expect(
+      upsertSaasConfig(
+        {
+          scenarioId: 's1',
+          productId: 'p1',
+          seatCount: 10,
+          personaMix: [],
+          committedUnitsPerMonth: 1000,
+          expectedActualUnitsPerMonth: 1000,
+        },
+        repo,
+      ),
+    ).rejects.toThrow(/only allowed for METERED/);
+    expect(repo.upsert).not.toHaveBeenCalled();
+  });
+
+  it('persists committed + expected for METERED products', async () => {
+    const repo = mockScenarioSaaSConfigRepo('METERED');
+    await upsertSaasConfig(
+      {
+        scenarioId: 's1',
+        productId: 'p1',
+        seatCount: 0,
+        personaMix: [],
+        committedUnitsPerMonth: 5000,
+        expectedActualUnitsPerMonth: 6200,
+      },
+      repo,
+    );
+    expect(repo.upsert).toHaveBeenCalledWith(
+      's1',
+      'p1',
+      expect.objectContaining({
+        committedUnitsPerMonth: 5000,
+        expectedActualUnitsPerMonth: 6200,
+      }),
+    );
+  });
+});
+
 describe('setLaborLines', () => {
   it('is exported as a function', () => {
     expect(typeof setLaborLines).toBe('function');
@@ -146,6 +201,11 @@ describe('applyBundleToScenario', () => {
       scenarioSaaSConfig: {
         upsert: txSaasUpsert,
       },
+      product: {
+        findUnique: vi
+          .fn()
+          .mockResolvedValue({ kind: 'SAAS_USAGE', revenueModel: 'PER_SEAT' }),
+      },
       scenario: { update: txScenarioUpdate },
     };
 
@@ -164,6 +224,52 @@ describe('applyBundleToScenario', () => {
     expect(txScenarioUpdate).toHaveBeenCalledWith(
       expect.objectContaining({ data: { appliedBundleId: 'b1' } }),
     );
+  });
+
+  it('rejects bundles whose SAAS_USAGE item targets a METERED product', async () => {
+    const { vi } = await import('vitest');
+
+    const bundle = {
+      id: 'b1',
+      items: [
+        {
+          productId: 'p-metered',
+          sortOrder: 0,
+          product: { id: 'p-metered', name: 'Metered Prod', kind: 'SAAS_USAGE' },
+          sku: null,
+          department: null,
+          config: { kind: 'SAAS_USAGE', seatCount: 0, personaMix: [] },
+        },
+      ],
+    };
+
+    const txSaasUpsert = vi.fn().mockResolvedValue({});
+    const txScenarioUpdate = vi.fn().mockResolvedValue({});
+
+    const tx = {
+      scenarioSaaSConfig: { upsert: txSaasUpsert },
+      product: {
+        findUnique: vi
+          .fn()
+          .mockResolvedValue({ kind: 'SAAS_USAGE', revenueModel: 'METERED' }),
+      },
+      scenario: { update: txScenarioUpdate },
+    };
+
+    const mockDb = {
+      bundle: { findUnique: vi.fn().mockResolvedValue(bundle) },
+      $transaction: vi.fn(async (cb: (tx: unknown) => Promise<void>) => {
+        await cb(tx);
+      }),
+    } as unknown as typeof import('@/lib/db/client').prisma;
+
+    await expect(
+      applyBundleToScenario({ scenarioId: 's1', bundleId: 'b1' }, mockDb),
+    ).rejects.toThrow(/METERED/);
+
+    // Neither the upsert nor the scenario update should run when the guard fires
+    expect(txSaasUpsert).not.toHaveBeenCalled();
+    expect(txScenarioUpdate).not.toHaveBeenCalled();
   });
 });
 
