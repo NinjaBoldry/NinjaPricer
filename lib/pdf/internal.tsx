@@ -72,9 +72,7 @@ function meteredInternalDetail({
 
 export async function renderInternalPdf(args: RenderArgs): Promise<Buffer> {
   const { scenario, generatedAt, version, result } = args;
-  const meteredTabs = result.perTab.filter(
-    (t) => t.kind === 'SAAS_USAGE' && t.saasMeta?.metered,
-  );
+  const meteredTabs = result.perTab.filter((t) => t.kind === 'SAAS_USAGE' && t.saasMeta?.metered);
   return toBuffer(
     <Document>
       <Page size="LETTER" style={styles.page}>

@@ -115,18 +115,14 @@ describe('ProductService — revenueModel invariants (phase 6)', () => {
       kind: 'SAAS_USAGE',
       revenueModel: 'METERED',
     });
-    expect(repo.create).toHaveBeenCalledWith(
-      expect.objectContaining({ revenueModel: 'METERED' }),
-    );
+    expect(repo.create).toHaveBeenCalledWith(expect.objectContaining({ revenueModel: 'METERED' }));
   });
 
   it('createProduct — defaults revenueModel to PER_SEAT when omitted', async () => {
     const repo = mockProductRepo();
     const service = new ProductService(repo);
     await service.createProduct({ name: 'X', kind: 'SAAS_USAGE' });
-    expect(repo.create).toHaveBeenCalledWith(
-      expect.objectContaining({ revenueModel: 'PER_SEAT' }),
-    );
+    expect(repo.create).toHaveBeenCalledWith(expect.objectContaining({ revenueModel: 'PER_SEAT' }));
   });
 
   it('createProduct — rejects revenueModel METERED for non-SAAS kinds', async () => {
@@ -136,14 +132,14 @@ describe('ProductService — revenueModel invariants (phase 6)', () => {
       service.createProduct({
         name: 'X',
         kind: 'PACKAGED_LABOR',
-        revenueModel: 'METERED' as 'METERED',
+        revenueModel: 'METERED' as const,
       }),
     ).rejects.toThrow(ValidationError);
     await expect(
       service.createProduct({
         name: 'X',
         kind: 'PACKAGED_LABOR',
-        revenueModel: 'METERED' as 'METERED',
+        revenueModel: 'METERED' as const,
       }),
     ).rejects.toMatchObject({ field: 'revenueModel' });
   });
@@ -157,12 +153,12 @@ describe('ProductService — revenueModel invariants (phase 6)', () => {
     });
     repo.findMeteredPricingByProductId = vi.fn().mockResolvedValue({ id: 'm1' });
     const service = new ProductService(repo);
-    await expect(
-      service.updateProduct('p1', { revenueModel: 'PER_SEAT' }),
-    ).rejects.toThrow(ValidationError);
-    await expect(
-      service.updateProduct('p1', { revenueModel: 'PER_SEAT' }),
-    ).rejects.toMatchObject({ field: 'revenueModel' });
+    await expect(service.updateProduct('p1', { revenueModel: 'PER_SEAT' })).rejects.toThrow(
+      ValidationError,
+    );
+    await expect(service.updateProduct('p1', { revenueModel: 'PER_SEAT' })).rejects.toMatchObject({
+      field: 'revenueModel',
+    });
   });
 
   it('updateProduct — rejects revenueModel change once ListPrice exists', async () => {
@@ -174,9 +170,9 @@ describe('ProductService — revenueModel invariants (phase 6)', () => {
     });
     repo.findListPriceByProductId = vi.fn().mockResolvedValue({ id: 'lp1' });
     const service = new ProductService(repo);
-    await expect(
-      service.updateProduct('p1', { revenueModel: 'METERED' }),
-    ).rejects.toThrow(ValidationError);
+    await expect(service.updateProduct('p1', { revenueModel: 'METERED' })).rejects.toThrow(
+      ValidationError,
+    );
   });
 
   it('updateProduct — rejects revenueModel change once scenarios reference product', async () => {
@@ -188,9 +184,9 @@ describe('ProductService — revenueModel invariants (phase 6)', () => {
     });
     repo.countScenarioSaaSConfigsByProductId = vi.fn().mockResolvedValue(3);
     const service = new ProductService(repo);
-    await expect(
-      service.updateProduct('p1', { revenueModel: 'METERED' }),
-    ).rejects.toThrow(ValidationError);
+    await expect(service.updateProduct('p1', { revenueModel: 'METERED' })).rejects.toThrow(
+      ValidationError,
+    );
   });
 
   it('updateProduct — allows revenueModel change when no references exist', async () => {

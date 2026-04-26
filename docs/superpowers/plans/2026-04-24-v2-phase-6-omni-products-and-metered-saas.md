@@ -28,6 +28,7 @@
 ## Task 6-A: Prisma schema + migration
 
 **Files:**
+
 - Modify: `prisma/schema.prisma`
 - Create: `prisma/migrations/<timestamp>_phase_6_metered_saas/migration.sql` (generated)
 
@@ -87,6 +88,7 @@ Find the `model ScenarioSaaSConfig { ... }` block. Add after the existing scenar
 - [ ] **Step 5: Generate the migration**
 
 Run:
+
 ```bash
 npx prisma migrate dev --name phase_6_metered_saas --create-only
 ```
@@ -114,6 +116,7 @@ git commit -m "feat(phase-6): prisma schema + migration for metered SaaS"
 ## Task 6-B: Engine type additions
 
 **Files:**
+
 - Modify: `lib/engine/types.ts`
 
 - [ ] **Step 1: Add the discriminator + metered snap types**
@@ -193,6 +196,7 @@ Expected: compile errors in `lib/engine/saas-tab.ts`, `lib/services/rateSnapshot
 - [ ] **Step 5: Add default fields to existing SaaS snap fixtures**
 
 Run:
+
 ```bash
 grep -rln "kind: 'SAAS_USAGE'" lib/engine/tests lib/engine/saas-tab.test.ts lib/engine/compute.test.ts lib/engine/saas-cost.test.ts lib/engine/saas-discount.test.ts lib/engine/rails.test.ts
 ```
@@ -230,6 +234,7 @@ git commit -m "feat(phase-6): engine types — SaaS revenueModel discriminator +
 ## Task 6-C: Engine — metered compute path
 
 **Files:**
+
 - Create: `lib/engine/metered-saas-tab.ts`
 - Create: `lib/engine/metered-saas-tab.test.ts`
 - Modify: `lib/engine/saas-tab.ts`
@@ -481,6 +486,7 @@ git commit -m "feat(phase-6): metered SaaS engine path + dispatch in computeSaaS
 ## Task 6-D: Engine — golden fixture for mixed scenario
 
 **Files:**
+
 - Create: `lib/engine/tests/fixtures/metered-mixed.test.ts`
 
 - [ ] **Step 1: Inspect existing fixture style**
@@ -605,6 +611,7 @@ git commit -m "test(phase-6): golden fixture — mixed per-seat + metered scenar
 ## Task 6-E: MeteredPricing repository
 
 **Files:**
+
 - Create: `lib/db/repositories/meteredPricing.ts`
 - Create: `lib/db/repositories/meteredPricing.test.ts`
 
@@ -721,6 +728,7 @@ git commit -m "feat(phase-6): MeteredPricing repository"
 ## Task 6-F: Rate snapshot — include revenueModel + metered pricing
 
 **Files:**
+
 - Modify: `lib/services/rateSnapshot.ts`
 - Modify: `lib/services/rateSnapshot.test.ts`
 
@@ -799,6 +807,7 @@ git commit -m "feat(phase-6): rate snapshot includes revenueModel + meteredPrici
 ## Task 6-G: MeteredPricing service
 
 **Files:**
+
 - Create: `lib/services/meteredPricing.ts`
 - Create: `lib/services/meteredPricing.test.ts`
 
@@ -968,6 +977,7 @@ git commit -m "feat(phase-6): MeteredPricingService with Zod validation"
 ## Task 6-H: Product service — revenueModel invariants
 
 **Files:**
+
 - Modify: `lib/services/product.ts`
 - Modify: `lib/services/product.test.ts`
 
@@ -1001,7 +1011,11 @@ describe('ProductService — revenueModel invariants (phase 6)', () => {
 
   it('createProduct — accepts revenueModel for SAAS_USAGE', async () => {
     prisma.product.create.mockResolvedValue({ id: 'p1', revenueModel: 'METERED' });
-    await svc.createProduct({ name: 'Omni Concierge', kind: 'SAAS_USAGE', revenueModel: 'METERED' });
+    await svc.createProduct({
+      name: 'Omni Concierge',
+      kind: 'SAAS_USAGE',
+      revenueModel: 'METERED',
+    });
     expect(prisma.product.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({ revenueModel: 'METERED' }),
@@ -1111,6 +1125,7 @@ git commit -m "feat(phase-6): product service enforces revenueModel invariants"
 ## Task 6-I: Service gates — per-seat mutations rejected on METERED
 
 **Files:**
+
 - Modify each of these services to check `product.revenueModel === 'METERED'` and throw `ValidationError` before any write:
   - `lib/services/listPrice.ts`
   - `lib/services/volumeDiscountTier.ts`
@@ -1169,7 +1184,7 @@ it('rejects mutation when product revenueModel is METERED', async () => {
     kind: 'SAAS_USAGE',
     revenueModel: 'METERED',
   });
-  await expect(svc.create({ productId: 'p1', /* minimal valid payload */ })).rejects.toThrow(
+  await expect(svc.create({ productId: 'p1' /* minimal valid payload */ })).rejects.toThrow(
     /revenueModel/,
   );
 });
@@ -1186,10 +1201,7 @@ if (
   product.revenueModel === 'METERED' &&
   (input.kind === 'MAX_DISCOUNT_PCT' || input.kind === 'MIN_SEAT_PRICE')
 ) {
-  throw new ValidationError(
-    'kind',
-    `rail kind ${input.kind} not applicable to METERED products`,
-  );
+  throw new ValidationError('kind', `rail kind ${input.kind} not applicable to METERED products`);
 }
 ```
 
@@ -1234,6 +1246,7 @@ git commit -m "feat(phase-6): per-seat service gates + rail-kind gates for METER
 ## Task 6-J: Scenario config — accept metered fields
 
 **Files:**
+
 - Modify: `lib/services/scenario.ts`
 - Modify: `lib/services/scenario.test.ts`
 
@@ -1335,6 +1348,7 @@ git commit -m "feat(phase-6): scenario SaaS config accepts + validates metered f
 ## Task 6-K: MCP tools — metered pricing
 
 **Files:**
+
 - Create: `lib/mcp/tools/catalog/meteredPricing.ts`
 - Create: `lib/mcp/tools/catalog/meteredPricing.test.ts`
 - Modify: `app/api/mcp/route.ts`
@@ -1521,6 +1535,7 @@ git commit -m "feat(phase-6): MCP tools — metered pricing + scenario metered f
 ## Task 6-L: Admin UI — product create page revenueModel dropdown
 
 **Files:**
+
 - Modify: `app/admin/products/new/page.tsx`
 - Modify: `app/admin/products/new/page.test.tsx` if it exists (otherwise skip — rely on server action tests).
 
@@ -1533,15 +1548,17 @@ Read `app/admin/products/new/page.tsx`. Identify how `name` and `kind` are submi
 Below the `kind` select, add a conditional block that only renders when the selected `kind` is `SAAS_USAGE`:
 
 ```tsx
-{kind === 'SAAS_USAGE' && (
-  <div>
-    <label htmlFor="revenueModel">Revenue model</label>
-    <Select id="revenueModel" name="revenueModel" defaultValue="PER_SEAT">
-      <option value="PER_SEAT">Per-seat</option>
-      <option value="METERED">Metered</option>
-    </Select>
-  </div>
-)}
+{
+  kind === 'SAAS_USAGE' && (
+    <div>
+      <label htmlFor="revenueModel">Revenue model</label>
+      <Select id="revenueModel" name="revenueModel" defaultValue="PER_SEAT">
+        <option value="PER_SEAT">Per-seat</option>
+        <option value="METERED">Metered</option>
+      </Select>
+    </div>
+  );
+}
 ```
 
 (If the current file is a fully server-side form without reactive state, use a wrapper client component with `useState` for the `kind` selection — matching the codebase's established pattern for other admin forms with conditional fields.)
@@ -1566,6 +1583,7 @@ git commit -m "feat(phase-6): product create — revenueModel dropdown for SAAS_
 ## Task 6-M: Admin UI — product detail conditional sections
 
 **Files:**
+
 - Modify: `app/admin/products/[id]/page.tsx`
 - Create: `app/admin/products/[id]/metered-pricing/page.tsx`
 - Create: `app/admin/products/[id]/metered-pricing/MeteredPricingForm.tsx` (client component)
@@ -1586,11 +1604,13 @@ Keep Fixed Costs, Contract Modifiers, Labor SKUs (rolled up via bundles), and Ra
 - [ ] **Step 2: Add the Metered Pricing section link**
 
 ```tsx
-{product.revenueModel === 'METERED' && (
-  <SectionLink href={`/admin/products/${product.id}/metered-pricing`}>
-    Metered Pricing
-  </SectionLink>
-)}
+{
+  product.revenueModel === 'METERED' && (
+    <SectionLink href={`/admin/products/${product.id}/metered-pricing`}>
+      Metered Pricing
+    </SectionLink>
+  );
+}
 ```
 
 - [ ] **Step 3: Create the metered-pricing page**
@@ -1667,9 +1687,7 @@ export function MeteredPricingForm({
         <input
           type="number"
           value={state.includedUnitsPerMonth}
-          onChange={(e) =>
-            setState({ ...state, includedUnitsPerMonth: Number(e.target.value) })
-          }
+          onChange={(e) => setState({ ...state, includedUnitsPerMonth: Number(e.target.value) })}
         />
       </label>
       <label>
@@ -1751,6 +1769,7 @@ git commit -m "feat(phase-6): admin product detail — conditional sections + me
 ## Task 6-N: Admin UI — rail editor filters kinds for METERED
 
 **Files:**
+
 - Modify: `app/admin/products/[id]/rails/*` (inspect to find the rail-kind dropdown).
 
 - [ ] **Step 1: Find the rail-kind select**
@@ -1777,6 +1796,7 @@ git commit -m "feat(phase-6): admin rail editor filters kinds for METERED produc
 ## Task 6-O: Sales UI — metered SaaS scenario tab
 
 **Files:**
+
 - Modify: `app/scenarios/[id]/page.tsx` — choose tab component per product.
 - Create: `app/scenarios/[id]/metered/page.tsx` (new route segment) OR add a `MeteredTab.tsx` component alongside `notes/page.tsx` — follow whatever pattern the existing Notes tab uses.
 
@@ -1787,8 +1807,9 @@ Run: `ls app/scenarios/\[id\]/` and read `app/scenarios/[id]/notes/page.tsx` to 
 - [ ] **Step 2: Decide the tab route**
 
 Notes is hardcoded in the file structure. For Omni Concierge (METERED), either:
-  - Add a new route segment `app/scenarios/[id]/metered/[productId]/page.tsx`, OR
-  - Generalize the notes tab to accept any `SAAS_USAGE` product and branch internally on `revenueModel`.
+
+- Add a new route segment `app/scenarios/[id]/metered/[productId]/page.tsx`, OR
+- Generalize the notes tab to accept any `SAAS_USAGE` product and branch internally on `revenueModel`.
 
 **Chosen approach:** keep the existing `notes/` route for Ninja Notes unchanged (it's a hardcoded singleton today). Add a new parallel route `app/scenarios/[id]/metered/[productId]/page.tsx` for METERED products. This avoids touching the working Notes tab; the layout's left-nav picks the correct route per product based on `revenueModel`.
 
@@ -1840,6 +1861,7 @@ git commit -m "feat(phase-6): sales scenario builder — metered SaaS tab"
 ## Task 6-P: Quote PDF — metered line-item block
 
 **Files:**
+
 - Modify: `lib/pdf/customer.tsx`
 - Modify: `lib/pdf/internal.tsx`
 - Modify: `lib/pdf/customer.test.tsx`
@@ -1879,15 +1901,24 @@ function MeteredLineItem({
   const committedAfterDiscount = m.committedMonthlyUsd.mul(d(1).minus(m.contractDiscountPct));
   return (
     <View>
-      <Text>{productName} — {contractMonths}-month term</Text>
-      <Text>Monthly base ({m.includedUnitsPerMonth} {unitLabel}s included)  {formatUsd(m.committedMonthlyUsd)}</Text>
-      <Text>Overage rate  {formatUsd(m.overageRatePerUnitUsd)} / {unitLabel}</Text>
+      <Text>
+        {productName} — {contractMonths}-month term
+      </Text>
+      <Text>
+        Monthly base ({m.includedUnitsPerMonth} {unitLabel}s included){' '}
+        {formatUsd(m.committedMonthlyUsd)}
+      </Text>
+      <Text>
+        Overage rate {formatUsd(m.overageRatePerUnitUsd)} / {unitLabel}
+      </Text>
       {m.contractDiscountPct.gt(0) && (
-        <Text>Contract discount ({contractMonths}-mo)  -{formatPct(m.contractDiscountPct)}</Text>
+        <Text>
+          Contract discount ({contractMonths}-mo) -{formatPct(m.contractDiscountPct)}
+        </Text>
       )}
-      <Text>Effective monthly base  {formatUsd(committedAfterDiscount)}</Text>
+      <Text>Effective monthly base {formatUsd(committedAfterDiscount)}</Text>
       <Text>Expected monthly total: {formatUsd(tab.monthlyRevenueCents / 100)}</Text>
-      <Text>Contract total  {formatUsd(tab.contractRevenueCents / 100)}</Text>
+      <Text>Contract total {formatUsd(tab.contractRevenueCents / 100)}</Text>
     </View>
   );
 }
@@ -1920,6 +1951,7 @@ git commit -m "feat(phase-6): customer + internal PDF render metered line items"
 ## Task 6-Q: HubSpot catalog translator — metered products
 
 **Files:**
+
 - Modify: `lib/hubspot/catalog/translator.ts`
 - Modify: `lib/hubspot/catalog/translator.test.ts`
 
@@ -1985,6 +2017,7 @@ git commit -m "feat(phase-6): HubSpot catalog translator — METERED products"
 ## Task 6-R: HubSpot quote translator — metered line items
 
 **Files:**
+
 - Modify: `lib/hubspot/quote/translator.ts`
 - Modify: `lib/hubspot/quote/translator.test.ts`
 
@@ -2063,6 +2096,7 @@ git commit -m "feat(phase-6): HubSpot quote translator — METERED line items"
 ## Task 6-S: Seed Omni Sales + Omni Concierge
 
 **Files:**
+
 - Modify: `prisma/seed.ts`
 
 - [ ] **Step 1: Extend the seed array**
@@ -2167,11 +2201,12 @@ git commit -m "chore(phase-6): final cleanup after full run" || true
 ## Task 6-U: Update backlog + mark phase shipped
 
 **Files:**
+
 - Modify: `docs/superpowers/backlog.md`
 
 - [ ] **Step 1: Remove the Phase 6 deferrals that are now shipped**
 
-In `docs/superpowers/backlog.md`, delete the "Additional SaaS products (Omni, Concierge, Sales)" style entry if present (it was tracked in `v1 design` rather than explicitly in backlog — verify by reading the file). Leave untouched the entries for volume tiers on committed units, `MIN_MONTHLY_FEE` rail, multiple cost types — those are the items you want the *next* phase to pick up.
+In `docs/superpowers/backlog.md`, delete the "Additional SaaS products (Omni, Concierge, Sales)" style entry if present (it was tracked in `v1 design` rather than explicitly in backlog — verify by reading the file). Leave untouched the entries for volume tiers on committed units, `MIN_MONTHLY_FEE` rail, multiple cost types — those are the items you want the _next_ phase to pick up.
 
 - [ ] **Step 2: Commit**
 

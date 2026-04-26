@@ -113,10 +113,7 @@ describe('upsertSaasConfig — metered fields (phase 6)', () => {
   it('requires committed + expected for METERED products', async () => {
     const repo = mockScenarioSaaSConfigRepo('METERED');
     await expect(
-      upsertSaasConfig(
-        { scenarioId: 's1', productId: 'p1', seatCount: 0, personaMix: [] },
-        repo,
-      ),
+      upsertSaasConfig({ scenarioId: 's1', productId: 'p1', seatCount: 0, personaMix: [] }, repo),
     ).rejects.toThrow(/METERED/);
     expect(repo.upsert).not.toHaveBeenCalled();
   });
@@ -202,9 +199,7 @@ describe('applyBundleToScenario', () => {
         upsert: txSaasUpsert,
       },
       product: {
-        findUnique: vi
-          .fn()
-          .mockResolvedValue({ kind: 'SAAS_USAGE', revenueModel: 'PER_SEAT' }),
+        findUnique: vi.fn().mockResolvedValue({ kind: 'SAAS_USAGE', revenueModel: 'PER_SEAT' }),
       },
       scenario: { update: txScenarioUpdate },
     };
@@ -249,9 +244,7 @@ describe('applyBundleToScenario', () => {
     const tx = {
       scenarioSaaSConfig: { upsert: txSaasUpsert },
       product: {
-        findUnique: vi
-          .fn()
-          .mockResolvedValue({ kind: 'SAAS_USAGE', revenueModel: 'METERED' }),
+        findUnique: vi.fn().mockResolvedValue({ kind: 'SAAS_USAGE', revenueModel: 'METERED' }),
       },
       scenario: { update: txScenarioUpdate },
     };

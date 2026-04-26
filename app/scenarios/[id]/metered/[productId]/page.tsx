@@ -42,8 +42,7 @@ export default async function MeteredTabPage({
     },
   });
 
-  const initialCommitted =
-    saasConfig?.committedUnitsPerMonth ?? pricing.includedUnitsPerMonth;
+  const initialCommitted = saasConfig?.committedUnitsPerMonth ?? pricing.includedUnitsPerMonth;
   const initialExpected = saasConfig?.expectedActualUnitsPerMonth ?? initialCommitted;
 
   return (

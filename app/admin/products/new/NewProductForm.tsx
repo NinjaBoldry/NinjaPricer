@@ -9,7 +9,11 @@ import { Textarea } from '@/components/ui/textarea';
 const SELECT_CLASSES =
   'flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm';
 
-export function NewProductForm({ action }: { action: (formData: FormData) => void | Promise<void> }) {
+export function NewProductForm({
+  action,
+}: {
+  action: (formData: FormData) => void | Promise<void>;
+}) {
   const [kind, setKind] = useState<string>('');
 
   return (

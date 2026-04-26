@@ -136,29 +136,33 @@ No vendor rates, base usage, other variable, or persona multipliers — all per-
 
 **Rails — METERED coverage:**
 
-| Rail kind | Behavior for METERED |
-|---|---|
-| `MIN_MARGIN_PCT` | Works unchanged. |
-| `MIN_CONTRACT_MONTHS` | Works unchanged. |
-| `MAX_DISCOUNT_PCT` | N/A — service layer rejects attachment. |
-| `MIN_SEAT_PRICE` | N/A — service layer rejects attachment. |
+| Rail kind             | Behavior for METERED                    |
+| --------------------- | --------------------------------------- |
+| `MIN_MARGIN_PCT`      | Works unchanged.                        |
+| `MIN_CONTRACT_MONTHS` | Works unchanged.                        |
+| `MAX_DISCOUNT_PCT`    | N/A — service layer rejects attachment. |
+| `MIN_SEAT_PRICE`      | N/A — service layer rejects attachment. |
 
 ### Services + MCP tools
 
 **`lib/services/product.ts`:**
+
 - `createProduct({ kind, revenueModel? })` — `revenueModel` only accepted when `kind = SAAS_USAGE`; defaults `PER_SEAT`.
 - `updateProduct` — rejects `revenueModel` change if any scenario references the product or any `MeteredPricing`/`ListPrice` exists.
 - Rail-attach methods reject `MAX_DISCOUNT_PCT` and `MIN_SEAT_PRICE` on `METERED` products.
 - `ListPrice`/`VolumeDiscountTier`/`Persona`/`OtherVariable`/`BaseUsage` mutation methods reject on `METERED` products.
 
 **New service — `lib/services/meteredPricing.ts`:**
+
 - `getMeteredPricing(productId)` — read.
 - `setMeteredPricing(productId, { unitLabel, includedUnitsPerMonth, committedMonthlyUsd, overageRatePerUnitUsd, costPerUnitUsd })` — upsert; one row per product.
 
 **Scenario service:**
+
 - `set_scenario_saas_config` accepts `committedUnitsPerMonth` + `expectedActualUnitsPerMonth`; validates present/null based on referenced product's `revenueModel`.
 
 **New MCP tools (Phase 5.2 pattern — admin-only, `isWrite`, audited):**
+
 - `set_metered_pricing` — upsert.
 - `get_metered_pricing` — read (sales + admin).
 
@@ -167,9 +171,11 @@ Existing catalog tools (`create_product`, `update_product`, bundle tools, rail t
 ### Admin UI
 
 **Product create** (`/admin/products/new`):
+
 - New **Revenue model** dropdown, shown only when `kind = SAAS_USAGE`. Options: `Per-seat` (default) / `Metered`. Disabled after creation.
 
 **Product detail** (`/admin/products/[id]`):
+
 - `PER_SEAT` products — all existing sections (Vendor Rates, Base Usage, Personas, Other Variable, List Price, Volume Tiers, Active Users @ Scale, Contract Modifiers, Fixed Costs, Rails). No change.
 - `METERED` products — hides Vendor Rates, Base Usage, Personas, Other Variable, List Price, Volume Tiers, Active Users @ Scale. Keeps Fixed Costs, Contract Modifiers, Rails. Adds a new **Metered Pricing** section.
 
@@ -186,6 +192,7 @@ One scenario-builder tab per configured SaaS product, same as today. Tab renders
 **`PER_SEAT`** — unchanged (seats, persona sliders, contract months, live per-seat + vendor breakdown).
 
 **`METERED`** — new layout:
+
 - `Committed units / month` (defaults to `includedUnitsPerMonth`, editable).
 - `Expected actual usage / month` (defaults to `committedUnitsPerMonth`).
 - `Contract months`.

@@ -66,13 +66,11 @@ export default function MeteredTabForm({
     if (!tab || !meta) return null;
     const committedMonthlyAfterDiscountUsd =
       Number(meta.committedMonthlyUsd) * (1 - Number(meta.contractDiscountPct));
-    const overageRevenueUsd =
-      Number(meta.overageRatePerUnitUsd) * meta.overageUnits;
+    const overageRevenueUsd = Number(meta.overageRatePerUnitUsd) * meta.overageUnits;
     const monthlyRevenueCents = tab.monthlyRevenueCents;
     const monthlyCostCents = tab.monthlyCostCents;
     const monthlyMarginCents = monthlyRevenueCents - monthlyCostCents;
-    const monthlyMarginPct =
-      monthlyRevenueCents > 0 ? monthlyMarginCents / monthlyRevenueCents : 0;
+    const monthlyMarginPct = monthlyRevenueCents > 0 ? monthlyMarginCents / monthlyRevenueCents : 0;
     return {
       committedMonthlyAfterDiscountCents: Math.round(committedMonthlyAfterDiscountUsd * 100),
       overageUnits: meta.overageUnits,
@@ -99,9 +97,7 @@ export default function MeteredTabForm({
         <input type="hidden" name="productId" value={productId} />
 
         <div className="space-y-1">
-          <Label htmlFor="committedUnitsPerMonth">
-            Committed {pricing.unitLabel} / month
-          </Label>
+          <Label htmlFor="committedUnitsPerMonth">Committed {pricing.unitLabel} / month</Label>
           <Input
             id="committedUnitsPerMonth"
             name="committedUnitsPerMonth"
@@ -166,9 +162,7 @@ export default function MeteredTabForm({
             </dd>
 
             <dt className="text-slate-500">Total monthly revenue</dt>
-            <dd className="font-medium text-right">
-              {formatCents(summary.monthlyRevenueCents)}
-            </dd>
+            <dd className="font-medium text-right">{formatCents(summary.monthlyRevenueCents)}</dd>
 
             <dt className="text-slate-500">Monthly cost</dt>
             <dd className="font-medium text-right">{formatCents(summary.monthlyCostCents)}</dd>

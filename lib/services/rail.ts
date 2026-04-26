@@ -3,7 +3,6 @@ import Decimal from 'decimal.js';
 import { RailKind, MarginBasis } from '@prisma/client';
 import { ValidationError } from '../utils/errors';
 import type { IProductRevenueInfoRepository } from './_revenueModelGuard';
-import { assertProductRevenueModel } from './_revenueModelGuard';
 
 export interface IRailRepository extends IProductRevenueInfoRepository {
   findByProduct(productId: string): Promise<unknown[]>;
@@ -105,10 +104,7 @@ export class RailService {
     if (!info) return; // upsert will surface a not-found / FK error downstream
     if (info.kind !== 'SAAS_USAGE') return;
     if (info.revenueModel === 'METERED') {
-      throw new ValidationError(
-        'kind',
-        `rail kind ${kind} not applicable to METERED products`,
-      );
+      throw new ValidationError('kind', `rail kind ${kind} not applicable to METERED products`);
     }
   }
 

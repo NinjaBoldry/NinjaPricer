@@ -5,11 +5,7 @@ import { ProductRepository } from '@/lib/db/repositories/product';
 import { MeteredPricingService } from '@/lib/services/meteredPricing';
 import { MeteredPricingForm, type MeteredPricingInitial } from './MeteredPricingForm';
 
-export default async function MeteredPricingPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default async function MeteredPricingPage({ params }: { params: { id: string } }) {
   const product = await new ProductRepository(prisma).findById(params.id);
   if (!product) notFound();
   if (product.revenueModel !== 'METERED') notFound();

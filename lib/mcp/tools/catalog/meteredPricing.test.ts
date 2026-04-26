@@ -127,8 +127,6 @@ describe('metered pricing MCP tools', () => {
   });
 
   it('get schema rejects unknown keys (.strict)', () => {
-    expect(() =>
-      getMeteredPricingTool.inputSchema.parse({ productId: 'p1', extra: 1 }),
-    ).toThrow();
+    expect(() => getMeteredPricingTool.inputSchema.parse({ productId: 'p1', extra: 1 })).toThrow();
   });
 });

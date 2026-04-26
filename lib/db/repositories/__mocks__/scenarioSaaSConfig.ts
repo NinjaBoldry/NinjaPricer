@@ -14,9 +14,7 @@ export function mockScenarioSaaSConfigRepo(
   revenueModel: SaaSRevenueModel = 'PER_SEAT',
 ): ScenarioSaaSConfigRepository {
   return {
-    findProductRevenueInfo: vi
-      .fn()
-      .mockResolvedValue({ kind: 'SAAS_USAGE', revenueModel }),
+    findProductRevenueInfo: vi.fn().mockResolvedValue({ kind: 'SAAS_USAGE', revenueModel }),
     upsert: vi.fn().mockResolvedValue({
       id: 'sc1',
       scenarioId: 's1',

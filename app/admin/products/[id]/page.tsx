@@ -143,8 +143,7 @@ export default async function ProductDetailPage({
         </h2>
         <div className="grid grid-cols-2 gap-2 max-w-lg">
           {SUBSECTIONS.filter(
-            ({ href }) =>
-              product.revenueModel === 'PER_SEAT' || !PER_SEAT_ONLY_HREFS.has(href),
+            ({ href }) => product.revenueModel === 'PER_SEAT' || !PER_SEAT_ONLY_HREFS.has(href),
           ).map(({ href, label }) => (
             <Link
               key={href}

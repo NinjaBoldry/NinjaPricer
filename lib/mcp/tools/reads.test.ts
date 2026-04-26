@@ -113,7 +113,6 @@ describe('list_products tool', () => {
       },
     ]);
   });
-
 });
 
 describe('get_product tool', () => {
