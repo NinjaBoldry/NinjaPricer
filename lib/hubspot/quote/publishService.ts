@@ -193,6 +193,26 @@ export async function runPublishScenario(
     const productSku = productDetail?.sku ?? '';
     const productDescription = productDetail?.description ?? '';
 
+    // METERED branch: emit a metered-shape line that the translator expands
+    // into base + (optional) overage HubSpot line items.
+    if (tabResult?.saasMeta?.metered) {
+      const m = tabResult.saasMeta.metered;
+      return {
+        kind: 'METERED_SAAS' as const,
+        productId: cfg.productId,
+        productName,
+        productSku,
+        productDescription,
+        contractMonths: scenario.contractMonths,
+        unitLabel: m.unitLabel,
+        includedUnitsPerMonth: m.includedUnitsPerMonth,
+        committedMonthlyUsd: m.committedMonthlyUsd,
+        contractDiscountPct: m.contractDiscountPct,
+        overageUnits: m.overageUnits,
+        overageRatePerUnitUsd: m.overageRatePerUnitUsd,
+      };
+    }
+
     const listPriceMonthly =
       productDetail?.listPrice?.usdPerSeatPerMonth != null
         ? new Decimal(productDetail.listPrice.usdPerSeatPerMonth.toString())

@@ -1,4 +1,4 @@
-import type Decimal from 'decimal.js';
+import Decimal from 'decimal.js';
 
 export interface SaaSLine {
   kind: 'SAAS';
@@ -12,6 +12,21 @@ export interface SaaSLine {
   discountPct: Decimal | null;
   contractMonths: number;
   rampSchedule: Array<{ monthStart: number; monthEnd: number; pricePerSeat: number }> | null;
+}
+
+export interface MeteredSaaSLine {
+  kind: 'METERED_SAAS';
+  productId: string;
+  productName: string;
+  productSku: string;
+  productDescription: string;
+  contractMonths: number;
+  unitLabel: string;
+  includedUnitsPerMonth: number;
+  committedMonthlyUsd: Decimal;
+  contractDiscountPct: Decimal;
+  overageUnits: number;
+  overageRatePerUnitUsd: Decimal;
 }
 
 export interface LaborLine {
@@ -35,7 +50,7 @@ export interface BundleLine {
 
 export interface TranslatorInput {
   scenarioId: string;
-  tabs: Array<SaaSLine | LaborLine>;
+  tabs: Array<SaaSLine | MeteredSaaSLine | LaborLine>;
   bundles: BundleLine[];
 }
 
@@ -62,6 +77,38 @@ export function scenarioToHubSpotLineItems(input: TranslatorInput): HubSpotLineI
   }
 
   for (const t of input.tabs) {
+    if (t.kind === 'METERED_SAAS') {
+      const effectiveBase = t.committedMonthlyUsd.mul(new Decimal(1).minus(t.contractDiscountPct));
+      items.push({
+        properties: {
+          name: `${t.productName} — Monthly base (${t.includedUnitsPerMonth} ${t.unitLabel} included)`,
+          description: t.productDescription ?? '',
+          hs_sku: t.productSku ?? '',
+          price: effectiveBase.toFixed(2),
+          quantity: String(t.contractMonths),
+          recurringbillingfrequency: 'monthly',
+          pricer_reason: 'metered_base',
+          pricer_scenario_id: input.scenarioId,
+          pricer_original_list_price: t.committedMonthlyUsd.toFixed(2),
+        },
+      });
+      if (t.overageUnits > 0) {
+        items.push({
+          properties: {
+            name: `${t.productName} — Overage (${t.overageUnits} ${t.unitLabel}/mo × ${t.contractMonths} mo)`,
+            description: t.productDescription ?? '',
+            hs_sku: t.productSku ?? '',
+            price: t.overageRatePerUnitUsd.toFixed(2),
+            quantity: String(t.overageUnits * t.contractMonths),
+            recurringbillingfrequency: 'monthly',
+            pricer_reason: 'metered_overage',
+            pricer_scenario_id: input.scenarioId,
+          },
+        });
+      }
+      continue;
+    }
+
     if (t.kind === 'LABOR') {
       items.push({
         properties: {

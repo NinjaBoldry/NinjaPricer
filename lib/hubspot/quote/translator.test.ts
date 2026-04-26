@@ -80,6 +80,75 @@ describe('scenarioToHubSpotLineItems', () => {
     expect(JSON.parse(result[0].properties.pricer_ramp_schedule as string)).toEqual(ramp);
   });
 
+  it('METERED tab → recurring base + overage line items', () => {
+    const result = scenarioToHubSpotLineItems({
+      scenarioId: 's1',
+      tabs: [
+        {
+          kind: 'METERED_SAAS',
+          productId: 'p-omni',
+          productName: 'Omni Concierge',
+          productSku: 'OMNI-01',
+          productDescription: 'Concierge w/ usage',
+          contractMonths: 36,
+          unitLabel: 'interaction',
+          includedUnitsPerMonth: 5000,
+          committedMonthlyUsd: new Decimal(2500),
+          contractDiscountPct: new Decimal('0.10'),
+          overageUnits: 1200,
+          overageRatePerUnitUsd: new Decimal('0.50'),
+        },
+      ],
+      bundles: [],
+    });
+    expect(result).toHaveLength(2);
+    // base
+    const base = result[0]!;
+    expect(base.properties.pricer_reason).toBe('metered_base');
+    expect(base.properties.price).toBe('2250.00');
+    expect(base.properties.quantity).toBe('36');
+    expect(base.properties.recurringbillingfrequency).toBe('monthly');
+    expect(base.properties.name).toContain('Monthly base');
+    expect(base.properties.name).toContain('5000 interaction');
+    expect(base.properties.pricer_original_list_price).toBe('2500.00');
+    // overage
+    const overage = result[1]!;
+    expect(overage.properties.pricer_reason).toBe('metered_overage');
+    expect(overage.properties.price).toBe('0.50');
+    expect(overage.properties.quantity).toBe(String(1200 * 36));
+    expect(overage.properties.recurringbillingfrequency).toBe('monthly');
+    expect(overage.properties.name).toContain('Overage');
+    expect(overage.properties.name).toContain('1200 interaction/mo × 36 mo');
+  });
+
+  it('METERED tab with overageUnits=0 → omits overage line item', () => {
+    const result = scenarioToHubSpotLineItems({
+      scenarioId: 's1',
+      tabs: [
+        {
+          kind: 'METERED_SAAS',
+          productId: 'p-omni',
+          productName: 'Omni Concierge',
+          productSku: 'OMNI-01',
+          productDescription: '',
+          contractMonths: 12,
+          unitLabel: 'interaction',
+          includedUnitsPerMonth: 5000,
+          committedMonthlyUsd: new Decimal(2500),
+          contractDiscountPct: new Decimal('0'),
+          overageUnits: 0,
+          overageRatePerUnitUsd: new Decimal('0.50'),
+        },
+      ],
+      bundles: [],
+    });
+    expect(result).toHaveLength(1);
+    const base = result[0]!;
+    expect(base.properties.pricer_reason).toBe('metered_base');
+    expect(base.properties.price).toBe('2500.00');
+    expect(base.properties.quantity).toBe('12');
+  });
+
   it('labor line → pricer_reason: other', () => {
     const result = scenarioToHubSpotLineItems({
       scenarioId: 's1',

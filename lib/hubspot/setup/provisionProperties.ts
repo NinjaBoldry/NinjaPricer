@@ -86,6 +86,8 @@ export const REQUIRED_PROPERTIES: PropertyDefinition[] = [
       { label: 'Bundle Rollup', value: 'bundle_rollup' },
       { label: 'Negotiated', value: 'negotiated' },
       { label: 'Ramp', value: 'ramp' },
+      { label: 'Metered Base', value: 'metered_base' },
+      { label: 'Metered Overage', value: 'metered_overage' },
       { label: 'Other', value: 'other' },
     ],
   },
