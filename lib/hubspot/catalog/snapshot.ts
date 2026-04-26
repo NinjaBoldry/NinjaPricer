@@ -11,7 +11,7 @@ export async function loadCatalogSnapshot(prisma: PrismaClient): Promise<Catalog
   // Load all active products, including their optional list price (one-to-one relation)
   const activeProducts = await prisma.product.findMany({
     where: { isActive: true },
-    include: { listPrice: true },
+    include: { listPrice: true, meteredPricing: true },
   });
 
   const products: ProductInput[] = activeProducts.map((p) => {
@@ -28,6 +28,15 @@ export async function loadCatalogSnapshot(prisma: PrismaClient): Promise<Catalog
       sku: p.sku ?? '',
       description: p.description ?? '',
       headlineMonthlyPrice,
+      revenueModel: p.revenueModel,
+      meteredPricing: p.meteredPricing
+        ? {
+            unitLabel: p.meteredPricing.unitLabel,
+            includedUnitsPerMonth: p.meteredPricing.includedUnitsPerMonth,
+            committedMonthlyUsd: new Decimal(p.meteredPricing.committedMonthlyUsd.toString()),
+            overageRatePerUnitUsd: new Decimal(p.meteredPricing.overageRatePerUnitUsd.toString()),
+          }
+        : null,
     };
   });
 

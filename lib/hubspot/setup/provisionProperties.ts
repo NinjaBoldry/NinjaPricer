@@ -48,6 +48,32 @@ export const REQUIRED_PROPERTIES: PropertyDefinition[] = [
     fieldType: 'text',
     groupName: 'productinformation',
   },
+  // Phase 6: METERED-product fields. Set on Products whose Ninja Pricer
+  // revenueModel = METERED so HubSpot views can surface usage terms.
+  {
+    objectType: 'products',
+    name: 'np_metered_unit_label',
+    label: 'NP Metered Unit Label',
+    type: 'string',
+    fieldType: 'text',
+    groupName: 'productinformation',
+  },
+  {
+    objectType: 'products',
+    name: 'np_included_units',
+    label: 'NP Included Units / Month',
+    type: 'number',
+    fieldType: 'number',
+    groupName: 'productinformation',
+  },
+  {
+    objectType: 'products',
+    name: 'np_overage_rate',
+    label: 'NP Overage Rate (USD / unit)',
+    type: 'number',
+    fieldType: 'number',
+    groupName: 'productinformation',
+  },
   // Line items (used by later phases, created now so a single setup run covers everything)
   {
     objectType: 'line_items',

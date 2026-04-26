@@ -1,6 +1,12 @@
 import { createHash } from 'node:crypto';
 import Decimal from 'decimal.js';
 
+export interface MeteredSyncFields {
+  unitLabel: string;
+  includedUnitsPerMonth: number;
+  overageRatePerUnitUsd: string;
+}
+
 export interface ProductSyncFields {
   kind: 'PRODUCT';
   name: string;
@@ -8,6 +14,7 @@ export interface ProductSyncFields {
   description: string;
   unitPrice: string | number;
   recurringBillingFrequency: string;
+  metered?: MeteredSyncFields;
 }
 
 export interface BundleSyncFields {
@@ -35,6 +42,16 @@ function canonicalise(v: SyncFields): string {
   if (v.kind === 'BUNDLE') {
     const items = [...v.itemIdentifiers].sort();
     return JSON.stringify({ ...base, itemIdentifiers: items });
+  }
+  if (v.metered) {
+    return JSON.stringify({
+      ...base,
+      metered: {
+        unitLabel: v.metered.unitLabel,
+        includedUnitsPerMonth: v.metered.includedUnitsPerMonth,
+        overageRatePerUnitUsd: new Decimal(v.metered.overageRatePerUnitUsd).toFixed(6),
+      },
+    });
   }
   return JSON.stringify(base);
 }
