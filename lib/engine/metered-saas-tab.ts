@@ -39,11 +39,15 @@ export function computeMeteredSaaSTab(
   const saasMeta: SaaSMeta = {
     effectiveDiscountPct: contractDiscountPct,
     metered: {
+      unitLabel: mp.unitLabel,
       includedUnitsPerMonth: mp.includedUnitsPerMonth,
       committedMonthlyUsd: mp.committedMonthlyUsd,
       overageUnits,
       overageRatePerUnitUsd: mp.overageRatePerUnitUsd,
       contractDiscountPct,
+      costPerUnitUsd: mp.costPerUnitUsd,
+      committedUnitsPerMonth: committed,
+      expectedActualUnitsPerMonth: expected,
     },
   };
 

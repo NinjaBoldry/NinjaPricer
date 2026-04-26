@@ -159,11 +159,15 @@ export interface ComputeRequest {
 export interface SaaSMeta {
   effectiveDiscountPct: Decimal;
   metered?: {
+    unitLabel: string;
     includedUnitsPerMonth: number;
     committedMonthlyUsd: Decimal;
     overageUnits: number;
     overageRatePerUnitUsd: Decimal;
     contractDiscountPct: Decimal;
+    costPerUnitUsd: Decimal;
+    committedUnitsPerMonth: number;
+    expectedActualUnitsPerMonth: number;
   };
 }
 

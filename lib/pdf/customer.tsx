@@ -8,9 +8,11 @@
  */
 import React from 'react';
 import { Document, Page, StyleSheet, Text, View } from '@react-pdf/renderer';
-import { formatCents, formatDate } from './format';
+import { formatCents, formatDate, formatPct } from './format';
 import { toBuffer } from './renderer';
 import type { RenderArgs } from '@/lib/services/quote';
+import type { TabResult } from '@/lib/engine/types';
+import { d } from '@/lib/utils/money';
 
 // All styles use padding/gap — never margin — so the serialized tree stays
 // free of the word "margin" (see business rule above).
@@ -23,6 +25,7 @@ const s = StyleSheet.create({
   },
   h1: { fontSize: 20, fontWeight: 700, paddingBottom: 4 },
   h2: { fontSize: 14, fontWeight: 700, paddingTop: 16, paddingBottom: 6 },
+  h3: { fontSize: 11, fontWeight: 700, paddingTop: 8, paddingBottom: 2 },
   muted: { color: '#6b7280' },
   row: { flexDirection: 'row', justifyContent: 'space-between', paddingBottom: 2 },
   table: { paddingTop: 6, borderTopWidth: 1, borderTopColor: '#e5e7eb' },
@@ -36,6 +39,11 @@ const s = StyleSheet.create({
   col1: { flex: 3 },
   col2: { flex: 2, textAlign: 'right' },
   col3: { flex: 2, textAlign: 'right' },
+  meteredBlock: {
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
   footer: {
     position: 'absolute',
     bottom: 24,
@@ -46,6 +54,62 @@ const s = StyleSheet.create({
     fontSize: 8,
   },
 });
+
+function formatUsdDecimal(v: { toNumber(): number } | number): string {
+  const n = typeof v === 'number' ? v : v.toNumber();
+  return formatCents(Math.round(n * 100));
+}
+
+function meteredLineItem({
+  tab,
+  productName,
+  contractMonths,
+}: {
+  tab: TabResult;
+  productName: string;
+  contractMonths: number;
+}) {
+  const m = tab.saasMeta!.metered!;
+  const unitLabel = m.unitLabel;
+  const committedAfterDiscount = m.committedMonthlyUsd.mul(d(1).minus(m.contractDiscountPct));
+  return (
+    <View key={`metered-${tab.productId}`} style={s.meteredBlock}>
+      <Text style={s.h3}>
+        {productName} — {contractMonths}-month term
+      </Text>
+      <View style={s.row}>
+        <Text>
+          Monthly base ({m.includedUnitsPerMonth.toLocaleString()} {unitLabel} included)
+        </Text>
+        <Text>{formatUsdDecimal(m.committedMonthlyUsd)}</Text>
+      </View>
+      <View style={s.row}>
+        <Text>Overage rate</Text>
+        <Text>
+          {formatUsdDecimal(m.overageRatePerUnitUsd)} / {unitLabel}
+        </Text>
+      </View>
+      {m.contractDiscountPct.gt(0) && (
+        <View style={s.row}>
+          <Text>Contract discount ({contractMonths}-mo)</Text>
+          <Text>-{formatPct(m.contractDiscountPct.toNumber())}</Text>
+        </View>
+      )}
+      <View style={s.row}>
+        <Text>Effective monthly base</Text>
+        <Text>{formatUsdDecimal(committedAfterDiscount)}</Text>
+      </View>
+      <View style={s.row}>
+        <Text>Expected monthly total</Text>
+        <Text>{formatCents(tab.monthlyRevenueCents)}</Text>
+      </View>
+      <View style={s.row}>
+        <Text>Contract total</Text>
+        <Text>{formatCents(tab.contractRevenueCents)}</Text>
+      </View>
+    </View>
+  );
+}
 
 export async function renderCustomerPdf(args: RenderArgs): Promise<Buffer> {
   const { scenario, generatedAt, version, result } = args;
@@ -101,6 +165,22 @@ export async function renderCustomerPdf(args: RenderArgs): Promise<Buffer> {
             <Text style={s.col3}>{formatCents(result.totals.contractRevenueCents)}</Text>
           </View>
         </View>
+
+        {/* Metered subscription detail blocks (if any) */}
+        {result.perTab.some((t) => t.kind === 'SAAS_USAGE' && t.saasMeta?.metered) && (
+          <>
+            <Text style={s.h2}>Subscription detail</Text>
+            {result.perTab
+              .filter((t) => t.kind === 'SAAS_USAGE' && t.saasMeta?.metered)
+              .map((t) =>
+                meteredLineItem({
+                  tab: t,
+                  productName: `Subscription (${t.productId})`,
+                  contractMonths: scenario.contractMonths,
+                }),
+              )}
+          </>
+        )}
 
         {/* Footer */}
         <Text style={s.footer}>
