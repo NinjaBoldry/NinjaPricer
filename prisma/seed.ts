@@ -1,4 +1,4 @@
-import { PrismaClient, Role, ProductKind } from '@prisma/client';
+import { PrismaClient, Role, ProductKind, SaaSRevenueModel } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -28,6 +28,20 @@ async function main() {
     { name: 'Ninja Notes', kind: ProductKind.SAAS_USAGE, sortOrder: 1 },
     { name: 'Training & White-glove', kind: ProductKind.PACKAGED_LABOR, sortOrder: 2 },
     { name: 'Service', kind: ProductKind.CUSTOM_LABOR, sortOrder: 3 },
+    {
+      name: 'Omni Sales',
+      kind: ProductKind.SAAS_USAGE,
+      revenueModel: SaaSRevenueModel.PER_SEAT,
+      sortOrder: 4,
+      isActive: false,
+    },
+    {
+      name: 'Omni Concierge',
+      kind: ProductKind.SAAS_USAGE,
+      revenueModel: SaaSRevenueModel.METERED,
+      sortOrder: 5,
+      isActive: false,
+    },
   ];
   for (const p of products) {
     await prisma.product.upsert({
@@ -37,6 +51,25 @@ async function main() {
     });
   }
   console.log('Seeded v1 products.');
+
+  // Omni Concierge requires a MeteredPricing template (golden-fixture values from Task 6-D).
+  // update: {} keeps this idempotent so admin edits aren't overwritten on re-seed.
+  const concierge = await prisma.product.findUnique({ where: { name: 'Omni Concierge' } });
+  if (concierge) {
+    await prisma.meteredPricing.upsert({
+      where: { productId: concierge.id },
+      create: {
+        productId: concierge.id,
+        unitLabel: 'minute',
+        includedUnitsPerMonth: 5000,
+        committedMonthlyUsd: '2500',
+        overageRatePerUnitUsd: '0.50',
+        costPerUnitUsd: '0.20',
+      },
+      update: {},
+    });
+    console.log('Seeded Omni Concierge metered pricing template.');
+  }
 }
 
 main()
