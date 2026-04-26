@@ -28,6 +28,19 @@ export default async function ScenarioBuilderLayout({
   if (!scenario) notFound();
   if (user.role === 'SALES' && scenario.ownerId !== user.id) notFound();
 
+  // Phase 6: each METERED SaaS product on the scenario gets its own tab in the
+  // left nav, alongside the hardcoded singleton "Notes" tab (PER_SEAT today).
+  const meteredProducts = await prisma.product.findMany({
+    where: {
+      isActive: true,
+      kind: 'SAAS_USAGE',
+      revenueModel: 'METERED',
+      scenarioSaaSConfigs: { some: { scenarioId: params.id } },
+    },
+    select: { id: true, name: true },
+    orderBy: { sortOrder: 'asc' },
+  });
+
   return (
     <div className="flex flex-col min-h-screen">
       <ScenarioHeader
@@ -44,7 +57,7 @@ export default async function ScenarioBuilderLayout({
         bundles={bundles}
         appliedBundleId={scenario.appliedBundleId}
       >
-        <ScenarioTabNav scenarioId={params.id} />
+        <ScenarioTabNav scenarioId={params.id} meteredProducts={meteredProducts} />
         <main className="flex-1 overflow-auto p-6">{children}</main>
       </ScenarioBuilderClient>
     </div>
