@@ -119,7 +119,13 @@ export async function POST(request: Request) {
         return rpcErr(env.id, -32602, 'Invalid params: name required');
       }
       const out = await server.callTool(params.name, params.arguments ?? {}, ctx);
-      return rpcOk(env.id, { content: [{ type: 'json', json: out }] });
+      // MCP spec: content blocks must be text/image/audio/resource. There is no
+      // "json" content type — older clients tolerated it; spec-strict clients
+      // (Cowork, current Claude Code) reject as malformed. Stringify tool
+      // output as text instead.
+      return rpcOk(env.id, {
+        content: [{ type: 'text', text: JSON.stringify(out) }],
+      });
     }
 
     return rpcErr(env.id, -32601, `Method not found: ${env.method}`);
