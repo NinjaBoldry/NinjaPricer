@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { authenticateMcpRequest } from '@/lib/mcp/auth';
 import { createMcpServer } from '@/lib/mcp/server';
 import { toMcpError } from '@/lib/mcp/errors';
+import { resolvePublicOrigin } from '@/lib/oauth/metadata';
 import { readTools } from '@/lib/mcp/tools/reads';
 import { adminReadTools } from '@/lib/mcp/tools/adminReads';
 import { scenarioWriteTools } from '@/lib/mcp/tools/scenarioWrites';
@@ -62,6 +63,24 @@ function rpcErr(id: JsonRpcEnvelope['id'], code: number, message: string, data?:
   return NextResponse.json({ jsonrpc: '2.0', id, error: { code, message, data } });
 }
 
+// Per the MCP authorization spec, an unauthenticated request must include a
+// WWW-Authenticate header pointing at the resource metadata so OAuth-aware clients
+// (Cowork, Claude Desktop) can discover where to authenticate. We additionally
+// return the JSON-RPC error body so existing direct-API clients see a sensible
+// payload, but they only need the body, not the header.
+function rpcUnauthorized(id: JsonRpcEnvelope['id'], request: Request, message: string) {
+  const origin = resolvePublicOrigin(request);
+  return NextResponse.json(
+    { jsonrpc: '2.0', id, error: { code: -32001, message } },
+    {
+      status: 401,
+      headers: {
+        'WWW-Authenticate': `Bearer realm="ninja-pricer", resource_metadata="${origin}/.well-known/oauth-protected-resource"`,
+      },
+    },
+  );
+}
+
 export async function POST(request: Request) {
   let env: JsonRpcEnvelope;
   try {
@@ -70,9 +89,18 @@ export async function POST(request: Request) {
     return rpcErr(null, -32700, 'Parse error');
   }
 
+  let ctx;
   try {
-    const ctx = await authenticateMcpRequest(request);
+    ctx = await authenticateMcpRequest(request);
+  } catch (err) {
+    const mapped = toMcpError(err);
+    if (mapped.code === -32001) {
+      return rpcUnauthorized(env.id ?? null, request, mapped.message);
+    }
+    return rpcErr(env.id ?? null, mapped.code, mapped.message, mapped.data);
+  }
 
+  try {
     if (env.method === 'initialize') {
       return rpcOk(env.id, {
         protocolVersion: '2025-03-26',

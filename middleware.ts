@@ -13,6 +13,12 @@ export default NextAuth(authConfig).auth((req) => {
     pathname.startsWith('/api/mcp') ||
     pathname.startsWith('/api/quotes/') ||
     pathname.startsWith('/api/hubspot/webhooks/') ||
+    // OAuth 2.1 endpoints — DCR (open registration), token exchange, and metadata
+    // discovery must be reachable without an existing NextAuth session. The
+    // /authorize endpoint enforces its own session check and bounces to sign-in.
+    pathname.startsWith('/api/oauth/register') ||
+    pathname.startsWith('/api/oauth/token') ||
+    pathname.startsWith('/.well-known/') ||
     pathname.startsWith('/_next') ||
     pathname.startsWith('/favicon');
 
