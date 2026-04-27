@@ -2,6 +2,15 @@ import { PrismaClient, Role, ProductKind, SaaSRevenueModel } from '@prisma/clien
 
 const prisma = new PrismaClient();
 
+/**
+ * Seed runs on every Railway deploy via `npm start`. Must be idempotent.
+ *
+ * Catalog source of truth: HubSpot (synced 2026-04-25). The product names + ids
+ * here mirror what scripts/sync-hubspot-catalog-once.ts populates. Pricing
+ * (ListPrice, MeteredPricing) is NOT seeded here — the sync script + admin UI
+ * own that. The seed only ensures product shells exist so the sync is safe to
+ * re-run on a fresh DB.
+ */
 async function main() {
   const adminEmail = process.env.SEED_ADMIN_EMAIL;
   if (!adminEmail) {
@@ -24,36 +33,47 @@ async function main() {
   });
   console.log(`Seeded admin user: ${adminEmail}`);
 
-  const products = [
-    { name: 'Ninja Notes', kind: ProductKind.SAAS_USAGE, sortOrder: 1 },
-    { name: 'Training & White-glove', kind: ProductKind.PACKAGED_LABOR, sortOrder: 2 },
-    { name: 'Service', kind: ProductKind.CUSTOM_LABOR, sortOrder: 3 },
-    {
-      name: 'Omni Sales',
-      kind: ProductKind.SAAS_USAGE,
-      revenueModel: SaaSRevenueModel.PER_SEAT,
-      sortOrder: 4,
-      isActive: false,
-    },
-    {
-      name: 'Omni Concierge',
-      kind: ProductKind.SAAS_USAGE,
-      revenueModel: SaaSRevenueModel.METERED,
-      sortOrder: 5,
-      isActive: false,
-    },
+  type ProductSeed = {
+    name: string;
+    kind: ProductKind;
+    revenueModel?: SaaSRevenueModel;
+    sortOrder: number;
+    isActive?: boolean;
+  };
+
+  const products: ProductSeed[] = [
+    // ── SaaS / per-seat ─────────────────────────────────────────────────
+    { name: 'Ninja Notes Enterprise', kind: ProductKind.SAAS_USAGE, revenueModel: SaaSRevenueModel.PER_SEAT, sortOrder: 1, isActive: true },
+    { name: 'Notes Pro',              kind: ProductKind.SAAS_USAGE, revenueModel: SaaSRevenueModel.PER_SEAT, sortOrder: 11, isActive: true },
+    { name: 'Notes Entry',            kind: ProductKind.SAAS_USAGE, revenueModel: SaaSRevenueModel.PER_SEAT, sortOrder: 12, isActive: true },
+    { name: 'Notes Free',             kind: ProductKind.SAAS_USAGE, revenueModel: SaaSRevenueModel.PER_SEAT, sortOrder: 13, isActive: false },
+    { name: 'Notes Trial',            kind: ProductKind.SAAS_USAGE, revenueModel: SaaSRevenueModel.PER_SEAT, sortOrder: 14, isActive: false },
+    { name: 'Omni Sales',             kind: ProductKind.SAAS_USAGE, revenueModel: SaaSRevenueModel.PER_SEAT, sortOrder: 4,  isActive: false },
+    { name: 'Sona Wearable 1.0',      kind: ProductKind.SAAS_USAGE, revenueModel: SaaSRevenueModel.PER_SEAT, sortOrder: 20, isActive: false },
+
+    // ── SaaS / metered ──────────────────────────────────────────────────
+    { name: 'Omni Concierge',                kind: ProductKind.SAAS_USAGE, revenueModel: SaaSRevenueModel.METERED, sortOrder: 5, isActive: false },
+    { name: 'Omni Concierge — White Glove',  kind: ProductKind.SAAS_USAGE, revenueModel: SaaSRevenueModel.METERED, sortOrder: 6, isActive: false },
+
+    // ── Labor ───────────────────────────────────────────────────────────
+    { name: 'Omni Customization',                       kind: ProductKind.PACKAGED_LABOR, sortOrder: 30, isActive: false },
+    { name: 'Omni Concierge Monthly Maintenance',       kind: ProductKind.PACKAGED_LABOR, sortOrder: 31, isActive: false },
+    { name: 'Omni Concierge — Agent update fee',        kind: ProductKind.PACKAGED_LABOR, sortOrder: 32, isActive: false },
+    { name: 'Custom Development Work',                  kind: ProductKind.CUSTOM_LABOR,   sortOrder: 33, isActive: false },
+    { name: 'Omni Concierge — Additional talk time',    kind: ProductKind.CUSTOM_LABOR,   sortOrder: 34, isActive: false },
   ];
+
   for (const p of products) {
     await prisma.product.upsert({
       where: { name: p.name },
-      update: {},
+      update: {}, // idempotent — admin edits are preserved
       create: p,
     });
   }
-  console.log('Seeded v1 products.');
+  console.log(`Seeded ${products.length} product shells.`);
 
-  // Omni Concierge requires a MeteredPricing template (golden-fixture values from Task 6-D).
-  // update: {} keeps this idempotent so admin edits aren't overwritten on re-seed.
+  // Omni Concierge keeps its golden-fixture metered pricing template (Task 6-D values).
+  // White Glove + future METERED tiers get placeholder values from the sync script.
   const concierge = await prisma.product.findUnique({ where: { name: 'Omni Concierge' } });
   if (concierge) {
     await prisma.meteredPricing.upsert({

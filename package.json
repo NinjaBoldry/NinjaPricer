@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "test -n \"$QUOTE_STORAGE_DIR\" && mkdir -p \"$QUOTE_STORAGE_DIR\" && prisma migrate deploy && prisma db seed && next start",
+    "start": "test -n \"$QUOTE_STORAGE_DIR\" && mkdir -p \"$QUOTE_STORAGE_DIR\" && prisma migrate deploy && next start",
     "postinstall": "prisma generate",
     "lint": "next lint",
     "format": "prettier --write .",
