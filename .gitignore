@@ -15,3 +15,6 @@ dist/
 
 /lib/generated/prisma
 .quote-storage/
+
+# Claude Code worktrees and local config
+.claude/
