@@ -72,29 +72,31 @@ enum SaaSRevenueModel {
 }
 
 model User {
-  id              String           @id @default(cuid())
-  email           String           @unique
-  name            String?
-  image           String?
-  emailVerified   DateTime?
-  role            Role             @default(SALES)
-  microsoftSub    String?          @unique
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  scenarios       Scenario[]       @relation("ScenarioOwner")
-  quotesGenerated Quote[]          @relation("QuoteGenerator")
-  commissionsAs   CommissionRule[] @relation("CommissionRecipient")
-  accounts        Account[]        @relation("UserAccounts")
-  sessions        Session[]        @relation("UserSessions")
-  apiTokens       ApiToken[]       @relation("TokenOwner")
-  auditEntries    ApiAuditLog[]    @relation("AuditActor")
+  id                String                   @id @default(cuid())
+  email             String                   @unique
+  name              String?
+  image             String?
+  emailVerified     DateTime?
+  role              Role                     @default(SALES)
+  microsoftSub      String?                  @unique
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+  scenarios         Scenario[]               @relation("ScenarioOwner")
+  quotesGenerated   Quote[]                  @relation("QuoteGenerator")
+  commissionsAs     CommissionRule[]         @relation("CommissionRecipient")
+  accounts          Account[]                @relation("UserAccounts")
+  sessions          Session[]                @relation("UserSessions")
+  apiTokens         ApiToken[]               @relation("TokenOwner")
+  auditEntries      ApiAuditLog[]            @relation("AuditActor")
+  oauthAuthCodes    OAuthAuthorizationCode[] @relation("OAuthCodeUser")
+  oauthAccessTokens OAuthAccessToken[]       @relation("OAuthTokenUser")
 }
 
 model Product {
   id                    String                   @id @default(cuid())
   name                  String                   @unique
   kind                  ProductKind
-  revenueModel SaaSRevenueModel @default(PER_SEAT)
+  revenueModel          SaaSRevenueModel         @default(PER_SEAT)
   sortOrder             Int                      @default(0)
   isActive              Boolean                  @default(true)
   description           String?
@@ -189,16 +191,16 @@ model ListPrice {
 }
 
 model MeteredPricing {
-  id                     String  @id @default(cuid())
-  productId              String  @unique
-  unitLabel              String
-  includedUnitsPerMonth  Int
-  committedMonthlyUsd    Decimal @db.Decimal(18, 4)
-  overageRatePerUnitUsd  Decimal @db.Decimal(18, 6)
-  costPerUnitUsd         Decimal @db.Decimal(18, 6)
-  createdAt              DateTime @default(now())
-  updatedAt              DateTime @updatedAt
-  product                Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  id                    String   @id @default(cuid())
+  productId             String   @unique
+  unitLabel             String
+  includedUnitsPerMonth Int
+  committedMonthlyUsd   Decimal  @db.Decimal(18, 4)
+  overageRatePerUnitUsd Decimal  @db.Decimal(18, 6)
+  costPerUnitUsd        Decimal  @db.Decimal(18, 6)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  product               Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
 
 model VolumeDiscountTier {
@@ -312,15 +314,15 @@ model CommissionTier {
 }
 
 model Bundle {
-  id          String       @id @default(cuid())
-  name        String       @unique
-  description String?
-  sku         String?      @unique
-  isActive    Boolean      @default(true)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  id               String             @id @default(cuid())
+  name             String             @unique
+  description      String?
+  sku              String?            @unique
+  isActive         Boolean            @default(true)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
   items            BundleItem[]
-  scenarios        Scenario[]        @relation("ScenarioAppliedBundle")
+  scenarios        Scenario[]         @relation("ScenarioAppliedBundle")
   hubspotProductId String?
   hubspotMap       HubSpotProductMap?
 }
@@ -351,44 +353,44 @@ model Rail {
 }
 
 model Scenario {
-  id              String               @id @default(cuid())
-  name            String
-  customerName    String
-  ownerId         String
-  contractMonths  Int
-  appliedBundleId String?
-  notes           String?
-  status          ScenarioStatus       @default(DRAFT)
-  isArchived      Boolean              @default(false)
-  createdAt       DateTime             @default(now())
-  updatedAt       DateTime             @updatedAt
-  owner           User                 @relation("ScenarioOwner", fields: [ownerId], references: [id], onDelete: Restrict)
-  appliedBundle   Bundle?              @relation("ScenarioAppliedBundle", fields: [appliedBundleId], references: [id], onDelete: SetNull)
-  saasConfigs              ScenarioSaaSConfig[]
-  laborLines               ScenarioLaborLine[]
-  quotes                   Quote[]
-  hubspotDealId            String?
-  hubspotCompanyId         String?
-  hubspotPrimaryContactId  String?
-  hubspotDealName          String?
-  hubspotDealStage         String?
-  hubspotCompanyName       String?
-  hubspotSnapshotAt        DateTime?
-  hubspotQuotes            HubSpotQuote[]
-  hubspotApprovalRequest   HubSpotApprovalRequest?
+  id                      String                  @id @default(cuid())
+  name                    String
+  customerName            String
+  ownerId                 String
+  contractMonths          Int
+  appliedBundleId         String?
+  notes                   String?
+  status                  ScenarioStatus          @default(DRAFT)
+  isArchived              Boolean                 @default(false)
+  createdAt               DateTime                @default(now())
+  updatedAt               DateTime                @updatedAt
+  owner                   User                    @relation("ScenarioOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  appliedBundle           Bundle?                 @relation("ScenarioAppliedBundle", fields: [appliedBundleId], references: [id], onDelete: SetNull)
+  saasConfigs             ScenarioSaaSConfig[]
+  laborLines              ScenarioLaborLine[]
+  quotes                  Quote[]
+  hubspotDealId           String?
+  hubspotCompanyId        String?
+  hubspotPrimaryContactId String?
+  hubspotDealName         String?
+  hubspotDealStage        String?
+  hubspotCompanyName      String?
+  hubspotSnapshotAt       DateTime?
+  hubspotQuotes           HubSpotQuote[]
+  hubspotApprovalRequest  HubSpotApprovalRequest?
 }
 
 model ScenarioSaaSConfig {
-  id                  String   @id @default(cuid())
-  scenarioId          String
-  productId           String
-  seatCount           Int
-  personaMix          Json
-  discountOverridePct Decimal? @db.Decimal(6, 4)
+  id                          String   @id @default(cuid())
+  scenarioId                  String
+  productId                   String
+  seatCount                   Int
+  personaMix                  Json
+  discountOverridePct         Decimal? @db.Decimal(6, 4)
   committedUnitsPerMonth      Int?
   expectedActualUnitsPerMonth Int?
-  scenario            Scenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
-  product             Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+  scenario                    Scenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  product                     Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
 
   @@unique([scenarioId, productId])
 }
@@ -412,12 +414,12 @@ model ScenarioLaborLine {
 }
 
 model Quote {
-  id               String   @id @default(cuid())
+  id               String              @id @default(cuid())
   scenarioId       String
   version          Int
   pdfUrl           String
   internalPdfUrl   String?
-  generatedAt      DateTime @default(now())
+  generatedAt      DateTime            @default(now())
   generatedById    String
   customerSnapshot Json
   totals           Json
@@ -502,6 +504,78 @@ enum AuditResult {
   ERROR
 }
 
+// OAuth 2.1 + DCR support for MCP authorization spec.
+// Used by remote MCP clients (Claude Cowork, Claude Desktop) that don't have
+// a place to paste a static np_live_... token. Public clients only — PKCE required,
+// no client secrets issued.
+model OAuthClient {
+  id                      String                   @id @default(cuid())
+  // Public-facing client_id used in OAuth flows. Random; stable for the client's lifetime.
+  clientId                String                   @unique
+  // Optional friendly name supplied at registration ("Claude" or similar).
+  clientName              String?
+  // Whitelisted redirect URIs supplied at registration. Must match exactly at /authorize.
+  redirectUris            String[]
+  // Always ["authorization_code", "refresh_token"] for now.
+  grantTypes              String[]
+  // Always ["code"] for now.
+  responseTypes           String[]
+  // Always "none" — public client + PKCE. We do not issue secrets.
+  tokenEndpointAuthMethod String                   @default("none")
+  // Software identification fields per RFC 7591 (optional).
+  softwareId              String?
+  softwareVersion         String?
+  scope                   String                   @default("mcp")
+  createdAt               DateTime                 @default(now())
+  authCodes               OAuthAuthorizationCode[] @relation("OAuthCodeClient")
+  accessTokens            OAuthAccessToken[]       @relation("OAuthTokenClient")
+
+  @@index([clientId])
+}
+
+model OAuthAuthorizationCode {
+  id                  String      @id @default(cuid())
+  // Single-use opaque code returned to the client at the redirect_uri.
+  // Stored hashed; raw value never persisted.
+  codeHash            String      @unique
+  clientId            String
+  userId              String
+  redirectUri         String
+  // PKCE — S256 only. RFC 7636.
+  codeChallenge       String
+  codeChallengeMethod String
+  scope               String
+  expiresAt           DateTime
+  consumedAt          DateTime?
+  createdAt           DateTime    @default(now())
+  client              OAuthClient @relation("OAuthCodeClient", fields: [clientId], references: [clientId], onDelete: Cascade)
+  user                User        @relation("OAuthCodeUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([clientId])
+  @@index([userId])
+}
+
+model OAuthAccessToken {
+  id               String      @id @default(cuid())
+  // Hashed access token (np_oauth_<random>). Raw value returned once at /token.
+  tokenHash        String      @unique
+  // Optional hashed refresh token (np_refresh_<random>).
+  refreshTokenHash String?     @unique
+  clientId         String
+  userId           String
+  scope            String
+  expiresAt        DateTime
+  refreshExpiresAt DateTime?
+  revokedAt        DateTime?
+  lastUsedAt       DateTime?
+  createdAt        DateTime    @default(now())
+  client           OAuthClient @relation("OAuthTokenClient", fields: [clientId], references: [clientId], onDelete: Cascade)
+  user             User        @relation("OAuthTokenUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([clientId])
+}
+
 enum HubSpotProductKind {
   PRODUCT
   BUNDLE
@@ -571,40 +645,40 @@ model HubSpotReviewQueueItem {
 }
 
 model HubSpotQuote {
-  id                  String              @id @default(cuid())
-  scenarioId          String
-  revision            Int
-  hubspotQuoteId      String              @unique
-  shareableUrl        String?
-  publishState        HubSpotPublishState
-  supersedesQuoteId   String?             @unique
-  publishedAt         DateTime?
-  lastStatusAt        DateTime?
-  lastStatus          String?
-  dealOutcomeAt       DateTime?
-  dealOutcome         String?
-  createdAt           DateTime            @default(now())
-  updatedAt           DateTime            @updatedAt
+  id                String              @id @default(cuid())
+  scenarioId        String
+  revision          Int
+  hubspotQuoteId    String              @unique
+  shareableUrl      String?
+  publishState      HubSpotPublishState
+  supersedesQuoteId String?             @unique
+  publishedAt       DateTime?
+  lastStatusAt      DateTime?
+  lastStatus        String?
+  dealOutcomeAt     DateTime?
+  dealOutcome       String?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
 
-  scenario            Scenario            @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
-  supersededBy        HubSpotQuote?       @relation("Supersedes", fields: [supersedesQuoteId], references: [id])
-  supersedes          HubSpotQuote?       @relation("Supersedes")
+  scenario     Scenario      @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  supersededBy HubSpotQuote? @relation("Supersedes", fields: [supersedesQuoteId], references: [id])
+  supersedes   HubSpotQuote? @relation("Supersedes")
 
   @@unique([scenarioId, revision])
   @@index([scenarioId])
 }
 
 model HubSpotWebhookEvent {
-  id                  String    @id @default(cuid())
-  hubspotEventId      String    @unique
-  subscriptionType    String
-  objectType          String
-  objectId            String
-  payload             Json
-  receivedAt          DateTime  @default(now())
-  processedAt         DateTime?
-  processingError     String?
-  processingAttempts  Int       @default(0)
+  id                 String    @id @default(cuid())
+  hubspotEventId     String    @unique
+  subscriptionType   String
+  objectType         String
+  objectId           String
+  payload            Json
+  receivedAt         DateTime  @default(now())
+  processedAt        DateTime?
+  processingError    String?
+  processingAttempts Int       @default(0)
 
   @@index([processedAt])
 }
@@ -620,5 +694,5 @@ model HubSpotApprovalRequest {
   resolvedByUserId         String?
   resolvedByHubspotOwnerId String?
 
-  scenario                 Scenario              @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  scenario Scenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
 }
